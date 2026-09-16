@@ -1,4 +1,4 @@
-"""Task-scoped Chat / Work / Wynxi behavior."""
+"""Task-scoped Chat / Work behavior."""
 import threading
 
 from PySide6.QtCore import QCoreApplication
@@ -36,11 +36,11 @@ def controller(tmp_path, connected=False):
     )
 
 
-def test_new_wynxo_task_starts_unlocked_and_chat_choice_locks(tmp_path):
+def test_new_task_starts_unlocked_and_chat_choice_locks(tmp_path):
     bridge = controller(tmp_path)
     assert bridge.taskMode == "chat"
     assert bridge.taskModeLocked is False
-    assert bridge.productName == "Wynxo"
+    assert bridge.productName == "Wynxq GUI"
 
     assert bridge.setTaskMode("chat") is True
     assert bridge.taskMode == "chat"
@@ -49,12 +49,12 @@ def test_new_wynxo_task_starts_unlocked_and_chat_choice_locks(tmp_path):
     bridge.shutdown()
 
 
-def test_wynxi_starts_as_locked_coding_task(tmp_path):
+def test_work_starts_as_locked_tool_task(tmp_path):
     bridge = controller(tmp_path)
-    bridge.newTaskMode("codex")
-    assert bridge.taskMode == "codex"
+    bridge.newTaskMode("work")
+    assert bridge.taskMode == "work"
     assert bridge.taskModeLocked is True
-    assert bridge.productName == "Wynxi"
+    assert bridge.productName == "Wynxq GUI"
     bridge.shutdown()
 
 
@@ -70,25 +70,26 @@ def test_first_send_persists_chat_mode_and_reopen_restores_it(tmp_path, monkeypa
     assert bridge.taskModeLocked is True
     assert bridge.store.get_setting(f"task_mode:{task_id}") == "chat"
 
-    bridge.newTaskMode("codex")
-    assert bridge.taskMode == "codex"
+    bridge.newTaskMode("work")
+    assert bridge.taskMode == "work"
     bridge.openTask(task_id)
     assert bridge.taskMode == "chat"
     assert bridge.taskModeLocked is True
-    assert bridge.productName == "Wynxo"
+    assert bridge.productName == "Wynxq GUI"
     bridge.shutdown()
 
 
-def test_reopening_saved_wynxi_task_restores_wynxi(tmp_path):
+def test_reopening_legacy_coding_task_migrates_to_work(tmp_path):
     bridge = controller(tmp_path)
     task = bridge.store.create_conversation("Fix the parser", "qwen3:8b")
     bridge.store.set_messages(task["id"], [{"role": "user", "content": "Fix parser"}])
     bridge.store.set_setting(f"task_mode:{task['id']}", "codex")
 
     bridge.openTask(task["id"])
-    assert bridge.taskMode == "codex"
+    assert bridge.store.get_setting(f"task_mode:{task['id']}") == "work"
+    assert bridge.taskMode == "work"
     assert bridge.taskModeLocked is True
-    assert bridge.productName == "Wynxi"
+    assert bridge.productName == "Wynxq GUI"
     bridge.shutdown()
 
 
@@ -122,6 +123,7 @@ def test_reopening_work_does_not_enable_screen_control(tmp_path):
     bridge.store.set_messages(task["id"], [{"role": "user", "content": "run tests"}])
     bridge.store.set_setting(f"task_mode:{task['id']}", "work")
     bridge.openTask(task["id"])
+    assert bridge.store.get_setting(f"task_mode:{task['id']}") == "work"
     assert bridge.taskMode == "work"
     assert bridge.desktopEnabled is False
     assert bridge.desktop.connected is False
@@ -191,9 +193,10 @@ def test_a_chat_task_cannot_run_a_command_even_if_the_model_asks(tmp_path):
                                                    "arguments": {"command": "rm -rf ~"}}}]}, "done": True},
          {"message": {"content": "I cannot do that here."}, "done": True}])
     assert desktop.calls == []
-    end = next(event for event in events if event["type"] == "tool_end")
-    assert end["result"]["ok"] is False
-    assert "not enabled" in end["result"]["error"]
+    assert len(client.requests) == 1
+    assert not any(event["type"] in {"tool_start", "tool_end"} for event in events)
+    assert any(event["type"] == "error" and "tools are disabled" in event["text"]
+               for event in events)
 
 
 def test_a_chat_task_is_told_plainly_what_it_cannot_do(tmp_path):
@@ -215,22 +218,29 @@ def test_a_chat_task_has_no_plan_tool_either(tmp_path):
     assert "update_plan" in {tool["function"]["name"] for tool in work.requests[0]["tools"]}
 
 
-def test_a_chat_task_can_still_remember_and_recall(tmp_path):
-    """Chat has no shell, but memory is a note in Wynxo's own file — the one
-    thing a conversation must be able to carry into the next one."""
+def test_chat_recalls_existing_memory_but_never_offers_or_runs_memory_tools(tmp_path):
     memory = Memory(tmp_path / "memory.md")
     memory.remember("Answers in Portuguese")
-    client, desktop, _ = engine_run(
+    before = memory.read()
+    client, desktop, events = engine_run(
         controller(tmp_path), "chat",
         [{"message": {"tool_calls": [{"function": {"name": "remember",
-                                                   "arguments": {"note": "Learned in a chat"}}}]}, "done": True},
-         {"message": {"content": "noted"}, "done": True}],
+                                                   "arguments": {"note": "Learned in a chat"}}}]}, "done": True}],
         memory=memory)
-    offered = {tool["function"]["name"] for tool in client.requests[0]["tools"]}
-    assert offered == {"remember", "forget"}
+    assert "tools" not in client.requests[0]
     assert "Answers in Portuguese" in client.requests[0]["messages"][0]["content"]
-    assert "Learned in a chat" in memory.notes()
+    assert memory.read() == before
     assert desktop.calls == []
+    assert not any(event["type"] in {"tool_start", "tool_end"} for event in events)
+
+
+def test_legacy_mode_cannot_be_used_for_new_tasks(tmp_path):
+    bridge = controller(tmp_path)
+    assert bridge.setTaskMode("codex") is False
+    bridge.newTaskMode("codex")
+    assert bridge.taskMode == "chat"
+    assert bridge.taskModeLocked is False
+    bridge.shutdown()
 
 
 def test_the_controller_puts_a_chat_task_into_chat_only_mode(tmp_path, monkeypatch):

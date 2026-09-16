@@ -56,7 +56,7 @@ def test_last_open_task_mode_plan_and_draft_restore_without_resuming(tmp_path):
 
     second = make_controller(database)
     assert second.taskId == task["id"]
-    assert second.taskMode == "codex"
+    assert second.taskMode == "work"
     assert second.draftText == "also check the fallback path"
     assert [step["status"] for step in second.planSteps] == ["completed", "pending"]
     assert second.store.get_setting(second._plan_key(task["id"]))[1]["status"] == "pending"

@@ -281,13 +281,13 @@ def test_turning_memory_off_keeps_the_file_but_stops_reading_it(tmp_path):
     again.shutdown()
 
 
-def test_memory_is_the_same_file_in_a_wynxo_task_and_a_wynxi_task(tmp_path):
+def test_memory_is_the_same_file_in_chat_and_work(tmp_path):
     # Imported here so simply loading this module does not install the
     # workspace layer's engine extensions into every other test.
     from wynxo.workspace import WorkspaceController
 
     bridge = controller(tmp_path, cls=WorkspaceController)
-    bridge.newTaskMode("codex")
+    bridge.newTaskMode("work")
     bridge.rememberNote("Learned while coding")
     bridge.newTaskMode("chat")
     assert "Learned while coding" in bridge.memoryText

@@ -6,7 +6,8 @@ import time
 
 import pytest
 
-from wynxo.engine import AgentEngine, Cancelled, OllamaClient, OllamaError, validate_endpoint, validate_tool_call
+from wynxo.engine import (AgentEngine, Cancelled, OllamaClient, OllamaError,
+                          MEMORY_TOOLS, _NONVISUAL, validate_endpoint, validate_tool_call)
 
 
 @pytest.fixture
@@ -189,7 +190,7 @@ def test_desktop_off_exposes_local_tools_without_screen_access():
     client = FakeClient([response("I can help explain.")])
     history, events, desktop = run(client, desktop_enabled=False)
     assert desktop.calls == []
-    assert {t["function"]["name"] for t in client.requests[0]["tools"]} == {"open_app", "list_apps", "wait", "run_command"}
+    assert {t["function"]["name"] for t in client.requests[0]["tools"]} == _NONVISUAL - MEMORY_TOOLS
     assert not any(m.get("images") for m in history)
 
 
@@ -197,7 +198,7 @@ def test_nonvision_model_can_only_launch_apps():
     client = FakeClient([response("App launching only.")], ["tools"])
     _, _, desktop = run(client)
     assert desktop.calls == []
-    assert {t["function"]["name"] for t in client.requests[0]["tools"]} == {"open_app", "list_apps", "wait", "run_command"}
+    assert {t["function"]["name"] for t in client.requests[0]["tools"]} == _NONVISUAL - MEMORY_TOOLS
 
 
 def test_screen_access_is_offered_without_eager_capture():

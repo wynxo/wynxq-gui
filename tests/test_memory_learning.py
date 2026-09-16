@@ -86,6 +86,7 @@ def controller(tmp_path):
 
 
 def ready(bridge, monkeypatch):
+    bridge.newTaskMode("work")
     bridge._online = True
     bridge._model_capabilities = ["completion"]  # deliberately no tool calling
     monkeypatch.setattr(bridge, "_start_run", lambda history: None)
@@ -138,4 +139,16 @@ def test_workspace_project_memory_does_not_leak_into_another_repo(tmp_path, monk
 
     assert "pytest" in bridge.memory.prompt(str(project))
     assert "pytest" not in bridge.memory.prompt(str(tmp_path / "other"))
+    bridge.shutdown()
+
+
+def test_chat_does_not_automatically_write_memories(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    bridge._online = True
+    bridge._model_capabilities = ["completion", "tools"]
+    monkeypatch.setattr(bridge, "_start_run", lambda history: None)
+    bridge.send("My preferred name is Morgan")
+    assert bridge.taskMode == "chat"
+    assert bridge.memory.notes() == []
+    assert not bridge.memory.exists()
     bridge.shutdown()

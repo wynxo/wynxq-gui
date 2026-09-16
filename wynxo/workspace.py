@@ -1,12 +1,12 @@
-"""Task-scoped Chat / Work / Wynxi mode state and live agent plans.
+"""Task-scoped Chat / Work mode state and live agent plans.
 
 The base Controller intentionally stays focused on conversation, Ollama and
 runtime state. WorkspaceController adds the product-level behavior used by the
 shell: a new task starts unlocked, choosing Chat or Work locks that task's mode,
-and Wynxi creates a permanently coding-focused task. Modes and plans are kept in
+and Work combines coding and desktop tools. Modes and plans are kept in
 the existing private settings table so old databases need no migration.
 
-Wynxo is also the desktop product's network-policy layer. The engine historically
+Wynxq GUI is also the desktop product's network-policy layer. The engine historically
 accepted loopback-only Ollama URLs, which made a perfectly normal homelab setup
 impossible. The desktop app now accepts explicit HTTP(S) Ollama origins on the
 LAN or elsewhere while still rejecting credentials, paths, query strings and
@@ -57,7 +57,7 @@ def _install_plan_tool() -> None:
         }
         tool = engine_module._tool(
             "update_plan",
-            "Publish or update the concise execution plan shown in Wynxo's Plan panel. "
+            "Publish or update the concise execution plan shown in Wynxq GUI's Plan panel. "
             "Use only for work that needs multiple concrete actions. Reuse stable step IDs "
             "and update statuses as work progresses.",
             {
@@ -86,7 +86,7 @@ class PlanningAgentEngine(AgentEngine):
     def run(self, *args, **kwargs):
         # The complete conversation is the archive. Build a temporary recent
         # view for this inference, then append only newly generated messages
-        # back onto the untouched archive. This applies to Chat, Work and Wynxi.
+        # back onto the untouched archive. This applies to Chat and Work.
         if args:
             full_history = copy.deepcopy(list(args[0]))
         else:
@@ -201,7 +201,7 @@ class WorkspaceController(Controller):
     planChanged = Signal()
     usageChanged = Signal()
     contextStateChanged = Signal()
-    VALID_TASK_MODES = {"chat", "work", "codex"}
+    VALID_TASK_MODES = {"chat", "work"}
     LAST_TASK_KEY = "workspace:last_task"
     DRAFT_KEY_PREFIX = "workspace:draft:"
 
@@ -286,6 +286,11 @@ class WorkspaceController(Controller):
 
     def _saved_mode(self, task_id: str) -> str:
         mode = str(self.store.get_setting(self._mode_key(task_id), "chat") or "chat")
+        # Coding tasks now use the same Work toolset as desktop tasks. Persist
+        # this small migration so reopening or duplicating keeps that intent.
+        if mode == "codex":
+            mode = "work"
+            self.store.set_setting(self._mode_key(task_id), mode)
         return mode if mode in self.VALID_TASK_MODES else "chat"
 
     @staticmethod
@@ -393,7 +398,7 @@ class WorkspaceController(Controller):
 
     @Property(str, notify=modeChanged)
     def productName(self):
-        return "Wynxi" if self._task_mode == "codex" else "Wynxo"
+        return "Wynxq GUI"
 
     @Property("QVariantList", notify=planChanged)
     def planSteps(self):
@@ -582,7 +587,7 @@ class WorkspaceController(Controller):
         repo convention. The Markdown memory file remains the source of truth,
         and its normal dedupe/size/privacy rules still apply.
         """
-        if not self._memory_enabled:
+        if not self._memory_enabled or self._task_mode != "work":
             return 0
         stored = 0
         identity_prefixes = ("User prefers to be called ", "User's preferred name is ")
@@ -668,7 +673,7 @@ class WorkspaceController(Controller):
         # Chat is chat. A Chat task never reaches the shell, the desktop or the
         # project — not "asks first", not "only safe commands": the tools are
         # not offered to the model at all, so there is nothing to approve.
-        tools_allowed = self._task_mode != "chat"
+        tools_allowed = self._task_mode == "work"
         think = self._think
         num_ctx, temperature = self._num_ctx, self._temperature
         keep_alive, max_steps = self._keep_alive, self._max_steps
