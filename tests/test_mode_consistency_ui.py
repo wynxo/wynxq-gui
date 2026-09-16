@@ -18,13 +18,14 @@ def test_locked_chat_starters_are_conversation_only():
     assert "Brainstorm" in block
 
 
-def test_tool_starters_promote_a_fresh_task_to_a_capable_mode():
+def test_tool_starters_promote_a_fresh_task_to_work():
     text = STARTERS.read_text(encoding="utf-8")
-    assert 'command: "files", needs: "codex"' in text
-    assert 'command: "terminal-panel", needs: "codex"' in text
+    assert 'command: "files", needs: "work"' in text
+    assert 'command: "terminal-panel", needs: "work"' in text
     assert 'label: "Read my screen", icon: "eye", needs: "work"' in text
     assert 'label: "Run a command", icon: "bolt", needs: "work"' in text
     assert 'command: "browser", needs: "work"' in text
+    assert 'needs: "codex"' not in text
 
 
 def test_chat_copy_does_not_promise_tools_it_cannot_run():
