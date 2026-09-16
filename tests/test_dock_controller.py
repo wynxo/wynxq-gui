@@ -45,6 +45,17 @@ def project(tmp_path):
     return root
 
 
+def settle(application, predicate, seconds=5.0):
+    """Spin the event loop the way the GUI does until async work lands."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        application.processEvents()
+        if predicate():
+            return True
+        time.sleep(0.01)
+    return False
+
+
 # ------------------------------------------------------------ the tab rules
 def test_the_dock_starts_closed_and_toggles(dock):
     assert dock.visible is False
@@ -223,12 +234,57 @@ def test_a_file_outside_the_project_is_refused_by_the_viewer(dock, project, tmp_
     assert dock.file.get("text") == ""
 
 
-def test_filtering_finds_files_by_name(dock, project):
+def test_filtering_finds_files_by_name(application, dock, project):
     dock.set_project(str(project))
     dock.setFileFilter("app")
-    assert any(match["name"] == "app.py" for match in dock.fileMatches)
+    assert settle(application, lambda: any(
+        match["name"] == "app.py" for match in dock.fileMatches))
     dock.setFileFilter("")
     assert dock.fileMatches == []
+
+
+def test_stale_file_search_results_never_replace_a_newer_query(
+        application, dock, project, monkeypatch):
+    started = []
+    finished = []
+
+    def fake_search(root, needle, *, limit, show_hidden):
+        started.append(needle)
+        time.sleep(0.30 if needle == "slow" else 0.01)
+        finished.append(needle)
+        return [{"name": f"{needle}.py", "path": str(project / f"{needle}.py")}]
+
+    monkeypatch.setattr("wynxo.dock.files.search_tree", fake_search)
+    dock.set_project(str(project))
+    dock.setFileFilter("slow")
+    assert settle(application, lambda: "slow" in started)
+
+    dock.setFileFilter("fast")
+    assert settle(application, lambda: set(finished) == {"slow", "fast"})
+    assert settle(application, lambda: bool(dock.fileMatches))
+    assert [match["name"] for match in dock.fileMatches] == ["fast.py"]
+
+
+def test_show_hidden_restarts_an_active_file_search(
+        application, dock, project, monkeypatch):
+    calls = []
+
+    def fake_search(root, needle, *, limit, show_hidden):
+        calls.append(show_hidden)
+        name = "hidden.py" if show_hidden else "visible.py"
+        return [{"name": name, "path": str(project / name)}]
+
+    monkeypatch.setattr("wynxo.dock.files.search_tree", fake_search)
+    dock.set_project(str(project))
+    dock.setFileFilter("file")
+    assert settle(application, lambda: [
+        match["name"] for match in dock.fileMatches] == ["visible.py"])
+
+    dock.setShowHidden(True)
+    assert dock.fileMatches == []
+    assert settle(application, lambda: [
+        match["name"] for match in dock.fileMatches] == ["hidden.py"])
+    assert calls[-1] is True
 
 
 def test_changing_project_clears_the_previous_one(dock, project, tmp_path):
@@ -297,26 +353,16 @@ def test_changes_are_read_from_git_and_a_diff_opens(application, store, tmp_path
                    capture_output=True)
     (root / "a.txt").write_text("two\n")
 
-    def settle(predicate, seconds=15.0):
-        """Spin the event loop the way the GUI does until the worker lands."""
-        deadline = time.monotonic() + seconds
-        while time.monotonic() < deadline:
-            application.processEvents()
-            if predicate():
-                return True
-            time.sleep(0.02)
-        return False
-
     dock = DockController(store=store)
     try:
         dock.set_project(str(root))
-        assert settle(lambda: not dock.changesBusy and bool(dock.changes))
+        assert settle(application, lambda: not dock.changesBusy and bool(dock.changes), 15.0)
         assert dock.isRepository is True
         assert dock.branch == "main"
         assert [entry["path"] for entry in dock.changes] == ["a.txt"]
 
         dock.openDiff("a.txt")
-        assert settle(lambda: bool(dock.diffRows))
+        assert settle(application, lambda: bool(dock.diffRows), 15.0)
         assert any(row["type"] == "add" for row in dock.diffRows)
         dock.closeDiff()
         assert dock.diffRows == []
