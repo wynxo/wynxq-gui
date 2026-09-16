@@ -254,7 +254,7 @@ def test_stale_file_search_results_never_replace_a_newer_query(
         finished.append(needle)
         return [{"name": f"{needle}.py", "path": str(project / f"{needle}.py")}]
 
-    monkeypatch.setattr("wynxo.dock.files.search_tree", fake_search)
+    monkeypatch.setattr("wynxo.dock.files._search_tree_impl", fake_search)
     dock.set_project(str(project))
     dock.setFileFilter("slow")
     assert settle(application, lambda: "slow" in started)
@@ -274,7 +274,7 @@ def test_show_hidden_restarts_an_active_file_search(
         name = "hidden.py" if show_hidden else "visible.py"
         return [{"name": name, "path": str(project / name)}]
 
-    monkeypatch.setattr("wynxo.dock.files.search_tree", fake_search)
+    monkeypatch.setattr("wynxo.dock.files._search_tree_impl", fake_search)
     dock.set_project(str(project))
     dock.setFileFilter("file")
     assert settle(application, lambda: [
