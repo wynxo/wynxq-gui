@@ -9,8 +9,8 @@ import QtQuick.Layouts
     Right: what the machine is doing — run state, system, the dock toggle, and
     an overflow for everything that is not a per-second concern.
 
-    Chat / Work is a one-time choice for a fresh Wynxo task; once selected it
-    disappears rather than becoming permanent navigation chrome.
+    Chat / Work is a one-time choice for a fresh Wynxq GUI task; once selected
+    it disappears rather than becoming permanent navigation chrome.
 */
 Item {
     id: root
@@ -36,8 +36,7 @@ Item {
     readonly property bool needsAttention: bridge && !bridge.online
     readonly property bool connecting: bridge && bridge.connectionState === "connecting"
     readonly property string resolvedMode: bridge ? bridge.taskMode : "chat"
-    readonly property bool canChooseMode: root.homeMode && bridge
-        && !bridge.taskModeLocked && bridge.taskMode !== "codex"
+    readonly property bool canChooseMode: root.homeMode && bridge && !bridge.taskModeLocked
     readonly property bool roomy: root.width > 820
 
     function requestMode(value) {
@@ -83,7 +82,7 @@ Item {
             spacing: Theme.s2
 
             Text {
-                text: bridge && bridge.taskMode === "codex" ? "Wynxi" : "Wynxo"
+                text: "Wynxq GUI"
                 color: Theme.textSecondary
                 font.family: Theme.sansFamily
                 font.pixelSize: Theme.label
@@ -294,7 +293,6 @@ Item {
                 Text {
                     text: !bridge ? ""
                         : bridge.permissionPending ? "Waiting"
-                        : root.resolvedMode === "codex" ? "Running"
                         : root.resolvedMode === "work" ? "Working" : "Generating"
                     color: Theme.textSecondary
                     font.family: Theme.sansFamily
@@ -361,7 +359,7 @@ Item {
             iconName: "chat"
             onClicked: root.openAgentSettings()
             ToolTip.visible: hovered
-            ToolTip.text: "This task answers and explains. It has no shell, no screen control and no file access — start a Work or Wynxi task for those."
+            ToolTip.text: "This task answers and explains. It has no shell, no screen control and no file access — start a Work task for those."
         }
 
         Chip {
