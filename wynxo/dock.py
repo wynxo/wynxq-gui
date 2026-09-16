@@ -403,6 +403,11 @@ class DockController(QObject):
         self.tree.changed.connect(self.filesChanged)
         self._file_filter = ""
         self._search_results: list[dict] = []
+        self._search_generation = 0
+        self._search_debounce = QTimer(self)
+        self._search_debounce.setSingleShot(True)
+        self._search_debounce.setInterval(120)
+        self._search_debounce.timeout.connect(self._start_file_search)
 
         self._viewer: dict = {}
         self._viewer_buffer = ""
@@ -580,6 +585,8 @@ class DockController(QObject):
             return True
         if self._block_dirty_transition("switching projects"):
             return False
+        self._search_generation += 1
+        self._search_debounce.stop()
         self._project = path
         self.tree.set_root(path)
         self._file_filter = ""
@@ -625,8 +632,16 @@ class DockController(QObject):
 
     @Slot(bool)
     def setShowHidden(self, value):
-        self.tree.set_show_hidden(bool(value))
-        self._remember("dock_show_hidden", bool(value))
+        value = bool(value)
+        changed = value != self.tree.show_hidden
+        self.tree.set_show_hidden(value)
+        self._remember("dock_show_hidden", value)
+        if changed and self._file_filter.strip():
+            self._search_generation += 1
+            self._search_debounce.stop()
+            self._search_results = []
+            if len(self._file_filter.strip()) >= 2 and self._project:
+                self._search_debounce.start()
         self.filesChanged.emit()
 
     @Slot(str)
@@ -635,16 +650,40 @@ class DockController(QObject):
         if text == self._file_filter:
             return
         self._file_filter = text
-        needle = text.strip()
-        if len(needle) < 2 or not self._project:
-            self._search_results = []
-        else:
-            try:
-                self._search_results = files.search_tree(
-                    self._project, needle, limit=120, show_hidden=self.tree.show_hidden)
-            except (OSError, ValueError):
-                self._search_results = []
+        self._search_generation += 1
+        self._search_debounce.stop()
+        self._search_results = []
         self.filesChanged.emit()
+        if len(text.strip()) >= 2 and self._project:
+            self._search_debounce.start()
+
+    @Slot()
+    def _start_file_search(self):
+        needle = self._file_filter.strip()
+        project = self._project
+        show_hidden = self.tree.show_hidden
+        generation = self._search_generation
+        if len(needle) < 2 or not project:
+            return
+
+        def search():
+            try:
+                return files.search_tree(
+                    project, needle, limit=120, show_hidden=show_hidden)
+            except (OSError, ValueError):
+                return []
+
+        def finish(results):
+            if generation != self._search_generation:
+                return
+            if project != self._project or needle != self._file_filter.strip():
+                return
+            if show_hidden != self.tree.show_hidden:
+                return
+            self._search_results = list(results or [])
+            self.filesChanged.emit()
+
+        self._run(search, finish)
 
     @Slot()
     def refreshFiles(self):
@@ -1331,6 +1370,8 @@ class DockController(QObject):
         here — rather than trusting `deleteLater` — is what makes shutdown safe
         from a controller that is about to be freed.
         """
+        self._search_generation += 1
+        self._search_debounce.stop()
         self._poll.stop()
         self._teardown_shell()
         for worker in list(self._workers):
