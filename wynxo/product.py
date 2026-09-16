@@ -2,9 +2,9 @@
 
 WorkspaceController keeps the durable task/workspace machinery. ProductController
 adds the interaction model exposed by the shell: Chat is a true tool-free mode,
-while Agent is the same task with local tools enabled and a live autonomy level.
-Users can move between them whenever the task is idle; the selected task mode is
-persisted immediately so reopening a conversation never guesses.
+while Work is the same task with local coding/tools enabled and a live autonomy
+level. Users can move between them whenever the task is idle; the selected task
+mode is persisted immediately so reopening a conversation never guesses.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from .workspace import WorkspaceController
 
 
 class ProductController(WorkspaceController):
-    """Workspace controller with live Chat / Agent switching."""
+    """Workspace controller with live Chat / Work switching."""
 
     @Property(bool, notify=WorkspaceController.modeChanged)
     def taskModeLocked(self):
@@ -40,7 +40,7 @@ class ProductController(WorkspaceController):
         if mode == "chat":
             self.toast.emit("Chat mode — tools are off for this task")
         else:
-            self.toast.emit(f"Agent mode — {self._permission_mode.title()} autonomy")
+            self.toast.emit(f"Work mode — {self._permission_mode.title()} autonomy")
         return True
 
     @Slot(str)
