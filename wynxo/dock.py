@@ -1051,6 +1051,11 @@ class DockController(QObject):
     @Slot()
     def _retire_worker(self):
         worker = self.sender()
+        # QThread.finished() is emitted before thread-local cleanup is
+        # guaranteed complete. Join here before another worker starts so Python
+        # and native thread-local teardown cannot overlap the next task.
+        if worker is not None:
+            worker.wait()
         self._workers.discard(worker)
         if worker is self._active_worker:
             self._active_worker = None
