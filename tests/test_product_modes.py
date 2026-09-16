@@ -1,4 +1,7 @@
 """Product-level Chat / Work switching and autonomy behavior."""
+import threading
+import time
+
 from PySide6.QtCore import QCoreApplication
 
 from wynxo.product import ProductController
@@ -31,6 +34,17 @@ def controller(tmp_path):
         store=Store(tmp_path / "history.sqlite3"),
         desktop=IdleDesktop(), autoconnect=False,
     )
+
+
+def settle(predicate, seconds=1.5):
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        APP.processEvents()
+        if predicate():
+            return True
+        time.sleep(0.01)
+    APP.processEvents()
+    return bool(predicate())
 
 
 def test_existing_task_can_switch_between_chat_and_work_without_losing_history(tmp_path):
@@ -86,6 +100,34 @@ def test_changing_autonomy_revokes_allow_rest_of_task(tmp_path):
 
     assert bridge.permissionMode == "auto"
     assert bridge._session_auto is False
+    bridge.shutdown()
+
+
+def test_product_job_body_runs_on_python_thread_and_callback_returns_to_gui(tmp_path):
+    bridge = controller(tmp_path)
+    caller = threading.current_thread()
+    observed = {}
+
+    def work(cancel, emit):
+        observed["worker"] = threading.current_thread()
+        emit({"type": "probe"})
+        return "ok"
+
+    def done(value):
+        observed["result"] = value
+        observed["callback"] = threading.current_thread()
+
+    def event(payload):
+        observed["event"] = payload
+        observed["event_thread"] = threading.current_thread()
+
+    bridge._job(work, done, event=event)
+    assert settle(lambda: observed.get("result") == "ok" and "event" in observed)
+    assert observed["worker"] is not caller
+    assert observed["worker"].name == "wynxo-product-job"
+    assert type(observed["worker"]).__name__ != "_DummyThread"
+    assert observed["callback"] is caller
+    assert observed["event_thread"] is caller
     bridge.shutdown()
 
 
