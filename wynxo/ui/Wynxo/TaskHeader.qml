@@ -6,13 +6,13 @@ import QtQuick.Layouts
     A thin workspace title bar.
 
     Left: where you are — the panel toggle, product, project and task.
-    Right: what the agent may do — Chat / Agent, Agent autonomy, run state,
+    Right: what Work may do — Chat / Work, Work autonomy, run state,
     system status, workspace dock and the overflow menu.
 
-    Chat / Agent is live task state rather than a one-time onboarding choice.
-    An idle task can move between conversation-only Chat and the local Agent
-    without starting over. Agent autonomy is visible beside the mode so there
-    is no hidden difference between Manual, Safe, Auto and Full.
+    Chat / Work is live task state rather than a one-time onboarding choice.
+    An idle task can move between conversation-only Chat and local Work without
+    starting over. Work autonomy is visible beside the mode so there is no
+    hidden difference between Manual, Safe, Auto and Full.
 */
 Item {
     id: root
@@ -231,7 +231,7 @@ Item {
             Item { Layout.fillWidth: true }
         }
 
-        // ----------------------------------------------- Chat / Agent mode
+        // ------------------------------------------------ Chat / Work mode
         Rectangle {
             id: modeSurface
             Layout.preferredHeight: 30
@@ -249,7 +249,7 @@ Item {
                 Repeater {
                     model: [
                         { id: "chat", label: "Chat", icon: "chat", hint: "Conversation only. No commands, project tools or desktop actions." },
-                        { id: "work", label: "Agent", icon: "code", hint: "Coding and local tools. Autonomy is controlled separately." },
+                        { id: "work", label: "Work", icon: "code", hint: "Coding and local tools. Autonomy is controlled separately." },
                     ]
                     delegate: AbstractButton {
                         id: choice
@@ -303,7 +303,7 @@ Item {
             }
         }
 
-        // Agent autonomy is intentionally adjacent to Agent mode. It is not a
+        // Work autonomy is intentionally adjacent to Work mode. It is not a
         // hidden setting because it changes what the next command may do.
         AbstractButton {
             id: autonomyButton
@@ -312,7 +312,7 @@ Item {
             Layout.preferredHeight: 30
             Layout.preferredWidth: autonomyRow.implicitWidth + Theme.s3 * 2
             hoverEnabled: true
-            Accessible.name: bridge ? "Agent autonomy " + root.permissionLabel(bridge.permissionMode) : "Agent autonomy"
+            Accessible.name: bridge ? "Work autonomy " + root.permissionLabel(bridge.permissionMode) : "Work autonomy"
             Accessible.description: bridge ? root.permissionDetail(bridge.permissionMode) : ""
             onClicked: autonomyMenu.opened ? autonomyMenu.close() : autonomyMenu.open()
             ToolTip.visible: hovered
@@ -361,7 +361,7 @@ Item {
                 anchorX: -menuWidth + autonomyButton.width
                 menuWidth: 310
                 items: [
-                    { id: "manual", label: bridge && bridge.permissionMode === "manual" ? "Manual  • current" : "Manual", icon: "hand" },
+                    { id: "manual", label: bridge && bridge.permissionMode === "manual" ? "Manual  • current" : "Manual", icon: "cursor" },
                     { id: "safe", label: bridge && bridge.permissionMode === "safe" ? "Safe  • current" : "Safe", icon: "shield" },
                     { id: "auto", label: bridge && bridge.permissionMode === "auto" ? "Auto  • current" : "Auto", icon: "bolt" },
                     { id: "full", label: bridge && bridge.permissionMode === "full" ? "Full  • current" : "Full", icon: "warning" },
@@ -405,7 +405,7 @@ Item {
                 Text {
                     text: !bridge ? ""
                         : bridge.permissionPending ? "Waiting"
-                        : root.resolvedMode === "work" ? "Agent working" : "Generating"
+                        : root.resolvedMode === "work" ? "Working" : "Generating"
                     color: Theme.textSecondary
                     font.family: Theme.sansFamily
                     font.pixelSize: Theme.caption
