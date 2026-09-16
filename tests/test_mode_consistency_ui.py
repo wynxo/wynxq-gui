@@ -11,6 +11,8 @@ TASK_START = WYNXO_UI / "TaskStart.qml"
 HEADER = WYNXO_UI / "TaskHeader.qml"
 SIDEBAR = WYNXO_UI / "WorkspaceSidebar.qml"
 TASK_ROW = WYNXO_UI / "TaskRow.qml"
+QUICK_BAR = WYNXO_UI / "QuickBarContent.qml"
+ONBOARDING = WYNXO_UI / "Onboarding.qml"
 PALETTE = WYNXO_UI / "CommandPalette.qml"
 MAIN = UI / "Main.qml"
 DEMO = ROOT / "wynxo" / "demo.py"
@@ -46,7 +48,7 @@ def test_chat_copy_does_not_promise_tools_it_cannot_run():
 
 
 def test_visible_shell_uses_only_chat_and_work_modes():
-    for path in (MAIN, HEADER, SIDEBAR, TASK_ROW, COMPOSER, TASK_START, STARTERS):
+    for path in (MAIN, HEADER, SIDEBAR, TASK_ROW, QUICK_BAR, COMPOSER, TASK_START, STARTERS):
         text = path.read_text(encoding="utf-8")
         assert 'taskMode === "codex"' not in text, path
         assert 'newTaskMode("codex")' not in text, path
@@ -59,6 +61,20 @@ def test_task_rows_describe_only_supported_modes():
     text = TASK_ROW.read_text(encoding="utf-8")
     assert 'row.mode === "work" ? ", Work task" : ", Chat task"' in text
     assert 'visible: row.mode === "work"' in text
+
+
+def test_quick_bar_makes_the_current_task_mode_explicit():
+    text = QUICK_BAR.read_text(encoding="utf-8")
+    assert 'readonly property bool workMode: root.mode === "work"' in text
+    assert '"Give the current Work task an instruction…"' in text
+    assert '"Ask the current Chat task…"' in text
+    assert 'text: root.workMode ? "Work" : "Chat"' in text
+
+
+def test_onboarding_uses_the_gui_product_name():
+    text = ONBOARDING.read_text(encoding="utf-8")
+    assert 'Accessible.name: "Welcome to Wynxq GUI"' in text
+    assert '"Start using Wynxq GUI"' in text
 
 
 def test_command_palette_starts_work_not_a_retired_coding_product():
