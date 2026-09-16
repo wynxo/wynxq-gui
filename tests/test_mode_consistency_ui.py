@@ -17,6 +17,7 @@ PALETTE = WYNXO_UI / "CommandPalette.qml"
 MAIN = UI / "Main.qml"
 DEMO = ROOT / "wynxo" / "demo.py"
 README = ROOT / "README.md"
+RETIRED_WYNXI_SCREENSHOT = ROOT / "docs" / "screenshots" / "16-wynxi-home.png"
 
 
 def test_locked_chat_starters_are_conversation_only():
@@ -91,6 +92,7 @@ def test_preview_scenes_use_the_same_chat_and_work_modes_as_the_app():
     assert "Wynxi" not in text
     assert 'self.scene == "work-run"' in text
     assert '("26-code-run", "work-run", "")' in text
+    assert not RETIRED_WYNXI_SCREENSHOT.exists()
 
 
 def test_readme_describes_the_current_modes_repo_and_preview_names():
