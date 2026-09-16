@@ -10,6 +10,7 @@ COMPOSER = WYNXO_UI / "Composer.qml"
 TASK_START = WYNXO_UI / "TaskStart.qml"
 HEADER = WYNXO_UI / "TaskHeader.qml"
 SIDEBAR = WYNXO_UI / "WorkspaceSidebar.qml"
+TASK_ROW = WYNXO_UI / "TaskRow.qml"
 PALETTE = WYNXO_UI / "CommandPalette.qml"
 MAIN = UI / "Main.qml"
 DEMO = ROOT / "wynxo" / "demo.py"
@@ -45,12 +46,19 @@ def test_chat_copy_does_not_promise_tools_it_cannot_run():
 
 
 def test_visible_shell_uses_only_chat_and_work_modes():
-    for path in (MAIN, HEADER, SIDEBAR, COMPOSER, TASK_START, STARTERS):
+    for path in (MAIN, HEADER, SIDEBAR, TASK_ROW, COMPOSER, TASK_START, STARTERS):
         text = path.read_text(encoding="utf-8")
         assert 'taskMode === "codex"' not in text, path
         assert 'newTaskMode("codex")' not in text, path
         assert 'needs: "codex"' not in text, path
+        assert 'row.mode === "codex"' not in text, path
         assert "Wynxi" not in text, path
+
+
+def test_task_rows_describe_only_supported_modes():
+    text = TASK_ROW.read_text(encoding="utf-8")
+    assert 'row.mode === "work" ? ", Work task" : ", Chat task"' in text
+    assert 'visible: row.mode === "work"' in text
 
 
 def test_command_palette_starts_work_not_a_retired_coding_product():
