@@ -5,12 +5,14 @@ import QtQuick.Layouts
 /*!
     A thin workspace title bar.
 
-    Left: where you are — the panel toggle, the product, the project, the task.
-    Right: what the machine is doing — run state, system, the dock toggle, and
-    an overflow for everything that is not a per-second concern.
+    Left: where you are — the panel toggle, product, project and task.
+    Right: what the agent may do — Chat / Agent, Agent autonomy, run state,
+    system status, workspace dock and the overflow menu.
 
-    Chat / Work is a one-time choice for a fresh Wynxq GUI task; once selected
-    it disappears rather than becoming permanent navigation chrome.
+    Chat / Agent is live task state rather than a one-time onboarding choice.
+    An idle task can move between conversation-only Chat and the local Agent
+    without starting over. Agent autonomy is visible beside the mode so there
+    is no hidden difference between Manual, Safe, Auto and Full.
 */
 Item {
     id: root
@@ -36,13 +38,28 @@ Item {
     readonly property bool needsAttention: bridge && !bridge.online
     readonly property bool connecting: bridge && bridge.connectionState === "connecting"
     readonly property string resolvedMode: bridge ? bridge.taskMode : "chat"
-    readonly property bool canChooseMode: root.homeMode && bridge && !bridge.taskModeLocked
+    readonly property bool canChooseMode: !!(bridge && !bridge.busy && !bridge.connecting)
     readonly property bool roomy: root.width > 820
 
     function requestMode(value) {
         if ((value !== "chat" && value !== "work") || !root.canChooseMode) return;
-        if (!bridge || bridge.connecting || bridge.busy) return;
         root.modeRequested(value);
+    }
+
+    function permissionLabel(mode) {
+        if (mode === "manual") return "Manual";
+        if (mode === "safe") return "Safe";
+        if (mode === "auto") return "Auto";
+        if (mode === "full") return "Full";
+        return "Safe";
+    }
+
+    function permissionDetail(mode) {
+        if (mode === "manual") return "Ask before every command and desktop action.";
+        if (mode === "safe") return "Read and inspect freely; ask before commands and input that change state.";
+        if (mode === "auto") return "Code, run and test unattended; ask only before destructive commands.";
+        if (mode === "full") return "Full autopilot. Never ask, including for destructive commands.";
+        return "";
     }
 
     Rectangle {
@@ -97,8 +114,6 @@ Item {
                 font.pixelSize: Theme.caption
             }
 
-            // The project is a button: it is where you are, and where you go
-            // to change it.
             AbstractButton {
                 id: projectButton
                 visible: bridge && bridge.projectName
@@ -118,23 +133,27 @@ Item {
                     spacing: Theme.s1
                     clip: true
                     Text {
-                        id: projectLabel
                         anchors.verticalCenter: parent.verticalCenter
                         text: bridge ? bridge.projectName : ""
                         color: Theme.textMuted
                         font.family: Theme.monoFamily
                         font.pixelSize: Theme.caption
                         elide: Text.ElideMiddle
-                        // The chevron's lane is reserved; the name gets the rest.
                         width: Math.min(implicitWidth, projectButton.budget - 22)
                     }
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
-                        name: "down"; ink: Theme.textDisabled
-                        width: 9; height: 9
+                        name: "down"
+                        ink: Theme.textDisabled
+                        width: 9
+                        height: 9
                     }
                 }
-                MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.PointingHandCursor }
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    cursorShape: Qt.PointingHandCursor
+                }
 
                 WMenu {
                     id: projectMenu
@@ -180,7 +199,7 @@ Item {
                 visible: !root.homeMode
                 enabled: !!(bridge && bridge.taskId)
                 Layout.fillWidth: true
-                Layout.maximumWidth: Math.max(160, root.width * 0.38)
+                Layout.maximumWidth: Math.max(130, root.width * 0.34)
                 implicitHeight: 26
                 hoverEnabled: true
                 Accessible.name: "Rename this task"
@@ -212,58 +231,150 @@ Item {
             Item { Layout.fillWidth: true }
         }
 
-        // -------------------------------------------- one-time Chat / Work
-        Row {
-            id: modeChoice
-            visible: root.canChooseMode
-            spacing: 2
+        // ----------------------------------------------- Chat / Agent mode
+        Rectangle {
+            id: modeSurface
+            Layout.preferredHeight: 30
+            Layout.preferredWidth: modeRow.implicitWidth + 4
+            radius: Theme.r2
+            color: Theme.surfaceSunken
+            border.width: 1
+            border.color: Theme.borderSubtle
 
-            Repeater {
-                model: [
-                    { id: "chat", label: "Chat", icon: "chat", hint: "Answers and explanations only. No commands, no screen, nothing on this computer is touched." },
-                    { id: "work", label: "Work", icon: "cursor", hint: "Runs commands and, when allowed, drives the screen." },
+            Row {
+                id: modeRow
+                anchors.centerIn: parent
+                spacing: 2
+
+                Repeater {
+                    model: [
+                        { id: "chat", label: "Chat", icon: "chat", hint: "Conversation only. No commands, project tools or desktop actions." },
+                        { id: "work", label: "Agent", icon: "code", hint: "Coding and local tools. Autonomy is controlled separately." },
+                    ]
+                    delegate: AbstractButton {
+                        id: choice
+                        required property var modelData
+                        width: choiceContent.implicitWidth + Theme.s3 * 2
+                        height: 26
+                        enabled: root.canChooseMode
+                        hoverEnabled: true
+                        readonly property bool chosen: root.resolvedMode === modelData.id
+                        Accessible.name: modelData.label + " mode"
+                        Accessible.description: modelData.hint
+                        Accessible.checked: chosen
+                        onClicked: root.requestMode(modelData.id)
+                        ToolTip.visible: hovered
+                        ToolTip.text: modelData.hint
+                        ToolTip.delay: 450
+                        background: Rectangle {
+                            radius: Theme.r1
+                            color: choice.chosen ? Theme.surfaceSelected
+                                 : choice.hovered && choice.enabled ? Theme.surfaceHover : "transparent"
+                            border.width: choice.visualFocus ? 1 : 0
+                            border.color: Theme.accentEdge
+                        }
+                        contentItem: Row {
+                            id: choiceContent
+                            anchors.centerIn: parent
+                            spacing: Theme.s1
+                            Icon {
+                                name: choice.modelData.icon
+                                ink: choice.chosen ? Theme.textPrimary : Theme.textMuted
+                                width: 12
+                                height: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            Text {
+                                text: choice.modelData.label
+                                color: choice.chosen ? Theme.textPrimary : Theme.textSecondary
+                                font.family: Theme.sansFamily
+                                font.pixelSize: Theme.caption
+                                font.weight: choice.chosen ? Font.DemiBold : Font.Normal
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.NoButton
+                            cursorShape: choice.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        }
+                    }
+                }
+            }
+        }
+
+        // Agent autonomy is intentionally adjacent to Agent mode. It is not a
+        // hidden setting because it changes what the next command may do.
+        AbstractButton {
+            id: autonomyButton
+            visible: root.resolvedMode === "work"
+            enabled: !!(bridge && !bridge.connecting)
+            Layout.preferredHeight: 30
+            Layout.preferredWidth: autonomyRow.implicitWidth + Theme.s3 * 2
+            hoverEnabled: true
+            Accessible.name: bridge ? "Agent autonomy " + root.permissionLabel(bridge.permissionMode) : "Agent autonomy"
+            Accessible.description: bridge ? root.permissionDetail(bridge.permissionMode) : ""
+            onClicked: autonomyMenu.opened ? autonomyMenu.close() : autonomyMenu.open()
+            ToolTip.visible: hovered
+            ToolTip.text: bridge ? root.permissionDetail(bridge.permissionMode) : ""
+            ToolTip.delay: 450
+            background: Rectangle {
+                radius: Theme.r2
+                color: autonomyButton.hovered || autonomyMenu.opened ? Theme.surfaceHover : Theme.surface
+                border.width: 1
+                border.color: autonomyMenu.opened || autonomyButton.visualFocus ? Theme.accentEdge : Theme.borderSubtle
+            }
+            contentItem: Row {
+                id: autonomyRow
+                anchors.centerIn: parent
+                spacing: Theme.s1
+                StatusDot {
+                    width: 6
+                    height: 6
+                    tone: bridge && bridge.permissionMode === "full" ? Theme.warning : Theme.accent
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: bridge ? root.permissionLabel(bridge.permissionMode) : "Safe"
+                    color: Theme.textSecondary
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.micro
+                    font.weight: Font.Medium
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Icon {
+                    name: "down"
+                    ink: Theme.textMuted
+                    width: 9
+                    height: 9
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            WMenu {
+                id: autonomyMenu
+                anchorX: -menuWidth + autonomyButton.width
+                menuWidth: 310
+                items: [
+                    { id: "manual", label: bridge && bridge.permissionMode === "manual" ? "Manual  • current" : "Manual", icon: "hand" },
+                    { id: "safe", label: bridge && bridge.permissionMode === "safe" ? "Safe  • current" : "Safe", icon: "shield" },
+                    { id: "auto", label: bridge && bridge.permissionMode === "auto" ? "Auto  • current" : "Auto", icon: "bolt" },
+                    { id: "full", label: bridge && bridge.permissionMode === "full" ? "Full  • current" : "Full", icon: "warning" },
+                    { separator: true },
+                    { id: "settings", label: "Agent settings…", icon: "sliders" },
                 ]
-                delegate: AbstractButton {
-                    id: choice
-                    required property var modelData
-                    width: choiceRow.implicitWidth + Theme.s3 * 2
-                    height: 30
-                    hoverEnabled: true
-                    readonly property bool chosen: root.resolvedMode === modelData.id
-                    Accessible.name: modelData.label
-                    Accessible.description: modelData.hint
-                    Accessible.checked: chosen
-                    onClicked: root.requestMode(modelData.id)
-                    ToolTip.visible: hovered
-                    ToolTip.text: modelData.hint
-                    ToolTip.delay: 500
-                    background: Rectangle {
-                        radius: Theme.r2
-                        color: choice.hovered ? Theme.surfaceHover
-                             : choice.chosen ? Theme.surfaceSelected : "transparent"
-                        border.width: choice.chosen || choice.visualFocus ? 1 : 0
-                        border.color: choice.visualFocus ? Theme.accentEdge : Theme.borderSubtle
+                onPicked: function(id) {
+                    if (id === "settings") {
+                        root.openAgentSettings();
+                        return;
                     }
-                    contentItem: Row {
-                        id: choiceRow
-                        anchors.centerIn: parent
-                        spacing: Theme.s2
-                        Icon {
-                            name: choice.modelData.icon
-                            ink: choice.chosen ? Theme.textPrimary : Theme.textMuted
-                            width: 13; height: 13
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: choice.modelData.label
-                            color: choice.chosen ? Theme.textPrimary : Theme.textSecondary
-                            font.family: Theme.sansFamily
-                            font.pixelSize: Theme.caption
-                            font.weight: choice.chosen ? Font.Medium : Font.Normal
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-                    MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.PointingHandCursor }
+                    if (bridge && (id === "manual" || id === "safe" || id === "auto" || id === "full"))
+                        bridge.setPermissionMode(id);
                 }
             }
         }
@@ -288,12 +399,13 @@ Item {
                 StatusDot {
                     tone: bridge && bridge.permissionPending ? Theme.warning : Theme.accent
                     pulsing: true
-                    width: 7; height: 7
+                    width: 7
+                    height: 7
                 }
                 Text {
                     text: !bridge ? ""
                         : bridge.permissionPending ? "Waiting"
-                        : root.resolvedMode === "work" ? "Working" : "Generating"
+                        : root.resolvedMode === "work" ? "Agent working" : "Generating"
                     color: Theme.textSecondary
                     font.family: Theme.sansFamily
                     font.pixelSize: Theme.caption
@@ -324,7 +436,11 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.PointingHandCursor }
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.NoButton
+                        cursorShape: Qt.PointingHandCursor
+                    }
                 }
             }
         }
@@ -337,29 +453,18 @@ Item {
             selected: true
             onClicked: root.openAgentSettings()
             ToolTip.visible: hovered
-            ToolTip.text: bridge ? "Permission mode: " + bridge.permissionModeLabel : ""
+            ToolTip.text: bridge ? "Desktop control is on · " + root.permissionLabel(bridge.permissionMode) : ""
         }
 
         Chip {
             visible: !root.homeMode && bridge && bridge.projectName
-                     && root.resolvedMode !== "chat" && bridge.projectInstructionsSummary && root.roomy
+                     && root.resolvedMode === "work" && bridge.projectInstructionsSummary && root.roomy
             text: "Project rules"
             iconName: "code"
             ToolTip.visible: hovered
             ToolTip.delay: 450
             ToolTip.text: bridge ? "Active repository guidance: " + bridge.projectInstructionsSummary
                                   + ". These files guide coding conventions but never grant permissions." : ""
-        }
-
-        // A Chat task cannot run anything. Saying so on the task itself is the
-        // difference between "it refused" and "it was never able to".
-        Chip {
-            visible: !root.homeMode && bridge && root.resolvedMode === "chat" && root.roomy
-            text: "Chat only"
-            iconName: "chat"
-            onClicked: root.openAgentSettings()
-            ToolTip.visible: hovered
-            ToolTip.text: "This task answers and explains. It has no shell, no screen control and no file access — start a Work task for those."
         }
 
         Chip {
@@ -384,19 +489,24 @@ Item {
 
             SystemPopover { id: system; anchorX: -width + systemButton.width }
 
-            // A dot instead of a badge: the connection is the only state worth
-            // reporting from a 30-pixel button.
             Rectangle {
                 visible: !!(bridge && !bridge.online)
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.margins: 5
-                width: 5; height: 5; radius: 2.5
+                width: 5
+                height: 5
+                radius: 2.5
                 color: Theme.danger
             }
         }
 
-        Divider { vertical: true; visible: root.dockAvailable; Layout.leftMargin: Theme.s1; Layout.rightMargin: Theme.s1 }
+        Divider {
+            vertical: true
+            visible: root.dockAvailable
+            Layout.leftMargin: Theme.s1
+            Layout.rightMargin: Theme.s1
+        }
 
         IconButton {
             objectName: "headerDockToggle"
