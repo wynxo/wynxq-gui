@@ -49,17 +49,17 @@ is ordering in the options builder. I will summarise, then offer to edit rather
 than editing without being asked."""
 
 # title, age in seconds, pinned, mode. The mode is what the sidebar marks, so
-# the screenshots have to include more than one kind of task.
+# the screenshots have to include both kinds of task.
 CONVERSATIONS = [
-    ("Debug the failing runtime tests", 0, True, "codex"),
+    ("Debug the failing runtime tests", 0, True, "work"),
     ("Draw a mountain scene in KolourPaint", 2400, False, "work"),
     ("Summarise this design document", 9000, False, "chat"),
-    ("Rewrite the composer layout", 26 * 3600, False, "codex"),
+    ("Rewrite the composer layout", 26 * 3600, False, "work"),
     ("Plan the 1.0 release", 30 * 3600, False, "chat"),
     ("Rename the screenshots folder", 32 * 3600, False, "work"),
     ("Explain this stack trace", 5 * 86400, False, "chat"),
     ("Compare two CSV exports", 12 * 86400, False, "chat"),
-    ("Set up a Python project", 40 * 86400, False, "codex"),
+    ("Set up a Python project", 40 * 86400, False, "work"),
 ]
 
 CATALOG = [
@@ -123,7 +123,7 @@ STEPS = [
 ]
 
 
-# A coding run: read, search, edit, then a real command with real output.
+# A project run: read, search, edit, then a real command with real output.
 # This is the shape §19 of the redesign asks for, so the screenshot has to be
 # of that shape rather than of a desktop run.
 CODE_STEPS = [
@@ -147,7 +147,7 @@ CODE_STEPS = [
 # The Browser scene loads a real page over real HTTP from a real server, so the
 # screenshot is of Qt WebEngine rendering rather than of an empty state. Local
 # and self-contained: the snapshot job needs no network.
-PREVIEW_PAGE = b"""<!doctype html><meta charset="utf-8"><title>Wynxo \xe2\x80\x94 local browsing</title>
+PREVIEW_PAGE = b"""<!doctype html><meta charset="utf-8"><title>Wynxq GUI \xe2\x80\x94 local browsing</title>
 <style>
  :root{color-scheme:dark}
  body{font:15px/1.65 system-ui,sans-serif;background:#191919;color:#f2f1ed;margin:0;padding:28px 26px}
@@ -173,7 +173,7 @@ PREVIEW_PAGE = b"""<!doctype html><meta charset="utf-8"><title>Wynxo \xe2\x80\x9
  <li>Sees nothing here until you attach the page</li>
  <li>Gets it as untrusted text, labelled with its address</li>
 </ul>
-<p class="note">Read a doc beside the task instead of leaving Wynxo to find it.</p>
+<p class="note">Read a doc beside the task instead of leaving Wynxq GUI to find it.</p>
 """
 
 
@@ -295,7 +295,7 @@ class DemoController(WorkspaceController):
         # Falls back to a plausible path when the checkout is not to hand.
         checkout = Path(__file__).resolve().parent.parent
         self._working_directory = str(checkout) if (checkout / "pyproject.toml").is_file() \
-            else str(Path.home() / "Projects" / "wynxo-gui-ai-agent")
+            else str(Path.home() / "Projects" / "wynxq-gui")
         self._recent_projects = [self._working_directory,
                                  str(Path.home() / "Projects" / "portal-bridge"),
                                  str(Path.home() / "Projects" / "notes")]
@@ -325,8 +325,6 @@ class DemoController(WorkspaceController):
             self._task_title = "New task"
             if self.scene == "empty-work-locked":
                 self._task_mode, self._task_mode_locked = "work", True
-            elif self.scene == "empty-codex-locked":
-                self._task_mode, self._task_mode_locked = "codex", True
             elif self.scene == "empty-chat-locked":
                 self._task_mode, self._task_mode_locked = "chat", True
             else:
@@ -338,7 +336,7 @@ class DemoController(WorkspaceController):
             self._seed_context_scene()
             return
 
-        if self.scene == "codex-run":
+        if self.scene == "work-run":
             self._seed_code_run()
             return
         if self.scene in ("desktop", "run"):
@@ -368,10 +366,10 @@ class DemoController(WorkspaceController):
         self.messages._emit(row, list(Messages_roles()))
 
     def _seed_code_run(self):
-        """A Wynxi turn: the execution blocks, then the answer."""
-        self._task_mode, self._task_mode_locked = "codex", True
+        """A project-focused Work turn: execution blocks, then the answer."""
+        self._task_mode, self._task_mode_locked = "work", True
         self._task_title = "Rewrite the composer layout"
-        self.store.set_setting(self._mode_key(self._task_id), "codex")
+        self.store.set_setting(self._mode_key(self._task_id), "work")
         self.messages.replace([])
         self.messages.append_message(
             "user", "The composer is too tall on a fresh task. Find where the height "
@@ -415,9 +413,9 @@ class DemoController(WorkspaceController):
         self.changed.emit()
 
     def _seed_dock_scene(self, tab: str):
-        """A conversation with one dock panel open, for the README shots."""
-        self._task_mode, self._task_mode_locked = "codex", True
-        self.store.set_setting(self._mode_key(self._task_id), "codex")
+        """A Work conversation with one dock panel open, for the README shots."""
+        self._task_mode, self._task_mode_locked = "work", True
+        self.store.set_setting(self._mode_key(self._task_id), "work")
         self.messages.append_message("user", "Have a look at the composer and tell me what changed.")
         for step in STEPS[:2]:
             self.messages.append_activity(step)
@@ -518,7 +516,6 @@ SCENES = [
     ("13-violet-home", "empty-violet", ""),
     ("14-ember-home", "empty-ember", ""),
     ("15-ion-conversation", "conversation-ion", ""),
-    ("16-wynxi-home", "empty-codex-locked", ""),
     ("17-work-home", "empty-work-locked", ""),
     ("18-chat-locked-home", "empty-chat-locked", ""),
     ("19-dock-files", "dock-files", ""),
@@ -529,5 +526,5 @@ SCENES = [
     ("24-dock-activity", "dock-activity", ""),
     ("27-dock-memory", "dock-memory", ""),
     ("25-system", "conversation", "system"),
-    ("26-code-run", "codex-run", ""),
+    ("26-code-run", "work-run", ""),
 ]
