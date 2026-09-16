@@ -16,7 +16,7 @@ Sheet {
 
     readonly property var commands: [
         { id: "new", group: "Task", label: "New task", detail: "Start a fresh task", icon: "plus", shortcut: "Ctrl+N" },
-        { id: "newcode", group: "Task", label: "New coding task", detail: "Wynxi, in the open project", icon: "code" },
+        { id: "newwork", group: "Task", label: "New Work task", detail: "Project, command and desktop tools", icon: "cursor" },
         { id: "compose", group: "Task", label: "Focus the composer", icon: "edit" },
         { id: "search", group: "Task", label: "Search tasks", detail: "Titles and message text", icon: "search", shortcut: "Ctrl+K" },
         { id: "next", group: "Task", label: "Next task", icon: "down", shortcut: "Alt+Down" },
@@ -32,7 +32,7 @@ Sheet {
         { id: "terminal-panel", group: "Workspace", label: "Terminal", detail: "A real shell in the project", icon: "terminal", shortcut: "Ctrl+`" },
         { id: "changes", group: "Workspace", label: "Changes", detail: "Uncommitted work, and its diff", icon: "branch", shortcut: "Ctrl+Shift+G" },
         { id: "context", group: "Workspace", label: "Context", detail: "What the model can see", icon: "layers", shortcut: "Ctrl+Shift+K" },
-        { id: "memory", group: "Workspace", label: "Memory", detail: "What Wynxo remembers between tasks", icon: "memory", shortcut: "Ctrl+Shift+M" },
+        { id: "memory", group: "Workspace", label: "Memory", detail: "What Wynxq GUI remembers between tasks", icon: "memory", shortcut: "Ctrl+Shift+M" },
         { id: "activity", group: "Workspace", label: "Activity", detail: "The full run timeline", icon: "bolt", shortcut: "Ctrl+Shift+A" },
         { id: "browser", group: "Workspace", label: "Browser", detail: "Read a page beside the task", icon: "globe", shortcut: "Ctrl+Shift+W" },
         { id: "preview", group: "Workspace", label: "Preview", detail: "Images and captures, full size", icon: "image", shortcut: "Ctrl+Shift+U" },
