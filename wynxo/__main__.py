@@ -142,8 +142,8 @@ def main():
         scene = args.ui_preview or "conversation"
         controller = DemoController(scene if not args.snapshot else "conversation")
     else:
-        from .workspace import WorkspaceController
-        controller = WorkspaceController(autoconnect=not args.smoke_test)
+        from .product import ProductController
+        controller = ProductController(autoconnect=not args.smoke_test)
 
     engine = QQmlApplicationEngine()
     engine.addImportPath(str(UI))
