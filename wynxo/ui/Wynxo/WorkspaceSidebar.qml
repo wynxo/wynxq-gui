@@ -3,12 +3,12 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 /*!
-    Where you are: the product, the project, and every task you have had.
+    Where you are: the app, the mode, the project, and every task you have had.
 
-    The top strip holds the three things you reach for constantly — new task,
-    search, collapse. Wynxo and Wynxi are one small switch rather than two
-    permanent rows, because you change product occasionally and start a task
-    every few minutes. Everything below is history.
+    The top strip holds the things you reach for constantly — current mode,
+    new task, search and collapse. Chat and Work are task modes, not separate
+    products; choosing the other mode starts a fresh task so saved history never
+    changes capabilities underneath you. Everything below is history.
 */
 Item {
     id: root
@@ -20,7 +20,7 @@ Item {
     signal deleteRequested(string id, string title)
     signal collapseRequested(bool value)
 
-    readonly property bool inWynxi: bridge && bridge.taskMode === "codex"
+    readonly property bool inWork: bridge && bridge.taskMode === "work"
     function focusSearch() { search.forceActiveFocus(); search.selectAll(); }
 
     GlassSurface {
@@ -50,14 +50,14 @@ Item {
 
             Mark { Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
 
-            // The product switch: the name you are in, with the other one a
-            // click away. Two words, not two rows of chrome.
+            // Mode is a task boundary. Picking the other entry starts a fresh
+            // task rather than mutating the capabilities of the current one.
             AbstractButton {
                 id: productButton
                 Layout.fillWidth: true
                 implicitHeight: 28
                 hoverEnabled: true
-                Accessible.name: (root.inWynxi ? "Wynxi" : "Wynxo") + ". Switch product"
+                Accessible.name: "Wynxq GUI. Current mode " + (root.inWork ? "Work" : "Chat") + ". Start another mode"
                 onClicked: productMenu.opened ? productMenu.close() : productMenu.open()
                 background: GlassSurface {
                     radius: Theme.r2
@@ -72,7 +72,7 @@ Item {
                     spacing: Theme.s1
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: root.inWynxi ? "Wynxi" : "Wynxo"
+                        text: "Wynxq GUI · " + (root.inWork ? "Work" : "Chat")
                         color: Theme.textPrimary
                         font.family: Theme.sansFamily
                         font.pixelSize: Theme.heading
@@ -88,16 +88,16 @@ Item {
 
                 WMenu {
                     id: productMenu
-                    menuWidth: 236
+                    menuWidth: 250
                     items: [
-                        { id: "chat", label: "Wynxo", detail: "Chat and desktop work",
-                          icon: "chat", checked: !root.inWynxi },
-                        { id: "codex", label: "Wynxi", detail: "Coding agent, in a project",
-                          icon: "code", checked: root.inWynxi },
+                        { id: "chat", label: "Chat", detail: "Answers and explanations, no local tools",
+                          icon: "chat", checked: !root.inWork },
+                        { id: "work", label: "Work", detail: "Project, command and desktop tools",
+                          icon: "cursor", checked: root.inWork },
                     ]
                     onPicked: function(id) {
-                        if (id === "chat" && root.inWynxi) root.newModeTask("chat");
-                        else if (id === "codex" && !root.inWynxi) root.newModeTask("codex");
+                        if (id === "chat" && root.inWork) root.newModeTask("chat");
+                        else if (id === "work" && !root.inWork) root.newModeTask("work");
                     }
                 }
             }
@@ -120,10 +120,10 @@ Item {
             WButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.control
-                text: root.inWynxi ? "New coding task" : "New task"
+                text: root.inWork ? "New work task" : "New task"
                 iconName: "plus"
                 variant: "secondary"
-                onClicked: root.inWynxi ? root.newModeTask("codex") : root.newTask()
+                onClicked: root.inWork ? root.newModeTask("work") : root.newTask()
                 ToolTip.visible: hovered
                 ToolTip.text: "Ctrl+N"
             }
@@ -398,9 +398,9 @@ Item {
         IconButton {
             Layout.alignment: Qt.AlignHCenter
             iconName: "plus"
-            tooltip: root.inWynxi ? "New coding task" : "New task"
+            tooltip: root.inWork ? "New work task" : "New task"
             shortcut: "Ctrl+N"
-            onClicked: root.inWynxi ? root.newModeTask("codex") : root.newTask()
+            onClicked: root.inWork ? root.newModeTask("work") : root.newTask()
         }
         IconButton {
             Layout.alignment: Qt.AlignHCenter
@@ -412,8 +412,8 @@ Item {
 
         IconButton {
             Layout.alignment: Qt.AlignHCenter
-            iconName: root.inWynxi ? "code" : "chat"
-            tooltip: root.inWynxi ? "Wynxi · Code" : "Wynxo · Chat & Work"
+            iconName: root.inWork ? "cursor" : "chat"
+            tooltip: "Wynxq GUI · " + (root.inWork ? "Work" : "Chat")
             active: true
             onClicked: root.collapseRequested(false)
         }
