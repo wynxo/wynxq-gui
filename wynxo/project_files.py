@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import threading
 from pathlib import Path
 
 from .native_core import native_core
@@ -26,6 +27,11 @@ MAX_IMAGE_BYTES = 12_000_000
 # size inside one timestamp tick, and that must still count as a conflict.
 MAX_TRACKED_READS = 512
 _READ_VERSIONS: dict[str, bytes] = {}
+# File search is intentionally single-flight. Starting another recursive walk
+# while an older query is still scanning only doubles I/O and has also exposed
+# unsafe overlapping PySide worker execution on Linux. The dock still rejects
+# stale results, so queued searches remain correct without blocking the GUI.
+_SEARCH_LOCK = threading.Lock()
 
 # Folders nobody opens a project to read. Hidden entries are filtered
 # separately, so `.github` is still reachable when hidden files are shown.
@@ -247,7 +253,7 @@ def list_directory(root, directory=None, show_hidden: bool = False) -> list[dict
     return entries
 
 
-def search_tree(root, needle: str, limit: int = 200, show_hidden: bool = False) -> list[dict]:
+def _search_tree_impl(root, needle: str, limit: int = 200, show_hidden: bool = False) -> list[dict]:
     """Find files by name anywhere in the project, breadth-first and bounded.
 
     Directory enumeration uses the same optional native C++ scanner as the file
@@ -305,6 +311,12 @@ def search_tree(root, needle: str, limit: int = 200, show_hidden: bool = False) 
                 if len(results) >= limit:
                     break
     return results
+
+
+def search_tree(root, needle: str, limit: int = 200, show_hidden: bool = False) -> list[dict]:
+    """Run one bounded recursive file search at a time."""
+    with _SEARCH_LOCK:
+        return _search_tree_impl(root, needle, limit=limit, show_hidden=show_hidden)
 
 
 def _looks_binary(sample: bytes) -> bool:
