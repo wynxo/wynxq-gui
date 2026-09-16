@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 /*!
-    One command box for Chat, Work and Wynxi.
+    One command box for Chat and Work.
 
     The prompt gets the space. Context, project, model and run controls live on
     one quiet toolbar underneath it. The composer is a permanent workspace
@@ -36,7 +36,6 @@ Item {
     Component.onCompleted: if (bridge) input.text = bridge.draftText
 
     readonly property string mode: bridge ? bridge.taskMode : "chat"
-    readonly property bool codexMode: root.mode === "codex"
     readonly property bool workMode: root.mode === "work"
     readonly property bool homeMode: bridge && !bridge.hasMessages
     readonly property bool hasAttachments: bridge && bridge.attachmentCount > 0
@@ -202,13 +201,11 @@ Item {
                     id: input
                     objectName: "composer"
                     onTextChanged: if (bridge) bridge.setDraft(text)
-                    placeholderText: root.codexMode
+                    placeholderText: root.workMode
                         ? (bridge && bridge.projectPath
-                            ? "Ask Wynxi to build, fix, explain, run, or review…"
-                            : "Open a project, then describe the coding task…")
-                        : root.workMode
-                            ? "Describe what you want done on the desktop…"
-                            : "Ask a question, explain, or brainstorm…"
+                            ? "Describe what you want done in this project or on the desktop…"
+                            : "Describe what you want done on this computer…")
+                        : "Ask a question, explain, or brainstorm…"
                     placeholderTextColor: Theme.textMuted
                     color: Theme.textPrimary
                     selectionColor: Theme.accent
@@ -223,7 +220,7 @@ Item {
                     bottomPadding: Theme.s1
                     background: Item {}
                     Accessible.role: Accessible.EditableText
-                    Accessible.name: root.codexMode ? "Coding task for Wynxi" : "Message to Wynxo"
+                    Accessible.name: root.workMode ? "Work request" : "Message to Wynxq GUI"
                     Accessible.description: placeholderText
 
                     Keys.onReturnPressed: function(event) {
@@ -311,7 +308,7 @@ Item {
                 }
 
                 Chip {
-                    visible: root.codexMode && bridge && bridge.projectPath && !root.veryTight
+                    visible: root.workMode && bridge && bridge.projectPath && !root.veryTight
                     Layout.maximumWidth: root.tight ? 150 : 220
                     text: bridge ? bridge.projectName : ""
                     iconName: "folderOpen"
@@ -321,7 +318,7 @@ Item {
                 }
 
                 IconButton {
-                    visible: root.codexMode && bridge && bridge.projectPath && !root.tight
+                    visible: root.workMode && bridge && bridge.projectPath && !root.tight
                     Layout.preferredWidth: 30; Layout.preferredHeight: 30
                     iconSize: 14
                     iconName: "terminal"
