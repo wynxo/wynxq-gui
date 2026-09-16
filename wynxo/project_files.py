@@ -7,6 +7,7 @@ inside the project the user chose.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 
@@ -20,6 +21,11 @@ MAX_SEARCH_ENTRIES = 20000
 # The viewer is a viewer, not an editor for a 400 MB core dump.
 MAX_TEXT_BYTES = 1_500_000
 MAX_IMAGE_BYTES = 12_000_000
+# Remember only a bounded set of files the viewer actually opened. The value is
+# a content digest, not an mtime: external tools can rewrite a file to the same
+# size inside one timestamp tick, and that must still count as a conflict.
+MAX_TRACKED_READS = 512
+_READ_VERSIONS: dict[str, bytes] = {}
 
 # Folders nobody opens a project to read. Hidden entries are filtered
 # separately, so `.github` is still reachable when hidden files are shown.
@@ -311,6 +317,18 @@ def _looks_binary(sample: bytes) -> bool:
     return printable / len(sample) < 0.75
 
 
+def _digest(data: bytes) -> bytes:
+    return hashlib.blake2b(data, digest_size=16).digest()
+
+
+def _remember_read(target: Path, data: bytes) -> None:
+    key = str(target)
+    _READ_VERSIONS.pop(key, None)
+    _READ_VERSIONS[key] = _digest(data)
+    while len(_READ_VERSIONS) > MAX_TRACKED_READS:
+        _READ_VERSIONS.pop(next(iter(_READ_VERSIONS)))
+
+
 def read_file(root, path, max_bytes: int = MAX_TEXT_BYTES) -> dict:
     """Read one file for the viewer, classifying it rather than guessing."""
     target = resolve_within(root, path)
@@ -347,6 +365,8 @@ def read_file(root, path, max_bytes: int = MAX_TEXT_BYTES) -> dict:
         result["truncated"] = True
     with target.open("rb") as handle:
         raw = handle.read(min(size, max_bytes) + 1)
+    if not result["truncated"]:
+        _remember_read(target, raw)
     if _looks_binary(raw[:8192]):
         result["binary"] = True
         result["error"] = f"Binary file · {human_size(size)}"
@@ -368,7 +388,9 @@ def write_file(root, path, text: str) -> dict:
     A truncated preview is never a complete editor buffer. Refuse to write files
     above the viewer limit so saving a visible prefix cannot destroy the unseen
     tail. Atomic replacement also preserves the original permission bits, which
-    matters for scripts and other executable project files.
+    matters for scripts and other executable project files. When the viewer has
+    read this path before, the save also refuses to overwrite bytes changed by
+    another editor or tool since that read.
     """
     target = resolve_within(root, path)
     if target.is_dir():
@@ -381,10 +403,17 @@ def write_file(root, path, text: str) -> dict:
             f"Files larger than {human_size(MAX_TEXT_BYTES)} are read-only in Wynxo"
         )
     payload = str(text)
+    payload_bytes = payload.encode("utf-8")
+    expected = _READ_VERSIONS.get(str(target))
     temporary = target.with_name(target.name + ".wynxo-tmp")
     try:
-        temporary.write_text(payload, encoding="utf-8")
+        temporary.write_bytes(payload_bytes)
         os.chmod(temporary, original.st_mode & 0o7777)
+        if expected is not None and _digest(target.read_bytes()) != expected:
+            raise ValueError(
+                "That file changed on disk after you opened it. Reload it before saving "
+                "so external edits are not overwritten"
+            )
         os.replace(temporary, target)
     finally:
         if temporary.exists():
@@ -392,6 +421,7 @@ def write_file(root, path, text: str) -> dict:
                 temporary.unlink()
             except OSError:
                 pass
+    _remember_read(target, payload_bytes)
     info = target.stat()
     return {"path": str(target), "size": int(info.st_size),
             "sizeLabel": human_size(info.st_size)}
