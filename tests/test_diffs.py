@@ -1,4 +1,5 @@
 """What the Changes panel reads from Git, against a real repository."""
+from pathlib import Path
 import shutil
 import subprocess
 
@@ -24,6 +25,11 @@ def repository(tmp_path):
     git(tmp_path, "add", "-A")
     git(tmp_path, "commit", "-qm", "first")
     return tmp_path
+
+
+def test_git_is_resolved_to_an_absolute_executable_before_workers_start():
+    assert diffs.GIT_EXECUTABLE
+    assert Path(diffs.GIT_EXECUTABLE).is_absolute()
 
 
 def test_a_plain_folder_is_reported_as_not_a_repository(tmp_path):
@@ -54,7 +60,7 @@ def test_every_kind_of_change_is_reported_with_its_line_counts(repository):
     assert by_path["gone.txt"]["status"] == "D"
     assert by_path["fresh.md"]["status"] == "?"
     assert by_path["fresh.md"]["untracked"] is True
-    assert by_path["fresh.md"]["added"] == 2       # a new file is all additions
+    assert by_path["fresh.md"]["added"] == 2
     assert result["added"] == sum(e["added"] for e in result["files"])
 
 
