@@ -12,23 +12,19 @@ Item {
 
     readonly property string mode: bridge ? bridge.taskMode : "chat"
     readonly property bool hasProject: !!(bridge && bridge.projectPath)
-    readonly property string modeLabel: mode === "work" ? "WORK"
-                                      : mode === "codex" ? "WYNXI"
-                                      : "CHAT"
-    readonly property string headline: mode === "work" ? "What should I handle?"
-                                      : mode === "codex" ? "What should we build?"
-                                      : "What do you want to figure out?"
+    readonly property string modeLabel: mode === "work" ? "WORK" : "CHAT"
+    readonly property string headline: mode === "work"
+        ? "What should I handle?"
+        : "What do you want to figure out?"
     readonly property string detail: mode === "chat"
         ? "Conversation only — no shell, workspace tools, or desktop control."
-        : mode === "codex" && !hasProject
-            ? "Open a project to read, edit, run, and test code in its workspace."
-            : mode === "work"
-                ? (bridge && bridge.desktopEnabled
-                    ? "Commands are available. Screen control is on and used only when the task needs visual context."
-                    : "Commands are available. Screen control is optional and stays off until you enable it.")
-                : hasProject
-                    ? "Working in " + (bridge ? bridge.projectLabel : "")
-                    : ""
+        : bridge && bridge.desktopEnabled
+            ? (hasProject
+                ? "Project tools and commands are available. Screen control is on and used only when the task needs visual context."
+                : "Commands are available. Screen control is on and used only when the task needs visual context.")
+            : (hasProject
+                ? "Project tools and commands are available. Screen control is optional and stays off until you enable it."
+                : "Commands are available. Screen control is optional and stays off until you enable it.")
 
     implicitHeight: column.implicitHeight
 
@@ -80,8 +76,7 @@ Item {
             visible: root.detail !== ""
             text: root.detail
             color: Theme.textMuted
-            font.family: root.hasProject && root.detail.indexOf("Working in") === 0
-                         ? Theme.monoFamily : Theme.sansFamily
+            font.family: Theme.sansFamily
             font.pixelSize: Theme.caption
             lineHeight: 1.35
             wrapMode: Text.Wrap
