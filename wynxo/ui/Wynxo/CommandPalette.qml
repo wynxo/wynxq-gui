@@ -14,6 +14,7 @@ Sheet {
     height: Math.min(480, parent ? parent.height - Theme.s7 : 480)
     signal invoked(string action)
 
+    readonly property bool workMode: !!(bridge && bridge.taskMode === "work")
     readonly property var commands: [
         { id: "new", group: "Task", label: "New task", detail: "Start a fresh task", icon: "plus", shortcut: "Ctrl+N" },
         { id: "newwork", group: "Task", label: "New Work task", detail: "Project, command and desktop tools", icon: "cursor" },
@@ -28,15 +29,15 @@ Sheet {
         { id: "export", group: "Task", label: "Export task to Markdown", icon: "download" },
         { id: "clear", group: "Task", label: "Clear messages", detail: "Empty this task but keep it", icon: "trash" },
 
-        { id: "files", group: "Workspace", label: "Files", detail: "The project tree and file viewer", icon: "folder", shortcut: "Ctrl+Shift+E" },
-        { id: "terminal-panel", group: "Workspace", label: "Terminal", detail: "A real shell in the project", icon: "terminal", shortcut: "Ctrl+`" },
-        { id: "changes", group: "Workspace", label: "Changes", detail: "Uncommitted work, and its diff", icon: "branch", shortcut: "Ctrl+Shift+G" },
-        { id: "context", group: "Workspace", label: "Context", detail: "What the model can see", icon: "layers", shortcut: "Ctrl+Shift+K" },
-        { id: "memory", group: "Workspace", label: "Memory", detail: "What Wynxq GUI remembers between tasks", icon: "memory", shortcut: "Ctrl+Shift+M" },
-        { id: "activity", group: "Workspace", label: "Activity", detail: "The full run timeline", icon: "bolt", shortcut: "Ctrl+Shift+A" },
-        { id: "browser", group: "Workspace", label: "Browser", detail: "Read a page beside the task", icon: "globe", shortcut: "Ctrl+Shift+W" },
-        { id: "preview", group: "Workspace", label: "Preview", detail: "Images and captures, full size", icon: "image", shortcut: "Ctrl+Shift+U" },
-        { id: "dock", group: "Workspace", label: "Show or hide the workspace dock", icon: "panel", shortcut: "Ctrl+Shift+B" },
+        { id: "files", group: "Workspace", label: "Files", detail: "The project tree and file viewer", icon: "folder", shortcut: "Ctrl+Shift+E", workOnly: true },
+        { id: "terminal-panel", group: "Workspace", label: "Terminal", detail: "A real shell in the project", icon: "terminal", shortcut: "Ctrl+`", workOnly: true },
+        { id: "changes", group: "Workspace", label: "Changes", detail: "Uncommitted work, and its diff", icon: "branch", shortcut: "Ctrl+Shift+G", workOnly: true },
+        { id: "context", group: "Workspace", label: "Context", detail: "What the model can see", icon: "layers", shortcut: "Ctrl+Shift+K", workOnly: true },
+        { id: "memory", group: "Workspace", label: "Memory", detail: "What Wynxq GUI remembers between tasks", icon: "memory", shortcut: "Ctrl+Shift+M", workOnly: true },
+        { id: "activity", group: "Workspace", label: "Activity", detail: "The full run timeline", icon: "bolt", shortcut: "Ctrl+Shift+A", workOnly: true },
+        { id: "browser", group: "Workspace", label: "Browser", detail: "Read a page beside the task", icon: "globe", shortcut: "Ctrl+Shift+W", workOnly: true },
+        { id: "preview", group: "Workspace", label: "Preview", detail: "Images and captures, full size", icon: "image", shortcut: "Ctrl+Shift+U", workOnly: true },
+        { id: "dock", group: "Workspace", label: "Show or hide the workspace dock", icon: "panel", shortcut: "Ctrl+Shift+B", workOnly: true },
 
         { id: "project", group: "Project", label: "Open a project folder…", icon: "folder" },
         { id: "reveal", group: "Project", label: "Reveal project in file manager", icon: "launch" },
@@ -89,6 +90,10 @@ Sheet {
         var scored = [];
         for (var i = 0; i < commands.length; i++) {
             var item = commands[i];
+            // Chat deliberately has no workspace dock. Do not advertise
+            // commands that the shell will refuse as no-ops in that mode.
+            if (item.workOnly && !palette.workMode)
+                continue;
             var label = item.label.toLowerCase();
             var points = score(label, needle);
             if (!points) {
