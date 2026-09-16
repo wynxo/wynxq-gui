@@ -170,6 +170,31 @@ def test_saving_preserves_executable_permissions(project):
     assert target.stat().st_mode & 0o777 == 0o751
 
 
+def test_saving_refuses_to_overwrite_an_external_change_after_read(project):
+    target = project / "src" / "notes.md"
+    opened = files.read_file(project, target)
+    assert opened["text"] == "# Notes\n"
+
+    # Same byte length as the opened version: size/mtime shortcuts are not
+    # enough to protect the user's external edit.
+    target.write_text("# Other\n")
+    with pytest.raises(ValueError, match="changed on disk"):
+        files.write_file(project, target, "# Wynxo\n")
+
+    assert target.read_text() == "# Other\n"
+    assert not list(project.glob("**/*.wynxo-tmp"))
+
+
+def test_a_successful_save_becomes_the_next_expected_version(project):
+    target = project / "src" / "notes.md"
+    files.read_file(project, target)
+
+    files.write_file(project, target, "first\n")
+    files.write_file(project, target, "second\n")
+
+    assert target.read_text() == "second\n"
+
+
 def test_saving_a_truncated_large_file_is_refused_without_data_loss(project, monkeypatch):
     monkeypatch.setattr(files, "MAX_TEXT_BYTES", 64)
     target = project / "large.txt"
