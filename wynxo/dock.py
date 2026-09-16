@@ -426,6 +426,8 @@ class DockController(QObject):
         self._diff: dict = {"rows": [], "error": "", "path": "", "binary": False}
         self._changes_busy = False
         self._workers: set[_Worker] = set()
+        self._worker_queue: list[_Worker] = []
+        self._active_worker: _Worker | None = None
 
         self.log = ActivityLog()
         self._activity_revision = -1
@@ -998,7 +1000,13 @@ class DockController(QObject):
         return str(self._diff.get("error", ""))
 
     def _run(self, fn, done):
-        """Run `fn` off the GUI thread and hand its result to `done`.
+        """Queue `fn` off the GUI thread and hand its result to `done`.
+
+        Only one worker is started at a time. Besides avoiding redundant I/O,
+        this matters for PySide on Linux: creating overlapping QThreads while a
+        Git subprocess and native directory scan are active can segfault inside
+        Qt/Python instead of raising an exception. Queued work is still fully
+        asynchronous from the GUI's point of view.
 
         The result is delivered through a bound slot rather than a closure.
         A closure is not a QObject, so Qt cannot sever it when this controller
@@ -1012,8 +1020,23 @@ class DockController(QObject):
         worker.failed.connect(self._deliver_failure)
         worker.finished.connect(self._retire_worker)
         self._workers.add(worker)
-        worker.start()
+        if self._active_worker is None:
+            self._active_worker = worker
+            worker.start()
+        else:
+            self._worker_queue.append(worker)
         return worker
+
+    def _start_next_worker(self) -> None:
+        if self._active_worker is not None:
+            return
+        while self._worker_queue:
+            worker = self._worker_queue.pop(0)
+            if worker not in self._workers:
+                continue
+            self._active_worker = worker
+            worker.start()
+            return
 
     @Slot(object)
     def _deliver(self, payload):
@@ -1029,8 +1052,13 @@ class DockController(QObject):
     def _retire_worker(self):
         worker = self.sender()
         self._workers.discard(worker)
+        if worker is self._active_worker:
+            self._active_worker = None
+        if worker in self._worker_queue:
+            self._worker_queue.remove(worker)
         if worker is not None:
             worker.deleteLater()
+        self._start_next_worker()
 
     @Slot()
     def refreshChanges(self):
@@ -1374,11 +1402,15 @@ class DockController(QObject):
         self._search_debounce.stop()
         self._poll.stop()
         self._teardown_shell()
+        self._worker_queue.clear()
         for worker in list(self._workers):
-            # `quit` only ends a thread that runs an event loop; these do not,
-            # so the wait is what matters. Git's own timeout bounds it.
-            worker.quit()
-            finished = worker.wait(2000)
+            # Only the active worker can be running; queued workers have never
+            # been started and are safe to detach immediately.
+            if worker.isRunning():
+                worker.quit()
+                finished = worker.wait(2000)
+            else:
+                finished = True
             for signal in (worker.done, worker.failed, worker.finished):
                 try:
                     signal.disconnect()
@@ -1393,3 +1425,4 @@ class DockController(QObject):
             _ORPHANED.add(worker)
             worker.finished.connect(lambda w=worker: _ORPHANED.discard(w))
         self._workers.clear()
+        self._active_worker = None
