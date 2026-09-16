@@ -10,6 +10,7 @@ call.
 """
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -19,6 +20,13 @@ GIT_TIMEOUT = 12
 MAX_FILES = 500
 MAX_DIFF_LINES = 4000
 
+# Resolve PATH while this module is imported on the GUI/main thread. PySide's
+# Shiboken import hook can be entered by os.get_exec_path() when subprocess is
+# first asked to resolve a bare executable from a QThread; doing that lookup in
+# the worker has caused hard interpreter crashes on Linux. An absolute program
+# path also makes every later Git call deterministic.
+GIT_EXECUTABLE = shutil.which("git")
+
 STATUS_LABELS = {
     "M": "Modified", "A": "Added", "D": "Deleted", "R": "Renamed",
     "C": "Copied", "?": "Untracked", "U": "Conflicted", "T": "Type changed",
@@ -26,8 +34,10 @@ STATUS_LABELS = {
 
 
 def _git(root, *arguments, timeout: int = GIT_TIMEOUT) -> subprocess.CompletedProcess:
+    if not GIT_EXECUTABLE:
+        raise FileNotFoundError("Git is not installed or not available on PATH")
     return subprocess.run(
-        ["git", "--no-optional-locks", *arguments],
+        [GIT_EXECUTABLE, "--no-optional-locks", *arguments],
         cwd=str(root), capture_output=True, text=True, timeout=timeout,
         stdin=subprocess.DEVNULL,
     )
