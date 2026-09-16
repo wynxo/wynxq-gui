@@ -12,6 +12,8 @@ HEADER = WYNXO_UI / "TaskHeader.qml"
 SIDEBAR = WYNXO_UI / "WorkspaceSidebar.qml"
 PALETTE = WYNXO_UI / "CommandPalette.qml"
 MAIN = UI / "Main.qml"
+DEMO = ROOT / "wynxo" / "demo.py"
+README = ROOT / "README.md"
 
 
 def test_locked_chat_starters_are_conversation_only():
@@ -57,3 +59,20 @@ def test_command_palette_starts_work_not_a_retired_coding_product():
     assert 'label: "New Work task"' in text
     assert 'id: "newcode"' not in text
     assert "Wynxi" not in text
+
+
+def test_preview_scenes_use_the_same_chat_and_work_modes_as_the_app():
+    text = DEMO.read_text(encoding="utf-8")
+    assert '"codex"' not in text
+    assert "Wynxi" not in text
+    assert 'self.scene == "work-run"' in text
+    assert '("26-code-run", "work-run", "")' in text
+
+
+def test_readme_describes_the_current_modes_repo_and_preview_names():
+    text = README.read_text(encoding="utf-8")
+    assert "Wynxi" not in text
+    assert "wynxo-gui-ai-agent" not in text
+    assert "--ui-preview codex-run" not in text
+    assert "git clone https://github.com/wynxo/wynxq-gui.git" in text
+    assert "--ui-preview work-run" in text
