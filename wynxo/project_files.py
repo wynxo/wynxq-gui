@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import hashlib
 import os
-import threading
 from pathlib import Path
 
+from .background import serialized_io
 from .native_core import native_core
 
 # A directory listing is cheap, but a node_modules with 40 000 entries is not.
@@ -27,11 +27,6 @@ MAX_IMAGE_BYTES = 12_000_000
 # size inside one timestamp tick, and that must still count as a conflict.
 MAX_TRACKED_READS = 512
 _READ_VERSIONS: dict[str, bytes] = {}
-# File search is intentionally single-flight. Starting another recursive walk
-# while an older query is still scanning only doubles I/O and has also exposed
-# unsafe overlapping PySide worker execution on Linux. The dock still rejects
-# stale results, so queued searches remain correct without blocking the GUI.
-_SEARCH_LOCK = threading.Lock()
 
 # Folders nobody opens a project to read. Hidden entries are filtered
 # separately, so `.github` is still reachable when hidden files are shown.
@@ -313,10 +308,10 @@ def _search_tree_impl(root, needle: str, limit: int = 200, show_hidden: bool = F
     return results
 
 
+@serialized_io
 def search_tree(root, needle: str, limit: int = 200, show_hidden: bool = False) -> list[dict]:
     """Run one bounded recursive file search at a time."""
-    with _SEARCH_LOCK:
-        return _search_tree_impl(root, needle, limit=limit, show_hidden=show_hidden)
+    return _search_tree_impl(root, needle, limit=limit, show_hidden=show_hidden)
 
 
 def _looks_binary(sample: bytes) -> bool:
