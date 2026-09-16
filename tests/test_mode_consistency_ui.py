@@ -86,6 +86,16 @@ def test_command_palette_starts_work_not_a_retired_coding_product():
     assert "Wynxi" not in text
 
 
+def test_chat_palette_hides_workspace_commands_that_cannot_open():
+    text = PALETTE.read_text(encoding="utf-8")
+    assert 'readonly property bool workMode: !!(bridge && bridge.taskMode === "work")' in text
+    for command in ("files", "terminal-panel", "changes", "context", "memory",
+                    "activity", "browser", "preview", "dock"):
+        line = next(line for line in text.splitlines() if f'id: "{command}"' in line)
+        assert "workOnly: true" in line, command
+    assert "if (item.workOnly && !palette.workMode)" in text
+
+
 def test_preview_scenes_use_the_same_chat_and_work_modes_as_the_app():
     text = DEMO.read_text(encoding="utf-8")
     assert '"codex"' not in text
