@@ -13,6 +13,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from .background import serialized_io
+
 GIT_TIMEOUT = 12
 MAX_FILES = 500
 MAX_DIFF_LINES = 4000
@@ -132,6 +134,7 @@ def _count_new_file(root, path) -> tuple[int, int]:
     return (text.count("\n") + (1 if text and not text.endswith("\n") else 0), 0)
 
 
+@serialized_io
 def changed_files(root) -> dict:
     """Every uncommitted change in the project, with line counts."""
     if not is_repository(root):
@@ -215,6 +218,7 @@ def _parse_unified(text: str) -> list[dict]:
     return rows
 
 
+@serialized_io
 def file_diff(root, path, untracked: bool = False) -> dict:
     """The diff for one file, as rows. An added file diffs against nothing."""
     result = {"path": str(path), "rows": [], "error": "", "binary": False}
