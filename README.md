@@ -125,14 +125,14 @@ the rest of the run, except for the things that cannot be undone.
 the model is never offered a shell, screen control or file access at all, so
 there is nothing there to approve and nothing that can run by accident. It
 answers, explains, plans and writes code as text, and says so plainly when a
-request needs the machine. Work drives the screen and runs commands; Wynxi runs
-commands in the project. The mode is chosen once per task and stays chosen.
+request needs the machine. Work handles project files, commands, and desktop
+control. The mode is chosen once per task and stays chosen.
 
 **Memory**
 One Markdown file, read at the start of every task. Tell Wynxo something once —
 how you deploy, what the test command is, that you would rather have the command
 first and the explanation after — and it is there in the next task, and the one
-after that, in Wynxo and Wynxi alike. The model saves and drops notes itself
+after that, in Chat and Work alike. The model saves and drops notes itself
 through two tools; you can do the same by hand.
 
 It is deliberately a file you own, not a table you cannot see: `memory.md` lives
@@ -210,8 +210,8 @@ else works without either.
 ## Install
 
 ```bash
-git clone https://github.com/wynxo/wynxo-gui-ai-agent.git
-cd wynxo-gui-ai-agent
+git clone https://github.com/wynxo/wynxq-gui.git
+cd wynxq-gui
 python3 install.py
 ```
 
@@ -505,7 +505,7 @@ To see the interface without any real history, Ollama, or desktop access:
 .venv/bin/python -m wynxo --ui-preview dock-context    # what the model can see
 .venv/bin/python -m wynxo --ui-preview dock-memory     # what carries between tasks
 .venv/bin/python -m wynxo --ui-preview dock-activity   # the run timeline
-.venv/bin/python -m wynxo --ui-preview codex-run       # a coding turn, start to finish
+.venv/bin/python -m wynxo --ui-preview work-run        # a coding turn, start to finish
 ```
 
 The dock scenes point at this checkout, so Files, Changes and Terminal show a
