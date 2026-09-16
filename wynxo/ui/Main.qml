@@ -14,17 +14,16 @@ import Wynxo
     it narrows, and the conversation keeps a reading measure rather than
     stretching to whatever is left.
 
-    Wynxo owns Chat and Work; Wynxi owns coding. A fresh Wynxo task can choose
-    Chat or Work once in the header. Product changes happen in the sidebar and
-    always start a fresh task, so reopening a saved conversation never changes
-    what kind of assistant it is.
+    A fresh task can choose Chat or Work once in the header. Work owns the
+    local project, command and desktop toolset; Chat is deliberately tool-free.
+    Reopening a saved conversation never changes which kind of task it is.
 */
 ApplicationWindow {
     id: window
     width: 1440; height: 920
     minimumWidth: 560; minimumHeight: 520
     visible: true
-    title: (bridge ? bridge.taskTitle : "Wynxo") + " — " + (bridge ? bridge.productName : "Wynxo")
+    title: (bridge ? bridge.taskTitle : "Wynxq GUI") + " — " + (bridge ? bridge.productName : "Wynxq GUI")
     color: bridge && bridge.solidBackground ? Theme.background : Theme.backgroundSoft
 
     // ------------------------------------------------------------ layout
@@ -120,7 +119,7 @@ ApplicationWindow {
     // -------------------------------------------------------- shortcuts
     Shortcut {
         sequences: ["Ctrl+N"]
-        onActivated: if (bridge) bridge.taskMode === "codex" ? bridge.newTaskMode("codex") : bridge.newTask()
+        onActivated: if (bridge) bridge.taskMode === "work" ? bridge.newTaskMode("work") : bridge.newTask()
     }
     Shortcut { sequences: ["Ctrl+,"]; onActivated: settings.show(settings.generalPage) }
     Shortcut { sequences: ["Ctrl+K"]; onActivated: window.focusSearch() }
@@ -490,7 +489,7 @@ ApplicationWindow {
     ConfirmSheet {
         id: linkSheet
         title: "Open this link?"
-        message: "Wynxo can show it in the built-in browser, or hand it to your default browser."
+        message: "Wynxq GUI can show it in the built-in browser, or hand it to your default browser."
         confirmText: "Open in browser"
         property string link: ""
         function ask(url) { link = url; detail = url; show(); }
@@ -514,7 +513,7 @@ ApplicationWindow {
         height: quickContent.implicitHeight
         flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Dialog
         color: "transparent"
-        title: "Wynxo quick bar"
+        title: "Wynxq GUI quick bar"
 
         QuickBarContent {
             id: quickContent
@@ -616,8 +615,8 @@ ApplicationWindow {
     function runCommand(action) {
         if (!bridge) return;
         switch (action) {
-        case "new": bridge.taskMode === "codex" ? bridge.newTaskMode("codex") : bridge.newTask(); break;
-        case "newcode": bridge.newTaskMode("codex"); break;
+        case "new": bridge.taskMode === "work" ? bridge.newTaskMode("work") : bridge.newTask(); break;
+        case "newcode": case "newwork": bridge.newTaskMode("work"); break;
         case "search": window.focusSearch(); break;
         case "models": models.open(); break;
         case "settings": settings.show(settings.generalPage); break;
