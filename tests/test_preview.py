@@ -89,8 +89,19 @@ def test_every_declared_scene_can_be_built():
         bridge = DemoController(scene)
         try:
             assert bridge.appVersion
+            assert bridge.taskMode in {"chat", "work"}, (name, scene, bridge.taskMode)
         finally:
             bridge.shutdown()
+
+
+def test_preview_history_uses_only_real_task_modes():
+    bridge = DemoController("conversation")
+    try:
+        modes = {item["mode"] for group in bridge.taskGroups for item in group["items"]}
+        assert modes <= {"chat", "work"}
+        assert modes == {"chat", "work"}
+    finally:
+        bridge.shutdown()
 
 
 def test_every_scene_names_a_project_so_the_hierarchy_is_visible():
