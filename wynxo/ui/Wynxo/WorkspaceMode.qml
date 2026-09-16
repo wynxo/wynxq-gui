@@ -4,17 +4,16 @@ import QtQuick
 /*!
     Lightweight UI mode state for the shell.
 
-    Chat stays conversational, Work owns visual desktop control, and Codex
-    turns the empty task into a project-first coding workspace. Work mode is
-    still backed by the controller's desktop connection; this singleton only
-    remembers which non-visual surface the user selected.
+    Chat stays conversational. Work is the local agent surface for coding,
+    project tools, commands and optional desktop control. Execution autonomy is
+    separate state, so changing Manual / Safe / Auto / Full never invents a
+    third product mode.
 */
 QtObject {
     property string current: "chat"
 
     function label(mode) {
         if (mode === "work") return "Work";
-        if (mode === "codex") return "Codex";
         return "Chat";
     }
 }
