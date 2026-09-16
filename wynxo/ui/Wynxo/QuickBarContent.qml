@@ -3,8 +3,11 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 /*!
-    The floating bar: one line of input for a question that does not deserve
-    the whole window. Answers stream in place; anything longer expands.
+    A compact handoff into the current task.
+
+    The bar deliberately keeps the current task mode instead of pretending to
+    be a separate chat session. Make that boundary visible: Chat stays
+    tool-free; Work keeps its project and tool permissions.
 */
 Item {
     id: root
@@ -14,6 +17,8 @@ Item {
 
     property string answer: ""
     property bool answering: false
+    readonly property string mode: bridge ? bridge.taskMode : "chat"
+    readonly property bool workMode: root.mode === "work"
 
     function focusInput() { input.forceActiveFocus(); input.selectAll(); }
     function reset() { input.text = ""; answer = ""; }
@@ -44,7 +49,9 @@ Item {
                 TextField {
                     id: input
                     Layout.fillWidth: true
-                    placeholderText: "Ask Wynxo…"
+                    placeholderText: root.workMode
+                        ? "Give the current Work task an instruction…"
+                        : "Ask the current Chat task…"
                     placeholderTextColor: Theme.textMuted
                     color: Theme.textPrimary
                     selectionColor: Theme.accent
@@ -52,14 +59,19 @@ Item {
                     font.family: Theme.sansFamily
                     font.pixelSize: 18
                     background: Item {}
-                    Accessible.name: "Ask Wynxo"
+                    Accessible.name: root.workMode
+                        ? "Instruction for the current Work task"
+                        : "Message for the current Chat task"
+                    Accessible.description: root.workMode
+                        ? "This task may use project, command, or desktop tools according to its permissions."
+                        : "This task is conversation only and has no local tools."
                     onAccepted: root.send()
                     Keys.onEscapePressed: root.dismissed()
                 }
 
                 IconButton {
                     iconName: root.answering ? "stop" : "arrow"
-                    tooltip: root.answering ? "Stop" : "Ask"
+                    tooltip: root.answering ? "Stop" : "Send to current task"
                     width: 32; height: 32; iconSize: 15
                     tint: root.answering ? Theme.textPrimary : Theme.onAccent
                     activeTint: tint
@@ -73,7 +85,9 @@ Item {
                 }
             }
 
-            // Streaming answer, capped so the bar never grows into a window.
+            // Kept for the inline-answer path so the component can display a
+            // response without growing into a full window when that path is
+            // used by the shell.
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: root.answer.length ? Math.min(answerText.implicitHeight + Theme.s3 * 2, 220) : 0
@@ -104,6 +118,16 @@ Item {
                 Layout.fillWidth: true
                 spacing: Theme.s2
                 Chip {
+                    text: root.workMode ? "Work" : "Chat"
+                    iconName: root.workMode ? "cursor" : "chat"
+                    selected: true
+                    interactive: false
+                    ToolTip.visible: hovered
+                    ToolTip.text: root.workMode
+                        ? "Sends to the current Work task, including its tool permissions"
+                        : "Sends to the current tool-free Chat task"
+                }
+                Chip {
                     text: "Screen"; iconName: "camera"
                     onClicked: if (bridge) bridge.attachScreenshot()
                 }
@@ -130,7 +154,7 @@ Item {
                 }
                 Item { Layout.fillWidth: true }
                 Chip {
-                    text: "Open Wynxo"; iconName: "launch"
+                    text: "Open Wynxq GUI"; iconName: "launch"
                     onClicked: root.expandRequested()
                 }
             }
