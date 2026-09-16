@@ -22,8 +22,7 @@ MAX_DIFF_LINES = 4000
 
 # Resolve PATH while this module is imported on the GUI/main thread. PySide's
 # Shiboken import hook can be entered by os.get_exec_path() when subprocess is
-# first asked to resolve a bare executable from a QThread; doing that lookup in
-# the worker has caused hard interpreter crashes on Linux. An absolute program
+# first asked to resolve a bare executable from a worker. An absolute program
 # path also makes every later Git call deterministic.
 GIT_EXECUTABLE = shutil.which("git")
 
@@ -47,8 +46,16 @@ def is_repository(root) -> bool:
     if not root:
         return False
     try:
-        directory = Path(root).expanduser()
+        directory = Path(root).expanduser().resolve()
         if not directory.is_dir():
+            return False
+        # Most projects are not Git repositories. Do not launch a subprocess
+        # merely to rediscover that fact: a normal repository has a .git
+        # directory, and a linked worktree has a .git file. Walking ancestors
+        # preserves the useful case where the selected project is a subfolder
+        # of a larger repository.
+        if not any((candidate / ".git").exists()
+                   for candidate in (directory, *directory.parents)):
             return False
         result = _git(directory, "rev-parse", "--is-inside-work-tree", timeout=6)
     except (OSError, subprocess.SubprocessError):
