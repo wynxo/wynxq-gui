@@ -156,6 +156,21 @@ def test_editing_marks_the_buffer_dirty_and_saving_clears_it(dock, project):
     assert dock.fileModified is False
 
 
+def test_external_change_blocks_save_and_keeps_the_dirty_buffer(dock, project):
+    target = project / "README.md"
+    dock.set_project(str(project))
+    assert dock.openFile(str(target)) is True
+    dock.setFileBuffer("# Mine\n")
+    assert dock.fileModified is True
+
+    target.write_text("# Them\n")
+    assert dock.saveFile() is False
+
+    assert target.read_text() == "# Them\n"
+    assert dock._viewer_buffer == "# Mine\n"
+    assert dock.fileModified is True
+
+
 def test_discarding_an_edit_restores_the_loaded_text(dock, project):
     dock.set_project(str(project))
     dock.openFile(str(project / "README.md"))
