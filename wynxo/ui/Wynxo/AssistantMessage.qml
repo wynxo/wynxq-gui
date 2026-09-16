@@ -45,7 +45,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
             }
             Text {
-                text: bridge && bridge.taskMode === "codex" ? "Wynxi is working" : "Wynxo is working"
+                text: bridge && bridge.taskMode === "work" ? "Agent is working" : "Wynxo is replying"
                 color: Theme.textMuted
                 font.family: Theme.monoFamily
                 font.pixelSize: Theme.micro
@@ -159,9 +159,6 @@ Item {
             objectName: "responseActions"
             width: parent.width
             height: 26
-            // Reserve the action lane: revealing controls must never change a
-            // historical turn's height or move the text under the pointer.
-            // Keep the buttons in the focus chain and reveal them on Tab too.
             visible: !root.streaming && root.body.length > 0
             opacity: hover.hovered || activeFocus ? 1 : root.latest ? 0.86 : 0
             Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
