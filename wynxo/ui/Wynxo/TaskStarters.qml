@@ -18,9 +18,9 @@ Item {
 
     readonly property string mode: bridge ? bridge.taskMode : "chat"
     readonly property bool hasProject: !!(bridge && bridge.projectPath)
-    // A fresh task can promote itself into the mode required by a starter. A
-    // locked Chat task cannot, so it gets conversation-only openings instead
-    // of dead buttons for tools that are deliberately unavailable.
+    // A fresh task can promote itself into Work when a starter needs local
+    // tools. A locked Chat task cannot, so it gets conversation-only openings
+    // instead of dead buttons for capabilities that are deliberately absent.
     readonly property bool modeOpen: !!(bridge && !bridge.taskModeLocked)
     readonly property bool lockedChat: root.mode === "chat" && !root.modeOpen
 
@@ -40,19 +40,18 @@ Item {
         }
 
         if (!root.hasProject)
-            list.push({ label: "Open project", icon: "folder", command: "project", needs: "codex" });
+            list.push({ label: "Open project", icon: "folder", command: "project", needs: "work" });
         else
-            list.push({ label: "Browse files", icon: "folderOpen", command: "files", needs: "codex" });
+            list.push({ label: "Browse files", icon: "folderOpen", command: "files", needs: "work" });
 
-        list.push({ label: "Terminal", icon: "terminal", command: "terminal-panel", needs: "codex" });
+        list.push({ label: "Terminal", icon: "terminal", command: "terminal-panel", needs: "work" });
 
         if (root.hasProject)
-            list.push({ label: "Explain this project", icon: "code", needs: "codex",
+            list.push({ label: "Explain this project", icon: "code", needs: "work",
                         prompt: "Inspect this project and explain how it is put together." });
 
-        if (root.mode !== "codex")
-            list.push({ label: "Read my screen", icon: "eye", needs: "work",
-                        prompt: "What is on my screen? Help me with it." });
+        list.push({ label: "Read my screen", icon: "eye", needs: "work",
+                    prompt: "What is on my screen? Help me with it." });
 
         list.push({ label: "Run a command", icon: "bolt", needs: "work",
                     prompt: "Check my disk space and explain what you find." });
