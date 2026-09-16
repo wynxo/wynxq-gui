@@ -99,7 +99,7 @@ def test_every_scene_names_a_project_so_the_hierarchy_is_visible():
     for scene in ("conversation", "desktop", "context", "run"):
         bridge = DemoController(scene)
         try:
-            assert bridge.projectName == "wynxo-gui-ai-agent"
+            assert bridge.projectName == "wynxq-gui"
             assert bridge.projectParentLabel
             assert len(bridge.recentProjects) >= 2
         finally:
