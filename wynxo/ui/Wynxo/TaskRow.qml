@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 
-/*! One task in the sidebar: its title, which assistant ran it, and — on
-    hover or from the keyboard — what you can do with it. */
+/*! One task in the sidebar: its title, task mode, and — on hover or from the
+    keyboard — what you can do with it. */
 AbstractButton {
     id: row
     property var entry: ({})
@@ -15,8 +15,7 @@ AbstractButton {
     hoverEnabled: true
     Accessible.role: Accessible.ListItem
     Accessible.name: (entry.title || "")
-                     + (row.mode === "codex" ? ", Wynxi coding task"
-                        : row.mode === "work" ? ", desktop task" : "")
+                     + (row.mode === "work" ? ", Work task" : ", Chat task")
                      + (entry.pinned ? ", pinned" : "")
     Accessible.description: entry.preview || ""
     Accessible.selected: current
@@ -41,14 +40,14 @@ AbstractButton {
     }
 
     contentItem: Item {
-        // Chat is the default and gets no mark; only the two modes that behave
-        // differently earn one, so the list stays quiet.
+        // Chat is the default and gets no mark; Work gets one because it can
+        // operate on the project and desktop instead of only answering.
         Icon {
             id: modeIcon
-            visible: row.mode !== "chat"
+            visible: row.mode === "work"
             x: Theme.s3
             anchors.verticalCenter: parent.verticalCenter
-            name: row.mode === "codex" ? "code" : "cursor"
+            name: "cursor"
             ink: row.current ? Theme.textSecondary : Theme.textDisabled
             width: 11; height: 11
         }
