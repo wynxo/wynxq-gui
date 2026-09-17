@@ -21,12 +21,20 @@ AbstractButton {
     Accessible.selected: current
     onClicked: if (bridge) bridge.openTask(entry.id)
 
-    background: Rectangle {
+    background: GlassSurface {
         radius: Theme.r2
-        color: row.current ? Theme.surfaceSelected
-             : row.hovered || moreMenu.opened ? Theme.surfaceHover : "transparent"
-        border.width: row.visualFocus ? 1 : 0
-        border.color: Theme.accentEdge
+        solid: row.current
+        glassEnabled: row.current || row.hovered || moreMenu.opened || row.visualFocus
+        tint: row.current ? Theme.surfaceSelected : Theme.glassTintHover
+        fillOpacity: row.current ? 1.0
+                   : row.hovered || moreMenu.opened ? 0.48 : 0.0
+        outlineVisible: row.current || row.hovered || moreMenu.opened || row.visualFocus
+        strongEdge: row.hovered || moreMenu.opened || row.visualFocus
+        active: row.visualFocus
+        sheen: row.hovered || moreMenu.opened || row.visualFocus
+        edgeColor: row.visualFocus ? Theme.accentEdge
+                 : row.current ? Theme.glassEdge
+                 : row.hovered || moreMenu.opened ? Theme.glassEdgeStrong : "transparent"
 
         Rectangle {
             anchors.left: parent.left

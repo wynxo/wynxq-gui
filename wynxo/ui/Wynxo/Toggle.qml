@@ -49,35 +49,45 @@ AbstractButton {
             }
         }
 
-        Rectangle {
+        GlassSurface {
             Layout.preferredWidth: 38
             Layout.preferredHeight: 22
             Layout.alignment: Qt.AlignVCenter
             radius: height / 2
-            color: root.checked ? Theme.accent : Theme.surfaceHover
-            border.width: 1
-            border.color: root.checked ? Theme.accent
-                        : root.hovered ? Theme.borderStrong : Theme.borderSubtle
-            Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
-            Behavior on border.color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
+            solid: true
+            glassEnabled: root.checked || root.hovered || root.visualFocus
+            tint: root.checked ? Theme.accent
+                  : root.hovered ? Theme.glassTintHover : Theme.surfaceHover
+            fillOpacity: root.checked ? (root.hovered ? 0.92 : 0.84)
+                       : root.hovered ? 0.64 : 1.0
+            active: root.visualFocus
+            strongEdge: root.hovered || root.visualFocus
+            sheen: root.checked || root.hovered || root.visualFocus
+            edgeColor: root.visualFocus ? Theme.accentEdge
+                     : root.checked ? Theme.alpha(Theme.textPrimary, 0.22)
+                     : root.hovered ? Theme.glassEdgeStrong : Theme.borderSubtle
 
             Rectangle {
                 width: 16; height: 16; radius: height / 2
                 y: 3
                 x: root.checked ? parent.width - width - 3 : 3
                 color: root.checked ? Theme.onAccent : Theme.textSecondary
+                border.width: 1
+                border.color: root.checked
+                              ? Theme.alpha(Theme.textInverse, 0.20)
+                              : Theme.alpha(Theme.textPrimary, 0.16)
                 Behavior on x { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast; easing.type: Theme.easing } }
                 Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
-            }
 
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: -3
-                radius: height / 2
-                color: "transparent"
-                visible: root.visualFocus
-                border.width: 2
-                border.color: Theme.accentEdge
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 2
+                    height: 5
+                    radius: 3
+                    color: Theme.alpha(root.checked ? Theme.textInverse : Theme.textPrimary, 0.12)
+                }
             }
         }
     }

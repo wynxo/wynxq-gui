@@ -183,12 +183,19 @@ Sheet {
                     text: entryRow.modelData.heading
                 }
 
-                Rectangle {
+                GlassSurface {
                     anchors.top: heading.bottom
                     width: parent.width
                     height: 38
                     radius: Theme.r2
-                    color: entryRow.on ? Theme.surfaceSelected : "transparent"
+                    solid: entryRow.on
+                    glassEnabled: entryRow.on
+                    tint: Theme.surfaceSelected
+                    fillOpacity: entryRow.on ? 1.0 : 0.0
+                    outlineVisible: entryRow.on
+                    strongEdge: entryRow.on
+                    sheen: entryRow.on
+                    edgeColor: entryRow.on ? Theme.glassEdgeStrong : "transparent"
 
                     Rectangle {
                         // Shape as well as colour, so the keyboard position is

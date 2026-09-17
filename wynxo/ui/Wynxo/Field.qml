@@ -16,18 +16,22 @@ TextField {
     leftPadding: iconName ? Theme.s3 + 20 : Theme.s3
     rightPadding: Theme.s3
     selectByMouse: true
+    hoverEnabled: true
     Accessible.name: placeholderText
 
     background: GlassSurface {
         radius: Theme.r2
         solid: true
-        glassEnabled: field.activeFocus
-        tint: field.activeFocus ? Theme.glassTintStrong : Theme.surfaceSunken
-        fillOpacity: field.activeFocus ? 0.72 : 1.0
+        glassEnabled: field.activeFocus || field.hovered
+        tint: field.activeFocus ? Theme.glassTintStrong
+              : field.hovered ? Theme.glassTintHover : Theme.surfaceSunken
+        fillOpacity: field.activeFocus ? 0.74
+                   : field.hovered ? 0.60 : 1.0
         active: field.activeFocus
-        strongEdge: field.activeFocus
-        sheen: field.activeFocus
-        edgeColor: field.activeFocus ? Theme.accentEdge : Theme.borderSubtle
+        strongEdge: field.activeFocus || field.hovered
+        sheen: field.activeFocus || field.hovered
+        edgeColor: field.activeFocus ? Theme.accentEdge
+                 : field.hovered ? Theme.glassEdgeStrong : Theme.borderSubtle
     }
 
     Icon {
