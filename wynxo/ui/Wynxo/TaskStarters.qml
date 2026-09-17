@@ -65,6 +65,7 @@ Item {
     Flow {
         id: flow
         width: parent.width
+        x: Math.max(0, (root.width - childrenRect.width) / 2)
         spacing: Theme.s1
 
         Repeater {

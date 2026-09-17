@@ -27,10 +27,13 @@ Item {
         border.color: Theme.borderSubtle
     }
 
-    Rectangle {
+    GlassSurface {
         y: 3; height: parent.height - 6
         radius: Theme.r1
-        color: Theme.surfaceSelected
+        tint: Theme.surfaceSelected
+        fillOpacity: 1
+        glassEnabled: true
+        edgeColor: Theme.glassEdgeStrong
         width: root.segmentWidth
         x: 3 + root.segmentWidth * root.currentIndex
         Behavior on x { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.base; easing.type: Theme.easing } }

@@ -266,12 +266,15 @@ Item {
                         ToolTip.visible: hovered
                         ToolTip.text: modelData.hint
                         ToolTip.delay: 450
-                        background: Rectangle {
+                        background: GlassSurface {
                             radius: Theme.r1
-                            color: choice.chosen ? Theme.surfaceSelected
-                                 : choice.hovered && choice.enabled ? Theme.surfaceHover : "transparent"
-                            border.width: choice.visualFocus ? 1 : 0
-                            border.color: Theme.accentEdge
+                            solid: choice.chosen
+                            autoGlass: false
+                            glassEnabled: choice.chosen || choice.hovered || choice.visualFocus
+                            tint: choice.chosen ? Theme.surfaceSelected : Theme.glassTintHover
+                            fillOpacity: choice.chosen ? 1 : choice.hovered && choice.enabled ? 0.42 : 0
+                            outlineVisible: choice.chosen || choice.visualFocus
+                            edgeColor: choice.visualFocus ? Theme.accentEdge : Theme.glassEdgeStrong
                         }
                         contentItem: Row {
                             id: choiceContent

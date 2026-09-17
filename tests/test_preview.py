@@ -3,6 +3,8 @@
 It exercises the real controller with fixed data, so a change that breaks the
 screenshot pipeline fails here rather than in CI's rendering step.
 """
+from pathlib import Path
+
 from PySide6.QtCore import QCoreApplication
 
 from wynxo.demo import CATALOG, SCENES, DemoController
@@ -110,7 +112,8 @@ def test_every_scene_names_a_project_so_the_hierarchy_is_visible():
     for scene in ("conversation", "desktop", "context", "run"):
         bridge = DemoController(scene)
         try:
-            assert bridge.projectName == "wynxq-gui"
+            assert bridge.projectName == Path(bridge.projectPath).name
+            assert bridge.projectName
             assert bridge.projectParentLabel
             assert len(bridge.recentProjects) >= 2
         finally:

@@ -6,9 +6,9 @@ import QtQuick.Layouts
     One command box for Chat and Work.
 
     The prompt gets the space. Context, project, model and run controls live on
-    one quiet toolbar underneath it. The composer is a permanent workspace
-    surface, so it stays opaque at rest; material/shadow feedback appears only
-    while the user is actively focused on it or interacting with its controls.
+    one quiet toolbar underneath it. The fresh-task surface has a satin glass
+    reflection over an opaque base. In conversations the material appears on
+    focus, keeping long reading sessions quiet.
 */
 Item {
     id: root
@@ -58,11 +58,11 @@ Item {
         fillOpacity: input.activeFocus ? Theme.glassStrongOpacity : 1.0
         solid: true
         autoGlass: false
-        glassEnabled: input.activeFocus
+        glassEnabled: root.homeMode || input.activeFocus
         elevated: input.activeFocus
         strongEdge: input.activeFocus
         active: input.activeFocus
-        sheen: input.activeFocus
+        sheen: root.homeMode || input.activeFocus
         edgeColor: input.activeFocus ? Theme.accentEdge : Theme.borderStrong
 
         ColumnLayout {
@@ -386,7 +386,8 @@ Item {
                     enabled: (bridge && bridge.busy) || root.canSend
                     onClicked: bridge && bridge.busy ? bridge.stop() : root.send()
                     background: GlassSurface {
-                        radius: Theme.rPill
+                        radius: Theme.r2
+                        glassEnabled: sendButton.enabled
                         tint: bridge && bridge.busy ? Theme.glassTintStrong
                              : sendButton.enabled
                                ? (sendButton.hovered ? Theme.accentHover : Theme.accent)

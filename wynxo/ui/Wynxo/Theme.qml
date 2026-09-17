@@ -20,23 +20,23 @@ QtObject {
     // ---------------------------------------------------------- foundation
     // Opaque fallbacks remain the readability baseline. GlassSurface layers
     // translucency over these values without weakening text contrast.
-    readonly property color background:      "#191919"
-    readonly property color backgroundSoft:  "#121212"
-    readonly property color surface:         "#202020"
-    readonly property color surfaceRaised:   "#262626"
-    readonly property color surfaceHover:    "#2e2e2e"
-    readonly property color surfacePressed:  "#383838"
-    readonly property color surfaceSelected: "#333333"
-    readonly property color surfaceSunken:   "#0e0e0e"
+    readonly property color background:      "#17181b"
+    readonly property color backgroundSoft:  "#111215"
+    readonly property color surface:         "#202126"
+    readonly property color surfaceRaised:   "#27292e"
+    readonly property color surfaceHover:    "#303239"
+    readonly property color surfacePressed:  "#3a3d45"
+    readonly property color surfaceSelected: "#34373f"
+    readonly property color surfaceSunken:   "#0e0f12"
     readonly property color scrim:           "#cc070707"
 
     // Aliases kept so a component can say what it means.
     readonly property color surfaceElevated: surfaceRaised
     readonly property color panel:           backgroundSoft
 
-    readonly property color borderSubtle: "#303030"
-    readonly property color border:       "#3b3b3b"
-    readonly property color borderStrong: "#4d4d4d"
+    readonly property color borderSubtle: "#303239"
+    readonly property color border:       "#3d4049"
+    readonly property color borderStrong: "#535761"
 
     // ------------------------------------------------------ liquid glass
     // Cross-platform approximation of the macOS material vocabulary. The
@@ -55,14 +55,14 @@ QtObject {
     readonly property real glassOpacity: 0.68
     readonly property real glassStrongOpacity: 0.88
 
-    readonly property color textPrimary:   "#f2f1ed"
-    readonly property color textSecondary: "#c6c5bf"
-    readonly property color textMuted:     "#97968f"
+    readonly property color textPrimary:   "#f1f3f7"
+    readonly property color textSecondary: "#c4c8d1"
+    readonly property color textMuted:     "#a0a6b2"
     readonly property color textDisabled:  "#6a6a64"
     readonly property color textInverse:   "#111111"
 
-    // Claude-like warmth as the default focus colour; Appearance can replace it.
-    readonly property color accent: ready && bridge.accentColor ? bridge.accentColor : "#df7e5e"
+    // Platinum matches the controller default; Appearance can replace it.
+    readonly property color accent: ready && bridge.accentColor ? bridge.accentColor : "#e9e3d6"
     readonly property color accentHover: Qt.lighter(accent, 1.08)
     readonly property color accentMuted: Qt.rgba(accent.r, accent.g, accent.b, 0.12)
     readonly property color accentEdge: Qt.rgba(accent.r, accent.g, accent.b, 0.44)
@@ -94,12 +94,12 @@ QtObject {
     // Terminal ink, resolved in Python against this map so ANSI keeps meaning
     // without inventing sixteen colours the rest of the app does not know.
     readonly property var terminalPalette: ({
-        "text": "#d8d7d2", "black": "#97968f", "red": "#e58476", "green": "#7acb96",
+        "text": "#d8d7d2", "black": "#a0a6b2", "red": "#e58476", "green": "#7acb96",
         "yellow": "#d7ab5d", "blue": "#82abdd", "magenta": "#c2a0e4", "cyan": "#7fc8bf",
         "white": "#d8d7d2", "brightBlack": "#b0afa8", "brightRed": "#f09c8e",
         "brightGreen": "#94daaa", "brightYellow": "#e6c179", "brightBlue": "#9dc0e8",
-        "brightMagenta": "#d4b6ee", "brightCyan": "#98dad1", "brightWhite": "#f2f1ed",
-        "dim": "#97968f"
+        "brightMagenta": "#d4b6ee", "brightCyan": "#98dad1", "brightWhite": "#f1f3f7",
+        "dim": "#a0a6b2"
     })
 
     // -------------------------------------------------------------- rhythm

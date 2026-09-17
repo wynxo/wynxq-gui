@@ -15,6 +15,8 @@ Canvas {
     Accessible.ignored: true   // Decorative; the wordmark beside it carries the name.
 
     onToneChanged: requestPaint()
+    onWidthChanged: requestPaint()
+    onHeightChanged: requestPaint()
     onPaint: {
         const c = getContext("2d");
         c.reset();

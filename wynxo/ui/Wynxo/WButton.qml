@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 
-/*! Compact text button. Solid at rest; glass appears only during interaction. */
+/*! Compact tactile button with an opaque base and a glass reflection. */
 Button {
     id: control
     property string variant: "secondary"
@@ -21,7 +21,7 @@ Button {
     implicitWidth: row.implicitWidth + (compactPadding ? Theme.s3 : Theme.s4) * 2
     hoverEnabled: true
     opacity: enabled ? 1 : 0.42
-    scale: down ? 0.97 : hovered ? 1.01 : 1
+    scale: down ? 0.97 : 1
     font.family: Theme.sansFamily
     font.pixelSize: Theme.label
     font.weight: Font.Medium
@@ -57,7 +57,7 @@ Button {
     background: GlassSurface {
         radius: Theme.r2
         solid: !control.isGhost && !control.isDanger
-        glassEnabled: control.interacting
+        glassEnabled: control.interacting || (!control.isGhost && !control.isDanger)
         tint: control.isPrimary
               ? (control.down ? Qt.darker(Theme.accent, 1.08)
                  : control.hovered ? Theme.accentHover : Theme.accent)
@@ -74,7 +74,7 @@ Button {
         strongEdge: control.interacting
         active: control.visualFocus
         elevated: control.isPrimary && control.hovered
-        sheen: control.interacting
+        sheen: control.interacting || (!control.isGhost && !control.isDanger)
         edgeColor: control.visualFocus ? Theme.accentEdge
                  : control.isDanger ? Theme.alpha(Theme.danger, control.interacting ? 0.42 : 0.24)
                  : control.isPrimary ? Theme.alpha(Theme.textPrimary, control.interacting ? 0.18 : 0.10)

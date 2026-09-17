@@ -17,7 +17,16 @@ full run timeline, an embedded browser, and a preview.
 No browser, no Node.js, no account, no API key, no cloud AI. Ollama does the
 inference; Wynxo is the interface.
 
-![Wynxo, mid-task](docs/screenshots/02-task.png)
+![Wynxo, new task](docs/screenshots/01-new-task.png)
+
+The graphite interface pairs a polished-metal edition of the Wynxo mark with
+satin glass controls. The welcome sculpture reacts only to pointer movement;
+there is no continuous animation competing with inference. Short windows hide
+the sculpture to preserve room for the prompt. Reduced Motion disables its
+movement, and floating surfaces retain an opaque fallback for readable text.
+
+The first-run guide supports Back, optional project selection, and scrollable
+explanations when the connection address or model name is long.
 
 ---
 
@@ -188,7 +197,7 @@ Every image below is a real capture of the running Qt application, produced by
 | **Permission** — the exact command, and where it would run<br>![](docs/screenshots/04-permission.png) | **Local context** — files, folders and captures as chips<br>![](docs/screenshots/05-context.png) |
 | **Settings** — six sections, nothing repeated<br>![](docs/screenshots/08-settings.png) | **Command palette** — every action, one keystroke away<br>![](docs/screenshots/09-command-palette.png) |
 | **Model** — switch and set the speed in one place<br>![](docs/screenshots/06-models.png) | **Model manager** — capabilities, size, favourites, downloads<br>![](docs/screenshots/07-model-manager.png) |
-| **Quick bar** — `Ctrl+Space`, above everything else<br>![](docs/screenshots/10-quick-bar.png) | **First run** — four steps, then out of your way<br>![](docs/screenshots/11-welcome.png) |
+| **Quick bar** — `Ctrl+Space`, above everything else<br>![](docs/screenshots/10-quick-bar.png) | **First run** — five steps, with Back and optional project setup<br>![](docs/screenshots/11-welcome.png) |
 
 ---
 

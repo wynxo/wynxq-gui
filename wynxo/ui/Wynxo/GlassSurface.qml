@@ -65,31 +65,46 @@ Rectangle {
         ColorAnimation { duration: Theme.fast }
     }
 
-    // Live crop of whatever is underneath this surface. MultiEffect performs
-    // the actual blur/saturation pass on the GPU.
-    ShaderEffectSource {
-        id: backdropSource
-        visible: false
-        sourceItem: surface.hostContent
-        sourceRect: Qt.rect(surface.backdropOrigin.x, surface.backdropOrigin.y,
-                            Math.max(1, surface.width), Math.max(1, surface.height))
-        textureSize: Qt.size(Math.max(1, Math.round(surface.width)),
-                             Math.max(1, Math.round(surface.height)))
-        live: surface.liveBlurOn
-        recursive: false
-        smooth: true
-    }
-
-    MultiEffect {
+    // Inactive controls allocate no capture texture or blur pipeline. The
+    // source must be a separate scene, never an ancestor of this surface.
+    Loader {
         anchors.fill: parent
         z: -4
-        visible: surface.liveBlurOn
-        source: backdropSource
-        blurEnabled: true
-        blur: surface.blurAmount
-        blurMax: 48
-        saturation: 0.18
-        brightness: 0.035
+        active: surface.liveBlurOn
+        sourceComponent: Item {
+            ShaderEffectSource {
+                id: backdropSource
+                visible: false
+                sourceItem: surface.hostContent
+                sourceRect: Qt.rect(surface.backdropOrigin.x, surface.backdropOrigin.y,
+                                    Math.max(1, surface.width), Math.max(1, surface.height))
+                textureSize: Qt.size(Math.max(1, Math.round(surface.width)),
+                                     Math.max(1, Math.round(surface.height)))
+                live: true
+                recursive: false
+                smooth: true
+            }
+            Rectangle {
+                id: roundedMask
+                anchors.fill: parent
+                radius: surface.radius
+                color: "white"
+                layer.enabled: true
+                visible: false
+            }
+            MultiEffect {
+                anchors.fill: parent
+                source: backdropSource
+                blurEnabled: true
+                blur: surface.blurAmount
+                blurMax: 48
+                saturation: 0.18
+                brightness: 0.035
+                maskEnabled: true
+                maskSource: roundedMask
+                autoPaddingEnabled: false
+            }
+        }
     }
 
     // Keep text legible even above high-contrast content. Optical details stay
@@ -137,13 +152,13 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 1
-        height: Math.max(surface.radius * 1.7, Math.round(surface.height * 0.50))
+        height: Math.min(surface.height - 2, Math.max(surface.radius * 1.7, Math.round(surface.height * 0.50)))
         radius: Math.max(0, surface.radius - 1)
         opacity: surface.materialOn && surface.sheen ? 1 : 0
         Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
         gradient: Gradient {
             GradientStop { position: 0.0; color: surface.active ? Theme.glassSpecularHot : Theme.glassSpecular }
-            GradientStop { position: 0.30; color: Theme.alpha(Theme.textPrimary, 0.055) }
+            GradientStop { position: 0.30; color: Theme.alpha(Theme.textPrimary, 0.065) }
             GradientStop { position: 0.70; color: Theme.alpha(Theme.textPrimary, 0.014) }
             GradientStop { position: 1.0; color: "transparent" }
         }

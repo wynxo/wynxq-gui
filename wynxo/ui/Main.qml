@@ -263,6 +263,7 @@ ApplicationWindow {
 
                     TaskStart {
                         id: homeIntro
+                        showSculpture: window.height >= 720 && contentColumn.width >= 480
                         width: Math.min(Theme.readingWidth, parent.width)
                         anchors.horizontalCenter: parent.horizontalCenter
                     }

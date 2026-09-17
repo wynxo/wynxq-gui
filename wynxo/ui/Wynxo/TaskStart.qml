@@ -10,6 +10,8 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    property bool showSculpture: true
+
     readonly property string mode: bridge ? bridge.taskMode : "chat"
     readonly property bool hasProject: !!(bridge && bridge.projectPath)
     readonly property string modeLabel: mode === "work" ? "WORK" : "CHAT"
@@ -36,9 +38,22 @@ Item {
         width: parent.width
         spacing: Theme.s2
 
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.showSculpture ? 170 : 0
+            visible: root.showSculpture
+            ChromeMark {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 190
+                height: 170
+            }
+        }
+
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.s2
+
+            Item { Layout.fillWidth: true }
 
             Rectangle {
                 width: 5
@@ -49,7 +64,8 @@ Item {
             }
 
             Text {
-                text: root.modeLabel
+                text: (bridge && bridge.productName ? bridge.productName.toUpperCase() : "WYNXO")
+                      + "  /  " + root.modeLabel
                 color: Theme.textMuted
                 font.family: Theme.monoFamily
                 font.pixelSize: Theme.micro
@@ -63,16 +79,18 @@ Item {
         Text {
             Layout.fillWidth: true
             text: root.headline
-            elide: Text.ElideRight
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.Wrap
             color: Theme.textPrimary
             font.family: Theme.sansFamily
-            font.pixelSize: root.width < 560 ? 23 : 27
+            font.pixelSize: root.width < 560 ? 24 : 32
             font.weight: Font.Medium
             font.letterSpacing: -0.45
         }
 
         Text {
             Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
             visible: root.detail !== ""
             text: root.detail
             color: Theme.textMuted
