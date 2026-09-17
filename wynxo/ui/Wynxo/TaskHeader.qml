@@ -124,9 +124,17 @@ Item {
                 hoverEnabled: true
                 Accessible.name: bridge ? "Project " + bridge.projectName : ""
                 onClicked: projectMenu.opened ? projectMenu.close() : projectMenu.open()
-                background: Rectangle {
+                background: GlassSurface {
                     radius: Theme.r1
-                    color: projectButton.hovered || projectMenu.opened ? Theme.surfaceHover : "transparent"
+                    solid: false
+                    glassEnabled: projectButton.hovered || projectMenu.opened || projectButton.visualFocus
+                    tint: Theme.glassTintHover
+                    fillOpacity: projectButton.hovered || projectMenu.opened ? 0.46 : 0.0
+                    outlineVisible: projectButton.hovered || projectMenu.opened || projectButton.visualFocus
+                    strongEdge: projectMenu.opened || projectButton.visualFocus
+                    active: projectButton.visualFocus
+                    sheen: projectButton.hovered || projectMenu.opened
+                    edgeColor: projectButton.visualFocus ? Theme.accentEdge : Theme.glassEdgeStrong
                 }
                 contentItem: Row {
                     id: projectRow
@@ -204,11 +212,17 @@ Item {
                 hoverEnabled: true
                 Accessible.name: "Rename this task"
                 onClicked: root.renameRequested()
-                background: Rectangle {
+                background: GlassSurface {
                     radius: Theme.r1
-                    color: titleButton.hovered && titleButton.enabled ? Theme.surfaceHover : "transparent"
-                    border.width: titleButton.visualFocus ? 1 : 0
-                    border.color: Theme.accentEdge
+                    solid: false
+                    glassEnabled: (titleButton.hovered && titleButton.enabled) || titleButton.visualFocus
+                    tint: Theme.glassTintHover
+                    fillOpacity: titleButton.hovered && titleButton.enabled ? 0.44 : 0.0
+                    outlineVisible: (titleButton.hovered && titleButton.enabled) || titleButton.visualFocus
+                    strongEdge: titleButton.visualFocus
+                    active: titleButton.visualFocus
+                    sheen: titleButton.hovered && titleButton.enabled
+                    edgeColor: titleButton.visualFocus ? Theme.accentEdge : Theme.glassEdgeStrong
                 }
                 contentItem: Text {
                     leftPadding: Theme.s1
@@ -321,11 +335,19 @@ Item {
             ToolTip.visible: hovered
             ToolTip.text: bridge ? root.permissionDetail(bridge.permissionMode) : ""
             ToolTip.delay: 450
-            background: Rectangle {
+            background: GlassSurface {
                 radius: Theme.r2
-                color: autonomyButton.hovered || autonomyMenu.opened ? Theme.surfaceHover : Theme.surface
-                border.width: 1
-                border.color: autonomyMenu.opened || autonomyButton.visualFocus ? Theme.accentEdge : Theme.borderSubtle
+                solid: true
+                glassEnabled: autonomyButton.hovered || autonomyMenu.opened || autonomyButton.visualFocus
+                tint: autonomyButton.hovered || autonomyMenu.opened ? Theme.glassTintHover : Theme.surface
+                fillOpacity: autonomyButton.hovered || autonomyMenu.opened ? 0.66 : 1.0
+                outlineVisible: true
+                strongEdge: autonomyButton.hovered || autonomyMenu.opened || autonomyButton.visualFocus
+                active: autonomyButton.visualFocus
+                sheen: autonomyButton.hovered || autonomyMenu.opened
+                edgeColor: autonomyButton.visualFocus || autonomyMenu.opened
+                         ? Theme.accentEdge
+                         : autonomyButton.hovered ? Theme.glassEdgeStrong : Theme.borderSubtle
             }
             contentItem: Row {
                 id: autonomyRow
@@ -427,9 +449,19 @@ Item {
                     hoverEnabled: true
                     Accessible.name: "Stop"
                     onClicked: if (bridge) bridge.stop()
-                    background: Rectangle {
+                    background: GlassSurface {
                         radius: Theme.r1
-                        color: parent.hovered ? Theme.dangerMuted : "transparent"
+                        solid: false
+                        glassEnabled: parent.hovered || parent.visualFocus
+                        tint: Theme.dangerMuted
+                        fillOpacity: parent.hovered ? 0.72 : 0.0
+                        outlineVisible: parent.hovered || parent.visualFocus
+                        strongEdge: parent.hovered || parent.visualFocus
+                        active: parent.visualFocus
+                        sheen: parent.hovered
+                        edgeColor: parent.visualFocus
+                                 ? Theme.accentEdge
+                                 : Theme.alpha(Theme.danger, 0.28)
                     }
                     contentItem: Text {
                         text: "Stop"
