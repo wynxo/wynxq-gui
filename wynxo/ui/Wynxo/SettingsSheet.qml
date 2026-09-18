@@ -13,8 +13,8 @@ Sheet {
     id: sheet
     objectName: "settingsSheet"
     title: "Settings"
-    width: Math.min(820, parent ? parent.width - Theme.s6 : 820)
-    height: Math.min(620, parent ? parent.height - Theme.s6 : 620)
+    width: Math.min(900, parent ? parent.width - Theme.s6 : 900)
+    height: Math.min(580, parent ? parent.height - Theme.s6 : 580)
     signal openModelManager()
     signal openMemoryPanel()
 
@@ -27,16 +27,32 @@ Sheet {
     readonly property int advancedPage: 6
 
     property int page: 0
+    property string settingsQuery: ""
     readonly property var pages: [
-        { label: "General", icon: "sliders" },
-        { label: "Model & runtime", icon: "layers" },
-        { label: "Agent", icon: "cursor" },
-        { label: "Workspace", icon: "panel" },
-        { label: "Usage", icon: "bolt" },
-        { label: "Appearance", icon: "sun" },
-        { label: "Advanced", icon: "shield" },
+        { label: "General", icon: "sliders", keywords: "ollama server connection notification startup tray" },
+        { label: "Model & runtime", icon: "layers", keywords: "model context tokens temperature keep alive speed fast balanced deep runtime" },
+        { label: "Agent", icon: "cursor", keywords: "agent screen desktop control permission ask auto autopilot memory stop" },
+        { label: "Workspace", icon: "panel", keywords: "workspace dock project files terminal browser panel sidebar" },
+        { label: "Usage", icon: "bolt", keywords: "usage tokens speed throughput input output runs statistics" },
+        { label: "Appearance", icon: "sun", keywords: "appearance theme accent glass density compact motion font" },
+        { label: "Advanced", icon: "shield", keywords: "advanced endpoint privacy debug reset system" },
     ]
 
+    function pageMatches(entry) {
+        var q = settingsQuery.toLowerCase().trim();
+        if (!q) return true;
+        return (entry.label + " " + (entry.keywords || "")).toLowerCase().indexOf(q) >= 0;
+    }
+    function applySettingsSearch() {
+        var q = settingsQuery.trim();
+        if (!q || pageMatches(pages[page])) return;
+        for (var i = 0; i < pages.length; i++) {
+            if (pageMatches(pages[i])) {
+                page = i;
+                return;
+            }
+        }
+    }
     function show(index) { page = index; open(); }
 
     function formatUsageCount(value) {
@@ -55,6 +71,8 @@ Sheet {
     onPageChanged: if (visible && page === usagePage && bridge) bridge.refreshTokenUsage()
 
     onOpened: {
+        settingsQuery = "";
+        settingsSearch.text = "";
         if (bridge) bridge.refreshTokenUsage();
         endpointField.text = bridge ? bridge.endpoint : "";
         accentField.text = bridge ? bridge.accentColor : "";
@@ -79,14 +97,35 @@ Sheet {
                 anchors.fill: parent
                 anchors.margins: Theme.s2
                 spacing: 1
+
+                Field {
+                    id: settingsSearch
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.controlSmall
+                    Layout.bottomMargin: Theme.s2
+                    iconName: "search"
+                    placeholderText: "Find settings"
+                    font.pixelSize: Theme.caption
+                    onTextChanged: {
+                        sheet.settingsQuery = text;
+                        sheet.applySettingsSearch();
+                    }
+                    Keys.onEscapePressed: function(event) {
+                        if (text.length) { text = ""; event.accepted = true; }
+                        else event.accepted = false;
+                    }
+                }
+
                 Repeater {
                     model: sheet.pages
                     delegate: AbstractButton {
                         id: pageButton
                         required property var modelData
                         required property int index
+                        readonly property bool matchesSearch: sheet.pageMatches(modelData)
                         Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.rowHeight
+                        Layout.preferredHeight: matchesSearch ? Theme.rowHeight : 0
+                        visible: matchesSearch
                         hoverEnabled: true
                         Accessible.name: modelData.label
                         Accessible.checked: sheet.page === index

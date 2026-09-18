@@ -13,6 +13,7 @@ Item {
     id: root
     property var steps: []
     property bool live: false
+    property bool detailsVisible: false
 
     implicitHeight: column.implicitHeight
     Accessible.role: Accessible.List
@@ -40,6 +41,9 @@ Item {
         return total;
     }
 
+    readonly property bool collapsedSummary: settled && failures === 0
+        && steps.length > 3 && !detailsVisible
+
     function duration(ms) {
         return ms >= 1000 ? (ms / 1000).toFixed(1) + "s" : Math.round(ms) + "ms";
     }
@@ -50,7 +54,7 @@ Item {
         spacing: 0
 
         Repeater {
-            model: root.steps
+            model: root.collapsedSummary ? [] : root.steps
             delegate: Item {
                 id: step
                 required property var modelData
@@ -214,10 +218,24 @@ Item {
         }
 
         // ------------------------------------------------------- the result
-        Item {
+        AbstractButton {
+            id: summaryButton
             width: column.width
-            height: root.settled && root.steps.length > 1 ? 22 : 0
+            height: root.settled && root.steps.length > 1 ? 26 : 0
             visible: height > 0
+            hoverEnabled: root.steps.length > 3
+            enabled: root.steps.length > 3
+            Accessible.name: root.collapsedSummary ? "Show action details" : "Hide action details"
+            onClicked: root.detailsVisible = !root.detailsVisible
+            background: GlassSurface {
+                radius: Theme.r1
+                solid: false
+                glassEnabled: summaryButton.hovered || summaryButton.visualFocus
+                tint: Theme.glassTintHover
+                fillOpacity: summaryButton.hovered ? 0.40 : 0.0
+                outlineVisible: summaryButton.visualFocus
+                active: summaryButton.visualFocus
+            }
 
             Row {
                 anchors.left: parent.left
@@ -242,6 +260,13 @@ Item {
                     }
                     color: Theme.textMuted
                     font.family: Theme.sansFamily; font.pixelSize: Theme.caption
+                }
+                Icon {
+                    visible: root.steps.length > 3
+                    name: root.collapsedSummary ? "chevron" : "down"
+                    ink: Theme.textDisabled
+                    width: 10; height: 10
+                    anchors.verticalCenter: parent.verticalCenter
                 }
             }
         }

@@ -10,11 +10,13 @@ import QtQuick.Layouts
 */
 Sheet {
     id: palette
-    width: Math.min(600, parent ? parent.width - Theme.s7 : 600)
-    height: Math.min(480, parent ? parent.height - Theme.s7 : 480)
+    width: Math.min(680, parent ? parent.width - Theme.s7 : 680)
+    height: Math.min(520, parent ? parent.height - Theme.s7 : 520)
     signal invoked(string action)
 
     readonly property bool workMode: !!(bridge && bridge.taskMode === "work")
+    readonly property var dock: bridge ? bridge.workspaceDock : null
+    property string previousFileFilter: ""
     readonly property var commands: [
         { id: "new", group: "Task", label: "New task", detail: "Start a fresh task", icon: "plus", shortcut: "Ctrl+N" },
         { id: "newwork", group: "Task", label: "New Work task", detail: "Project, command and desktop tools", icon: "cursor" },
@@ -30,6 +32,7 @@ Sheet {
         { id: "clear", group: "Task", label: "Clear messages", detail: "Empty this task but keep it", icon: "trash" },
 
         { id: "files", group: "Workspace", label: "Files", detail: "The project tree and file viewer", icon: "folder", shortcut: "Ctrl+Shift+E", workOnly: true },
+        { id: "focus-editor", group: "Workspace", label: "Focus current file", detail: "Expand the open file into the coding surface", icon: "maximize", shortcut: "Ctrl+Enter", workOnly: true },
         { id: "terminal-panel", group: "Workspace", label: "Terminal", detail: "A real shell in the project", icon: "terminal", shortcut: "Ctrl+`", workOnly: true },
         { id: "changes", group: "Workspace", label: "Changes", detail: "Uncommitted work, and its diff", icon: "branch", shortcut: "Ctrl+Shift+G", workOnly: true },
         { id: "context", group: "Workspace", label: "Context", detail: "What the model can see", icon: "layers", shortcut: "Ctrl+Shift+K", workOnly: true },
@@ -85,33 +88,68 @@ Sheet {
         return points;
     }
 
-    function refilter() {
+    function refilter(requestFiles) {
         var needle = search.text.toLowerCase().trim();
+        if (requestFiles && palette.dock && palette.workMode && bridge && bridge.projectPath)
+            palette.dock.setFileFilter(needle.length >= 2 ? needle : "");
+
         var scored = [];
+        function add(item, order, ceiling) {
+            var label = String(item.label || "").toLowerCase();
+            var points = palette.score(label, needle);
+            if (!points) {
+                points = palette.score(((item.detail || "") + " " + (item.group || "")).toLowerCase(), needle);
+                points = points ? Math.min(points, ceiling || 240) : 0;
+            }
+            if (points) scored.push({ command: item, points: points, order: order });
+        }
+
         for (var i = 0; i < commands.length; i++) {
             var item = commands[i];
-            // Chat deliberately has no workspace dock. Do not advertise
-            // commands that the shell will refuse as no-ops in that mode.
-            if (item.workOnly && !palette.workMode)
-                continue;
-            var label = item.label.toLowerCase();
-            var points = score(label, needle);
-            if (!points) {
-                // The detail and the group still match, at a lower weight, so
-                // "diff" finds Changes without putting it above a title match.
-                points = score(((item.detail || "") + " " + item.group).toLowerCase(), needle);
-                points = points ? Math.min(points, 240) : 0;
-            }
-            if (points) scored.push({ command: item, points: points, order: i });
+            if (item.workOnly && !palette.workMode) continue;
+            add(item, i, 240);
         }
-        // Searching ranks by score; an empty query keeps the authored order and
-        // its group headings, because that list is a menu, not a result set.
-        if (needle) scored.sort(function (a, b) { return b.points - a.points || a.order - b.order; });
+
+        // Once there is a query this becomes quick-open, not merely a command
+        // menu. Tasks and files compete in the same ranked keyboard list.
+        if (needle) {
+            var groups = bridge ? bridge.taskGroups : [];
+            var order = 1000;
+            for (var g = 0; g < groups.length; g++) {
+                var tasks = groups[g].items || [];
+                for (var t = 0; t < tasks.length; t++) {
+                    var task = tasks[t];
+                    add({
+                        id: "task:" + task.id,
+                        group: "Tasks",
+                        label: task.title || "Untitled task",
+                        detail: task.preview || (task.mode === "work" ? "Work task" : "Chat task"),
+                        icon: task.mode === "work" ? "code" : "chat"
+                    }, order++, 600);
+                }
+            }
+
+            var matches = palette.dock ? palette.dock.fileMatches : [];
+            for (var f = 0; f < matches.length; f++) {
+                var file = matches[f];
+                add({
+                    id: "file:" + file.path,
+                    group: "Files",
+                    label: file.relative || file.name || file.path,
+                    detail: "Open in focused editor",
+                    icon: Theme.kindIcon(file.kind)
+                }, order++, 560);
+            }
+        }
+
+        if (needle)
+            scored.sort(function(a, b) { return b.points - a.points || a.order - b.order; });
+
         var out = [];
         var seen = "";
         for (var j = 0; j < scored.length; j++) {
             var command = scored[j].command;
-            var heading = needle ? "" : (command.group === seen ? "" : command.group);
+            var heading = command.group === seen ? "" : command.group;
             out.push({ command: command, heading: heading });
             seen = command.group;
         }
@@ -130,7 +168,24 @@ Sheet {
         close();
     }
 
-    onOpened: { search.text = ""; refilter(); search.forceActiveFocus(); }
+    Connections {
+        target: palette.dock
+        function onFilesChanged() {
+            if (palette.opened && search.text.trim().length >= 2)
+                palette.refilter(false);
+        }
+    }
+
+    onOpened: {
+        previousFileFilter = palette.dock ? palette.dock.fileFilter : "";
+        search.text = "";
+        refilter(false);
+        search.forceActiveFocus();
+    }
+    onClosed: {
+        if (palette.dock && palette.dock.fileFilter !== previousFileFilter)
+            palette.dock.setFileFilter(previousFileFilter);
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -142,9 +197,9 @@ Sheet {
             Layout.fillWidth: true
             implicitHeight: 42
             iconName: "search"
-            placeholderText: "Search commands…"
+            placeholderText: "Quick open commands, tasks, files…"
             font.pixelSize: Theme.body
-            onTextChanged: palette.refilter()
+            onTextChanged: palette.refilter(true)
             Keys.onDownPressed: palette.move(1)
             Keys.onUpPressed: palette.move(-1)
             Keys.onReturnPressed: palette.run()
@@ -254,7 +309,7 @@ Sheet {
             Text {
                 anchors.centerIn: parent
                 visible: list.count === 0
-                text: "No matching command"
+                text: search.text.length ? "No matching command, task, or file" : "No commands available"
                 color: Theme.textMuted
                 font.family: Theme.sansFamily; font.pixelSize: Theme.label
             }

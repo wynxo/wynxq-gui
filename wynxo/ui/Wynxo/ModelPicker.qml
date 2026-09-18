@@ -23,6 +23,13 @@ AbstractButton {
     // The handful worth showing without a search box: current, favourites,
     // then recents, in the order the catalogue already ranks them.
     readonly property int shortlistLength: 6
+    readonly property var currentEntry: {
+        var catalog = bridge ? bridge.modelCatalog : [];
+        for (var i = 0; i < catalog.length; i++)
+            if (catalog[i].selected || catalog[i].name === bridge.model) return catalog[i];
+        return ({});
+    }
+    readonly property bool modelLoaded: !!currentEntry.loaded
     readonly property var shortlist: {
         var catalog = bridge ? bridge.modelCatalog : [];
         var out = [];
@@ -38,7 +45,9 @@ AbstractButton {
     onClicked: popover.opened ? popover.close() : popover.open()
     function showPicker() { popover.open(); }
     ToolTip.visible: hovered && !popover.opened
-    ToolTip.text: bridge ? bridge.modelCapabilitySummary : ""
+    ToolTip.text: !bridge ? ""
+        : !bridge.online ? "Ollama offline · click to inspect"
+        : (button.modelLoaded ? "Loaded · " : "Ready · ") + bridge.modelCapabilitySummary
     ToolTip.delay: 500
 
     background: Rectangle {
@@ -54,6 +63,12 @@ AbstractButton {
             id: row
             anchors.centerIn: parent
             spacing: Theme.s2
+            StatusDot {
+                width: 6; height: 6
+                tone: !bridge || !bridge.online ? Theme.danger
+                    : button.modelLoaded ? Theme.success : Theme.textMuted
+                anchors.verticalCenter: parent.verticalCenter
+            }
             Text {
                 text: !bridge ? "No model"
                     : button.compact ? bridge.modelShortName : bridge.model

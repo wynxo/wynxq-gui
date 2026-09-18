@@ -652,6 +652,7 @@ ApplicationWindow {
         case "sidebar": window.toggleSidebar(); break;
         case "dock": window.toggleDock(); break;
         case "files": window.openDock("files"); break;
+        case "focus-editor": if (window.dockState && window.dockState.filePath) editorFocus.open(); else window.openDock("files"); break;
         case "terminal-panel": window.openDock("terminal"); break;
         case "changes": window.openDock("changes"); break;
         case "context": window.openDock("context"); break;
