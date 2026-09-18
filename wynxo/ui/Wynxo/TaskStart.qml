@@ -40,12 +40,12 @@ Item {
 
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: root.showSculpture ? 170 : 0
+            Layout.preferredHeight: root.showSculpture ? 138 : 0
             visible: root.showSculpture
             ChromeMark {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: 190
-                height: 170
+                width: 158
+                height: 138
             }
         }
 
@@ -64,13 +64,14 @@ Item {
             }
 
             Text {
-                text: (bridge && bridge.productName ? bridge.productName.toUpperCase() : "WYNXO")
-                      + "  /  " + root.modeLabel
-                color: Theme.textMuted
+                text: bridge && bridge.online
+                    ? "LOCAL AI  ·  " + (bridge.modelShortName || "OLLAMA")
+                    : "OLLAMA OFFLINE"
+                color: bridge && bridge.online ? Theme.textMuted : Theme.danger
                 font.family: Theme.monoFamily
                 font.pixelSize: Theme.micro
                 font.weight: Font.DemiBold
-                font.letterSpacing: 1.2
+                font.letterSpacing: 1.0
             }
 
             Item { Layout.fillWidth: true }

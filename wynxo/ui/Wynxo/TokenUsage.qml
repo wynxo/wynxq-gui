@@ -16,6 +16,10 @@ Item {
     readonly property real liveRate: bridge ? Number(bridge.liveTokenRate || 0) : 0
     readonly property bool rateExact: bridge ? !!bridge.liveTokenRateExact : false
     readonly property int chatTokens: bridge ? Math.max(0, Number(bridge.conversationTokens || 0)) : 0
+    readonly property int contextUsed: bridge ? Math.max(0, Number(bridge.contextUsed || 0)) : 0
+    readonly property int contextTotal: bridge ? Math.max(0, Number(bridge.numCtx || 0)) : 0
+    readonly property real contextFraction: contextTotal > 0 ? Math.min(1, contextUsed / contextTotal) : 0
+    readonly property bool showRate: !!(bridge && bridge.busy && liveRate > 0)
     implicitWidth: stats.implicitWidth
     implicitHeight: 30
 
@@ -33,16 +37,16 @@ Item {
         spacing: Theme.s2
 
         Text {
-            text: root.liveRate > 0
-                ? (root.rateExact ? "" : "≈") + root.liveRate.toFixed(1) + (root.compact ? "/s" : " tok/s")
-                : (root.compact ? "—/s" : "— tok/s")
-            color: bridge && bridge.busy ? Theme.textSecondary : Theme.textMuted
+            visible: root.showRate
+            text: (root.rateExact ? "" : "≈") + root.liveRate.toFixed(1) + (root.compact ? "/s" : " tok/s")
+            color: Theme.textSecondary
             font.family: Theme.monoFamily
             font.pixelSize: Theme.caption
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Rectangle {
+            visible: root.showRate
             width: 1
             height: 12
             color: Theme.borderSubtle
@@ -50,20 +54,37 @@ Item {
         }
 
         Text {
-            text: root.formatCount(root.chatTokens) + (root.compact ? " tok" : " tokens")
+            text: root.formatCount(root.chatTokens) + (root.compact ? " chat" : " chat tokens")
             color: Theme.textSecondary
             font.family: Theme.monoFamily
             font.pixelSize: Theme.caption
             anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Rectangle {
+            visible: root.contextTotal > 0 && !root.compact
+            width: 34
+            height: 4
+            radius: 2
+            color: Theme.surfaceSunken
+            anchors.verticalCenter: parent.verticalCenter
+            Rectangle {
+                width: Math.max(parent.height, parent.width * root.contextFraction)
+                height: parent.height
+                radius: parent.radius
+                color: root.contextFraction > 0.88 ? Theme.warning : Theme.accent
+            }
         }
     }
 
     HoverHandler { id: usageHover }
     ToolTip.visible: usageHover.hovered
     ToolTip.delay: 550
-    ToolTip.text: root.liveRate > 0 && !root.rateExact
-        ? "Live generation speed is approximate until Ollama reports final metrics. Chat total is exact recorded input + output from completed runs."
-        : "Generation speed · exact recorded input + output tokens for this chat"
+    ToolTip.text: (root.showRate && !root.rateExact
+        ? "Live generation speed is approximate until Ollama reports final metrics. "
+        : "") + "Chat total: " + root.formatCount(root.chatTokens)
+        + (root.contextTotal > 0 ? " · context: " + root.formatCount(root.contextUsed)
+            + " / " + root.formatCount(root.contextTotal) : "")
 
     Accessible.role: Accessible.StaticText
     Accessible.name: (root.liveRate > 0

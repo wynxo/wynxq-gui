@@ -194,7 +194,7 @@ Item {
                     Row {
                         id: nodeRow
                         anchors.left: parent.left
-                        anchors.leftMargin: Theme.s2 + node.depth * 12
+                        anchors.leftMargin: Theme.s2 + node.depth * 10
                         anchors.right: parent.right
                         anchors.rightMargin: Theme.s2
                         anchors.verticalCenter: parent.verticalCenter

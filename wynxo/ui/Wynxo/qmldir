@@ -59,6 +59,7 @@ PlanPanel 1.0 PlanPanel.qml
 PlanTaskRow 1.0 PlanTaskRow.qml
 FileExplorer 1.0 FileExplorer.qml
 FileViewer 1.0 FileViewer.qml
+FocusEditor 1.0 FocusEditor.qml
 TerminalPanel 1.0 TerminalPanel.qml
 ChangesPanel 1.0 ChangesPanel.qml
 DiffViewer 1.0 DiffViewer.qml

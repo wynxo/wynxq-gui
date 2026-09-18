@@ -72,7 +72,7 @@ Item {
                     spacing: Theme.s1
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Wynxq GUI · " + (root.inWork ? "Work" : "Chat")
+                        text: "Wynxq GUI"
                         color: Theme.textPrimary
                         font.family: Theme.sansFamily
                         font.pixelSize: Theme.heading

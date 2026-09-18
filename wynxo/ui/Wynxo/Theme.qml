@@ -129,6 +129,8 @@ QtObject {
     readonly property int denseRow: compact ? 24 : 26
     readonly property int gutter: compact ? 16 : 22
     readonly property int readingWidth: 780
+    readonly property int wideReadingWidth: 940
+    readonly property int focusEditorWidth: 1160
     readonly property int headerHeight: compact ? 42 : 46
     readonly property int railWidth: 44
 

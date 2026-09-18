@@ -29,6 +29,7 @@ Item {
     property string pendingFilePath: ""
     readonly property alias resizing: resizer.dragging
     signal widthChangeRequested(int value)
+    signal focusEditorRequested()
 
     readonly property var dock: bridge ? bridge.workspaceDock : null
     readonly property string tab: dock ? dock.tab : "files"
@@ -222,7 +223,7 @@ Item {
 
                 Loader {
                     id: filesLoader
-                    SplitView.preferredHeight: Math.round(root.height * 0.42)
+                    SplitView.preferredHeight: Math.round(root.height * 0.34)
                     SplitView.minimumHeight: 120
                     active: !root.planSelected && root.tab === "files"
                     sourceComponent: FileExplorer {
@@ -236,6 +237,7 @@ Item {
                     active: !root.planSelected && root.tab === "files"
                     sourceComponent: FileViewer {
                         onClosed: root.closeFileRequested()
+                        onFocusRequested: root.focusEditorRequested()
                     }
                 }
             }

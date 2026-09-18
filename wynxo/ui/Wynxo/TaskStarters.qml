@@ -23,11 +23,24 @@ Item {
     // instead of dead buttons for capabilities that are deliberately absent.
     readonly property bool modeOpen: !!(bridge && !bridge.taskModeLocked)
     readonly property bool lockedChat: root.mode === "chat" && !root.modeOpen
+    readonly property var recentTask: {
+        var groups = bridge ? bridge.taskGroups : [];
+        for (var g = 0; g < groups.length; g++) {
+            var items = groups[g].items || [];
+            for (var i = 0; i < items.length; i++)
+                if (!bridge || items[i].id !== bridge.taskId) return items[i];
+        }
+        return null;
+    }
 
     implicitHeight: flow.implicitHeight
 
     readonly property var actions: {
         var list = [];
+
+        if (root.recentTask)
+            list.push({ label: "Continue " + String(root.recentTask.title || "recent task"),
+                        icon: "clock", command: "task:" + root.recentTask.id });
 
         if (root.lockedChat) {
             list.push({ label: "Explain a concept", icon: "chat",
@@ -41,8 +54,10 @@ Item {
 
         if (!root.hasProject)
             list.push({ label: "Open project", icon: "folder", command: "project", needs: "work" });
-        else
+        else {
+            list.push({ label: "Quick open", icon: "search", command: "palette", needs: "work" });
             list.push({ label: "Browse files", icon: "folderOpen", command: "files", needs: "work" });
+        }
 
         list.push({ label: "Terminal", icon: "terminal", command: "terminal-panel", needs: "work" });
 
@@ -55,9 +70,6 @@ Item {
 
         list.push({ label: "Run a command", icon: "bolt", needs: "work",
                     prompt: "Check my disk space and explain what you find." });
-
-        if (bridge && bridge.workspaceDock && bridge.workspaceDock.browserAvailable)
-            list.push({ label: "Browser", icon: "globe", command: "browser", needs: "work" });
 
         return list;
     }

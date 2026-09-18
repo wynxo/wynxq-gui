@@ -13,6 +13,7 @@ import QtQuick.Layouts
 Item {
     id: root
     signal submitted(string text)
+    signal commandInvoked(string action)
     signal openModelManager()
 
     property alias text: input.text
@@ -42,6 +43,44 @@ Item {
     readonly property bool tight: root.width < 560
     readonly property bool veryTight: root.width < 430
     readonly property bool canSend: input.text.trim().length > 0 && bridge && bridge.online && !bridge.connecting
+    property int slashIndex: 0
+    readonly property string slashQuery: input.text.length > 0 && input.text.charAt(0) === "/"
+        && input.text.indexOf("\n") < 0 && input.text.indexOf(" ") < 0
+        ? input.text.substring(1).toLowerCase() : ""
+    readonly property var slashCommands: [
+        { name: "model", action: "models", detail: "Choose or manage the local model", icon: "layers" },
+        { name: "settings", action: "settings", detail: "Open settings", icon: "sliders" },
+        { name: "project", action: "project", detail: "Choose a project folder", icon: "folder" },
+        { name: "files", action: "files", detail: "Open project files", icon: "folderOpen", workOnly: true },
+        { name: "terminal", action: "terminal-panel", detail: "Open the project shell", icon: "terminal", workOnly: true },
+        { name: "changes", action: "changes", detail: "Review uncommitted work", icon: "branch", workOnly: true },
+        { name: "screen", action: "screenshot", detail: "Attach a screenshot", icon: "camera" },
+        { name: "work", action: "mode-work", detail: "Switch this blank task to Work", icon: "code" },
+        { name: "chat", action: "mode-chat", detail: "Switch this blank task to Chat", icon: "chat" },
+        { name: "clear", action: "clear", detail: "Clear this task", icon: "trash" },
+        { name: "stop", action: "stop", detail: "Stop the current run", icon: "stop" },
+    ]
+    readonly property var slashMatches: {
+        if (!root.slashQuery && input.text !== "/") return [];
+        var out = [];
+        for (var i = 0; i < slashCommands.length; i++) {
+            var item = slashCommands[i];
+            if (item.workOnly && !root.workMode) continue;
+            if (!root.homeMode && (item.action === "mode-work" || item.action === "mode-chat")) continue;
+            if (!root.slashQuery || item.name.indexOf(root.slashQuery) === 0) out.push(item);
+        }
+        return out.slice(0, 5);
+    }
+
+    function runSlash(index) {
+        if (!slashMatches.length) return false;
+        var at = Math.max(0, Math.min(slashMatches.length - 1, index));
+        var action = slashMatches[at].action;
+        input.text = "";
+        slashIndex = 0;
+        root.commandInvoked(action);
+        return true;
+    }
 
     function send() {
         if (!canSend || (bridge && bridge.busy)) return;
@@ -200,7 +239,10 @@ Item {
                 TextArea {
                     id: input
                     objectName: "composer"
-                    onTextChanged: if (bridge) bridge.setDraft(text)
+                    onTextChanged: {
+                        root.slashIndex = 0;
+                        if (bridge) bridge.setDraft(text);
+                    }
                     placeholderText: root.workMode
                         ? (bridge && bridge.projectPath
                             ? "Describe what you want done in this project or on the desktop…"
@@ -226,18 +268,85 @@ Item {
                     Keys.onReturnPressed: function(event) {
                         if (input.inputMethodComposing) { event.accepted = false; return; }
                         if (event.modifiers & Qt.ShiftModifier) { event.accepted = false; return; }
+                        if (root.slashMatches.length) { root.runSlash(root.slashIndex); event.accepted = true; return; }
                         root.send(); event.accepted = true;
                     }
                     Keys.onEnterPressed: function(event) {
                         if (input.inputMethodComposing) { event.accepted = false; return; }
                         if (event.modifiers & Qt.ShiftModifier) { event.accepted = false; return; }
+                        if (root.slashMatches.length) { root.runSlash(root.slashIndex); event.accepted = true; return; }
                         root.send(); event.accepted = true;
                     }
                     Keys.onPressed: function(event) {
-                        if (event.key === Qt.Key_V && (event.modifiers & Qt.ControlModifier)
+                        if (root.slashMatches.length && event.key === Qt.Key_Down) {
+                            root.slashIndex = Math.min(root.slashMatches.length - 1, root.slashIndex + 1);
+                            event.accepted = true;
+                        } else if (root.slashMatches.length && event.key === Qt.Key_Up) {
+                            root.slashIndex = Math.max(0, root.slashIndex - 1);
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_V && (event.modifiers & Qt.ControlModifier)
                                 && (event.modifiers & Qt.ShiftModifier)) {
                             if (bridge) bridge.pasteImage();
                             event.accepted = true;
+                        }
+                    }
+                }
+            }
+
+            GlassSurface {
+                id: slashSurface
+                Layout.fillWidth: true
+                Layout.preferredHeight: visible ? slashColumn.implicitHeight + Theme.s2 : 0
+                visible: root.slashMatches.length > 0
+                radius: Theme.r2
+                tint: Theme.glassTintStrong
+                fillOpacity: 0.82
+                strongEdge: true
+                sheen: true
+
+                Column {
+                    id: slashColumn
+                    width: parent.width
+                    topPadding: Theme.s1
+                    bottomPadding: Theme.s1
+                    Repeater {
+                        model: root.slashMatches
+                        delegate: AbstractButton {
+                            id: slashRow
+                            required property var modelData
+                            required property int index
+                            width: slashColumn.width
+                            height: 34
+                            hoverEnabled: true
+                            onClicked: root.runSlash(index)
+                            background: Rectangle {
+                                radius: Theme.r1
+                                color: slashRow.index === root.slashIndex || slashRow.hovered
+                                    ? Theme.surfaceSelected : "transparent"
+                            }
+                            contentItem: RowLayout {
+                                spacing: Theme.s2
+                                Icon {
+                                    Layout.leftMargin: Theme.s3
+                                    Layout.preferredWidth: 13; Layout.preferredHeight: 13
+                                    name: slashRow.modelData.icon
+                                    ink: slashRow.index === root.slashIndex ? Theme.accent : Theme.textMuted
+                                }
+                                Text {
+                                    text: "/" + slashRow.modelData.name
+                                    color: Theme.textPrimary
+                                    font.family: Theme.monoFamily
+                                    font.pixelSize: Theme.caption
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: slashRow.modelData.detail
+                                    color: Theme.textMuted
+                                    font.family: Theme.sansFamily
+                                    font.pixelSize: Theme.micro
+                                    elide: Text.ElideRight
+                                }
+                            }
                         }
                     }
                 }
@@ -317,18 +426,6 @@ Item {
                     onClicked: if (bridge) bridge.chooseProject()
                     ToolTip.visible: hovered
                     ToolTip.text: bridge ? bridge.projectLabel + " — click to change" : ""
-                }
-
-                IconButton {
-                    visible: root.workMode && bridge && bridge.projectPath && !root.tight
-                    Layout.preferredWidth: 30; Layout.preferredHeight: 30
-                    iconSize: 14
-                    iconName: "terminal"
-                    tooltip: "Terminal"
-                    shortcut: "Ctrl+`"
-                    active: !!(bridge && bridge.workspaceDock && bridge.workspaceDock.visible
-                               && bridge.workspaceDock.tab === "terminal")
-                    onClicked: if (bridge && bridge.workspaceDock) bridge.workspaceDock.openTab("terminal")
                 }
 
                 Chip {

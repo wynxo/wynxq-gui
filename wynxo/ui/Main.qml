@@ -38,7 +38,7 @@ ApplicationWindow {
     // viewable after reopening a task even if that task currently says Chat.
     readonly property bool hasPresentablePlan: !!(bridge && bridge.planSteps && bridge.planSteps.length >= 2)
     readonly property bool workspaceAvailable: !!(bridge && (bridge.taskMode !== "chat" || hasPresentablePlan))
-    property int sidebarUserWidth: 248
+    property int sidebarUserWidth: 272
     readonly property int sidebarWidth: sidebarCollapsed ? 52
         : Math.max(200, Math.min(sidebarUserWidth, Math.round(width * 0.3)))
 
@@ -123,6 +123,7 @@ ApplicationWindow {
     }
     Shortcut { sequences: ["Ctrl+,"]; onActivated: settings.show(settings.generalPage) }
     Shortcut { sequences: ["Ctrl+K"]; onActivated: window.focusSearch() }
+    Shortcut { sequences: ["Ctrl+P"]; onActivated: palette.open() }
     Shortcut { sequences: ["Ctrl+M"]; onActivated: models.open() }
     Shortcut { sequences: ["Ctrl+B"]; onActivated: window.toggleSidebar() }
     Shortcut { sequences: ["Ctrl+Shift+P"]; onActivated: palette.open() }
@@ -347,6 +348,7 @@ ApplicationWindow {
                             - (warningLane.visible ? warningLane.height + Theme.s3 : 0)
                             - (errorLane.visible ? errorLane.height + Theme.s3 : 0)))
                         onSubmitted: function(text) { if (bridge) bridge.send(text); }
+                        onCommandInvoked: function(action) { window.runCommand(action); }
                         onOpenModelManager: models.open()
                     }
                 }
@@ -391,6 +393,7 @@ ApplicationWindow {
                 window.dockUserWidth = value;
                 window.dockResizing = false;
             }
+            onFocusEditorRequested: editorFocus.open()
             Behavior on Layout.preferredWidth {
                 enabled: !Theme.reducedMotion && !dock.resizing
                 NumberAnimation { duration: Theme.base; easing.type: Theme.easing }
@@ -449,6 +452,13 @@ ApplicationWindow {
     }
     ShortcutsSheet { id: shortcuts }
     CommandPalette { id: palette; onInvoked: function(action) { window.runCommand(action); } }
+    FocusEditor {
+        id: editorFocus
+        onAskRequested: {
+            close();
+            composer.focusInput();
+        }
+    }
     PermissionPrompt { id: permission }
     Onboarding { id: onboarding; onOpenModelManager: models.open() }
     Toast { id: toast }
@@ -616,6 +626,22 @@ ApplicationWindow {
 
     function runCommand(action) {
         if (!bridge) return;
+        if (action.indexOf("task:") === 0) {
+            bridge.openTask(action.substring(5));
+            return;
+        }
+        if (action.indexOf("file:") === 0) {
+            if (!window.dockState) return;
+            var path = action.substring(5);
+            if (window.dockState.openFile(path)) {
+                window.dockState.revealFile(path);
+                editorFocus.open();
+            }
+            return;
+        }
+        if (action === "mode-chat") { bridge.setTaskMode("chat"); return; }
+        if (action === "mode-work") { bridge.setTaskMode("work"); return; }
+        if (action === "palette") { palette.open(); return; }
         switch (action) {
         case "new": bridge.taskMode === "work" ? bridge.newTaskMode("work") : bridge.newTask(); break;
         case "newcode": case "newwork": bridge.newTaskMode("work"); break;

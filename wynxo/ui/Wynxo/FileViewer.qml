@@ -13,6 +13,8 @@ import QtQuick.Layouts
 Item {
     id: root
     signal closed()
+    signal focusRequested()
+    property bool allowFocus: true
 
     readonly property var dock: bridge ? bridge.workspaceDock : null
     readonly property var record: dock ? dock.file : ({})
@@ -267,6 +269,14 @@ Item {
                 tooltip: root.wrap ? "Stop wrapping long lines" : "Wrap long lines"
                 active: root.wrap
                 onClicked: root.wrap = !root.wrap
+            }
+            IconButton {
+                width: 28; height: 28; iconSize: 12
+                visible: root.hasFile && root.allowFocus
+                iconName: "maximize"
+                tooltip: "Focus editor"
+                shortcut: "Ctrl+Enter"
+                onClicked: root.focusRequested()
             }
             IconButton {
                 id: fileMore

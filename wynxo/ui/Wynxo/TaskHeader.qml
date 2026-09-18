@@ -47,11 +47,11 @@ Item {
     }
 
     function permissionLabel(mode) {
-        if (mode === "manual") return "Manual";
-        if (mode === "safe") return "Safe";
-        if (mode === "auto") return "Auto";
+        if (mode === "manual") return "Ask";
+        if (mode === "safe") return "Auto-approve";
+        if (mode === "auto") return "Autopilot";
         if (mode === "full") return "Full";
-        return "Safe";
+        return "Auto-approve";
     }
 
     function permissionDetail(mode) {
@@ -99,6 +99,7 @@ Item {
             spacing: Theme.s2
 
             Text {
+                visible: root.sidebarCollapsed
                 text: "Wynxq GUI"
                 color: Theme.textSecondary
                 font.family: Theme.sansFamily
@@ -107,7 +108,7 @@ Item {
             }
 
             Text {
-                visible: bridge && bridge.projectName
+                visible: root.sidebarCollapsed && bridge && bridge.projectName
                 text: "/"
                 color: Theme.textDisabled
                 font.family: Theme.sansFamily
@@ -375,7 +376,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {
-                        text: bridge ? root.permissionLabel(bridge.permissionMode) : "Safe"
+                        text: bridge ? root.permissionLabel(bridge.permissionMode) : "Auto-approve"
                         color: Theme.textSecondary
                         font.family: Theme.monoFamily
                         font.pixelSize: Theme.micro
@@ -402,10 +403,10 @@ Item {
                 anchorX: -menuWidth + autonomyButton.width
                 menuWidth: 310
                 items: [
-                    { id: "manual", label: bridge && bridge.permissionMode === "manual" ? "Manual  • current" : "Manual", icon: "cursor" },
-                    { id: "safe", label: bridge && bridge.permissionMode === "safe" ? "Safe  • current" : "Safe", icon: "shield" },
-                    { id: "auto", label: bridge && bridge.permissionMode === "auto" ? "Auto  • current" : "Auto", icon: "bolt" },
-                    { id: "full", label: bridge && bridge.permissionMode === "full" ? "Full  • current" : "Full", icon: "warning" },
+                    { id: "manual", label: bridge && bridge.permissionMode === "manual" ? "Ask every time  • current" : "Ask every time", icon: "cursor" },
+                    { id: "safe", label: bridge && bridge.permissionMode === "safe" ? "Auto-approve  • current" : "Auto-approve", icon: "shield" },
+                    { id: "auto", label: bridge && bridge.permissionMode === "auto" ? "Autopilot  • current" : "Autopilot", icon: "bolt" },
+                    { id: "full", label: bridge && bridge.permissionMode === "full" ? "Full access  • current" : "Full access", icon: "warning" },
                     { separator: true },
                     { id: "settings", label: "Agent settings…", icon: "sliders" },
                 ]
@@ -445,8 +446,10 @@ Item {
                 }
                 Text {
                     text: !bridge ? ""
-                        : bridge.permissionPending ? "Waiting"
-                        : root.resolvedMode === "work" ? "Working" : "Generating"
+                        : bridge.permissionPending ? "Waiting for approval"
+                        : (bridge.status && bridge.status !== "Ready when you are"
+                            ? bridge.status
+                            : root.resolvedMode === "work" ? "Working" : "Generating")
                     color: Theme.textSecondary
                     font.family: Theme.sansFamily
                     font.pixelSize: Theme.caption
