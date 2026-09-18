@@ -1500,6 +1500,15 @@ class Controller(QObject):
         self.messages.replace(history)
         self._start_run(history)
 
+    @Slot(str)
+    def regenerateWithPreset(self, name):
+        """Retry a tool-free answer after applying one named runtime preset."""
+        name = str(name or "")
+        if not self.canRegenerate or name not in self.RUNTIME_PRESETS:
+            return
+        self.applyRuntimePreset(name)
+        self.regenerate()
+
     # --------------------------------------------------------- attachments
     def _add_attachment(self, attachment: dict):
         if len(self._attachments) >= 12:

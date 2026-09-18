@@ -34,9 +34,8 @@ Item {
         responseMenu.close();
     }
     function retryWithPreset(name) {
-        if (!bridge || !bridge.canRegenerate) return;
-        bridge.applyRuntimePreset(name);
-        bridge.regenerate();
+        if (bridge && bridge.canRegenerate)
+            bridge.regenerateWithPreset(name);
     }
     Accessible.role: Accessible.StaticText
     Accessible.name: (root.streaming ? "Agent is replying: " : "Agent said: ") + root.body
