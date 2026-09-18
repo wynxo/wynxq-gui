@@ -64,10 +64,34 @@ Item {
                 readonly property bool isTurn: modelData.kind === "turn"
                 readonly property color tone: Theme.stateColor(modelData.state)
                 readonly property bool hasDetail: !!modelData.output || !!modelData.detail
+                activeFocusOnTab: event.hasDetail && !event.isTurn
 
-                Accessible.role: Accessible.ListItem
+                Accessible.role: event.hasDetail && !event.isTurn ? Accessible.Button : Accessible.ListItem
                 Accessible.name: (modelData.summary || modelData.label) + ", "
                                  + Theme.stateLabel(modelData.state)
+                Accessible.description: event.hasDetail && !event.isTurn
+                    ? (event.expanded ? "Details expanded" : "Press Enter to expand details") : ""
+
+                Keys.onReturnPressed: function(keyEvent) {
+                    if (!event.hasDetail || event.isTurn) return;
+                    event.expanded = !event.expanded;
+                    keyEvent.accepted = true;
+                }
+                Keys.onSpacePressed: function(keyEvent) {
+                    if (!event.hasDetail || event.isTurn) return;
+                    event.expanded = !event.expanded;
+                    keyEvent.accepted = true;
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    z: 2
+                    visible: event.activeFocus
+                    radius: Theme.r1
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Theme.accentEdge
+                }
 
                 // ------------------------------------------------ turn header
                 Rectangle {

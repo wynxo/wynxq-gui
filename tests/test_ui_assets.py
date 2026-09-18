@@ -251,3 +251,53 @@ def test_the_composer_keeps_drag_and_drop_and_keyboard_send():
     for feature in ("DropArea", "attachPath", "Keys.onReturnPressed",
                     "Keys.onEnterPressed", "ShiftModifier", "pasteImage"):
         assert feature in text
+
+
+def test_permanent_navigation_surfaces_stay_opaque():
+    """Permanent shell chrome should be stable; material effects belong to transient UI."""
+    sidebar = (MODULE / "WorkspaceSidebar.qml").read_text(encoding="utf-8")
+    dock = (MODULE / "WorkspaceDock.qml").read_text(encoding="utf-8")
+    assert "Permanent navigation is deliberately opaque" in sidebar
+    assert "color: Theme.backgroundSoft" in sidebar
+    assert "fillOpacity: 0.82" not in sidebar
+    assert "permanent productivity surface" in dock
+    assert "color: Theme.background" in dock
+
+
+def test_hover_actions_remain_keyboard_reachable_without_layout_jitter():
+    context = (MODULE / "ContextPanel.qml").read_text(encoding="utf-8")
+    assert "id: removeButton" in context
+    assert "visible: !!entry.modelData.removable" in context
+    assert "opacity: hover.hovered || visualFocus ? 1 : 0" in context
+    assert "removeButton.visualFocus" in context
+
+    changes = (MODULE / "ChangesPanel.qml").read_text(encoding="utf-8")
+    assert "opacity: change.hovered || more.visualFocus || changeMenu.opened ? 1 : 0" in changes
+    assert "opacity: change.hovered || more.visualFocus || changeMenu.opened ? 0 : 1" in changes
+
+    user = (MODULE / "UserMessage.qml").read_text(encoding="utf-8")
+    assert "editAction.visualFocus" in user
+    assert "copyAction.visualFocus" in user
+
+
+def test_transient_quick_bar_uses_shared_material_and_scrollbar():
+    text = (MODULE / "QuickBarContent.qml").read_text(encoding="utf-8")
+    assert "GlassSurface {\n        id: shell" in text
+    assert "font.pixelSize: Theme.title" in text
+    assert "ScrollBar.vertical: WScrollBar {}" in text
+    assert "sendButton.visualFocus" in text
+
+
+def test_composer_image_actions_have_real_hit_targets_and_icons():
+    text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
+    assert text.count("width: Theme.controlSmall; height: Theme.controlSmall") >= 2
+    assert 'name: "close"' in text
+    assert 'text: "×"' not in text
+
+
+def test_activity_details_are_keyboard_expandable():
+    text = (MODULE / "ActivityPanel.qml").read_text(encoding="utf-8")
+    assert "activeFocusOnTab: event.hasDetail && !event.isTurn" in text
+    assert "Keys.onReturnPressed" in text
+    assert "Keys.onSpacePressed" in text
+    assert "visible: event.activeFocus" in text

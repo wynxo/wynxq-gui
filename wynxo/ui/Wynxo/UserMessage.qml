@@ -3,8 +3,8 @@ import QtQuick.Controls
 
 /*!
     A user turn is the task brief: quiet, full-width and easy to edit. Actions
-    stay reachable without hover so keyboard and accessibility users never have
-    to discover invisible controls.
+    stay out of the reading path at rest, but remain in the keyboard focus chain
+    so focus reveals the same controls as pointer hover.
 */
 Item {
     id: root
@@ -110,17 +110,20 @@ Item {
             anchors.top: parent.top
             anchors.topMargin: Theme.s2
             spacing: 0
-            opacity: root.editing ? 0 : (hover.hovered ? 1 : 0.62)
+            opacity: root.editing ? 0
+                : (hover.hovered || editAction.visualFocus || copyAction.visualFocus ? 1 : 0)
             visible: !root.editing
             Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
 
             IconButton {
+                id: editAction
                 width: 27; height: 27; iconSize: 12
                 iconName: "edit"
                 tooltip: "Edit and run again"
                 onClicked: root.startEditing()
             }
             IconButton {
+                id: copyAction
                 width: 27; height: 27; iconSize: 12
                 iconName: "copy"
                 tooltip: "Copy"

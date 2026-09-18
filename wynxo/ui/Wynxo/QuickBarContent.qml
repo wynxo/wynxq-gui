@@ -25,14 +25,22 @@ Item {
 
     implicitHeight: shell.height
 
-    Rectangle {
+    // The quick bar is transient chrome, so it gets the richer material that
+    // permanent work surfaces intentionally avoid.
+    GlassSurface {
         id: shell
         width: parent.width
         height: column.implicitHeight + Theme.s3 * 2
         radius: Theme.r3
-        color: Theme.surface
-        border.width: 1
-        border.color: Theme.borderStrong
+        solid: false
+        autoGlass: false
+        glassEnabled: true
+        tint: Theme.glassTintStrong
+        fillOpacity: Theme.glassStrongOpacity
+        elevated: true
+        strongEdge: true
+        sheen: true
+        edgeColor: Theme.glassEdgeStrong
 
         ColumnLayout {
             id: column
@@ -57,7 +65,7 @@ Item {
                     selectionColor: Theme.accent
                     selectedTextColor: Theme.onAccent
                     font.family: Theme.sansFamily
-                    font.pixelSize: 18
+                    font.pixelSize: Theme.title
                     background: Item {}
                     Accessible.name: root.workMode
                         ? "Instruction for the current Work task"
@@ -70,6 +78,7 @@ Item {
                 }
 
                 IconButton {
+                    id: sendButton
                     iconName: root.answering ? "stop" : "arrow"
                     tooltip: root.answering ? "Stop" : "Send to current task"
                     width: 32; height: 32; iconSize: 15
@@ -77,10 +86,23 @@ Item {
                     activeTint: tint
                     enabled: root.answering || input.text.trim().length > 0
                     onClicked: root.answering ? (bridge && bridge.stop()) : root.send()
-                    background: Rectangle {
+                    background: GlassSurface {
                         radius: Theme.r2
-                        color: root.answering ? Theme.surfaceHover
-                             : parent.enabled ? Theme.accent : Theme.surfaceRaised
+                        solid: true
+                        autoGlass: false
+                        glassEnabled: sendButton.enabled
+                            && (sendButton.hovered || sendButton.down || sendButton.visualFocus || root.answering)
+                        tint: root.answering ? Theme.glassTintStrong
+                             : sendButton.enabled
+                               ? (sendButton.hovered ? Theme.accentHover : Theme.accent)
+                               : Theme.surfaceRaised
+                        fillOpacity: root.answering ? 0.82
+                                   : sendButton.enabled ? 0.94 : 1.0
+                        strongEdge: sendButton.enabled && (sendButton.hovered || sendButton.visualFocus)
+                        active: sendButton.visualFocus
+                        sheen: sendButton.enabled && (sendButton.hovered || sendButton.visualFocus)
+                        edgeColor: sendButton.visualFocus ? Theme.accentEdge
+                                 : sendButton.enabled ? Theme.glassEdgeStrong : Theme.borderSubtle
                     }
                 }
             }
@@ -98,8 +120,11 @@ Item {
                 Flickable {
                     anchors.fill: parent
                     anchors.margins: Theme.s3
+                    contentWidth: width
                     contentHeight: answerText.implicitHeight
                     clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar.vertical: WScrollBar {}
                     TextEdit {
                         id: answerText
                         width: parent.width

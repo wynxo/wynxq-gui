@@ -123,7 +123,7 @@ Item {
 
                 background: Rectangle {
                     color: change.current ? Theme.surfaceSelected
-                         : change.hovered || changeMenu.opened ? Theme.surfaceHover : "transparent"
+                         : change.hovered || more.visualFocus || changeMenu.opened ? Theme.surfaceHover : "transparent"
                     Rectangle {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
@@ -176,8 +176,7 @@ Item {
                     Row {
                         Layout.rightMargin: Theme.s2
                         spacing: Theme.s1
-                        opacity: change.hovered ? 0 : 1
-                        visible: opacity > 0
+                        opacity: change.hovered || more.visualFocus || changeMenu.opened ? 0 : 1
                         Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
                         Text {
                             visible: change.modelData.added > 0
@@ -202,8 +201,7 @@ Item {
                     width: 26; height: 26; iconSize: 12
                     iconName: "moreVertical"
                     tooltip: "File actions"
-                    opacity: change.hovered || changeMenu.opened ? 1 : 0
-                    visible: opacity > 0
+                    opacity: change.hovered || more.visualFocus || changeMenu.opened ? 1 : 0
                     Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
                     onClicked: changeMenu.opened ? changeMenu.close() : changeMenu.open()
 

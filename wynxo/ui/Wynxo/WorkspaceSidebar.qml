@@ -23,14 +23,14 @@ Item {
     readonly property bool inWork: bridge && bridge.taskMode === "work"
     function focusSearch() { search.forceActiveFocus(); search.selectAll(); }
 
-    GlassSurface {
+    // Permanent navigation is deliberately opaque. Glass is reserved for the
+    // controls and menus that float above it, so resizing and long sessions
+    // stay visually stable.
+    Rectangle {
         anchors.fill: parent
-        tint: Theme.backgroundSoft
-        fillOpacity: 0.82
-        outlineVisible: false
-        sheen: true
+        color: Theme.backgroundSoft
     }
-    Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.glassEdge }
+    Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.borderSubtle }
 
     // ------------------------------------------------------------ expanded
     ColumnLayout {

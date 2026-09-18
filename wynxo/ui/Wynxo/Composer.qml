@@ -186,18 +186,25 @@ Item {
                                 id: includeImage
                                 visible: attachment.isImage
                                 z: 4
-                                width: 20; height: 20
+                                width: Theme.controlSmall; height: Theme.controlSmall
                                 anchors.left: parent.left
                                 anchors.bottom: parent.bottom
-                                anchors.margins: 4
+                                anchors.margins: Theme.s1
                                 hoverEnabled: true
+                                focusPolicy: Qt.StrongFocus
                                 Accessible.name: attachment.included ? "Hold image for a later message" : "Include image in next message"
                                 onClicked: if (bridge) bridge.setAttachmentEnabled(modelData.id, !attachment.included)
-                                background: GlassSurface {
-                                    radius: Theme.rPill
-                                    tint: attachment.included ? Theme.accent : Theme.glassTintStrong
-                                    fillOpacity: attachment.included ? 0.84 : 0.76
-                                    strongEdge: true
+                                background: Item {
+                                    GlassSurface {
+                                        anchors.centerIn: parent
+                                        width: Theme.s5; height: Theme.s5
+                                        radius: Theme.rPill
+                                        tint: attachment.included ? Theme.accent : Theme.glassTintStrong
+                                        fillOpacity: attachment.included ? 0.84 : 0.76
+                                        strongEdge: true
+                                        active: includeImage.visualFocus
+                                        edgeColor: includeImage.visualFocus ? Theme.accentEdge : Theme.glassEdgeStrong
+                                    }
                                 }
                                 contentItem: Icon {
                                     anchors.centerIn: parent
@@ -213,26 +220,31 @@ Item {
                                 id: removeImage
                                 visible: attachment.isImage
                                 z: 4
-                                width: 18; height: 18
+                                width: Theme.controlSmall; height: Theme.controlSmall
                                 anchors.top: parent.top
                                 anchors.right: parent.right
-                                anchors.margins: 4
+                                anchors.margins: Theme.s1
                                 hoverEnabled: true
+                                focusPolicy: Qt.StrongFocus
                                 Accessible.name: "Remove " + modelData.title
                                 onClicked: if (bridge) bridge.removeAttachment(modelData.id)
-                                background: GlassSurface {
-                                    radius: Theme.rPill
-                                    tint: removeImage.hovered ? Theme.textPrimary : Theme.glassTintStrong
-                                    fillOpacity: removeImage.hovered ? 0.94 : 0.82
-                                    strongEdge: true
+                                background: Item {
+                                    GlassSurface {
+                                        anchors.centerIn: parent
+                                        width: Theme.s5; height: Theme.s5
+                                        radius: Theme.rPill
+                                        tint: removeImage.hovered ? Theme.textPrimary : Theme.glassTintStrong
+                                        fillOpacity: removeImage.hovered ? 0.94 : 0.82
+                                        strongEdge: true
+                                        active: removeImage.visualFocus
+                                        edgeColor: removeImage.visualFocus ? Theme.accentEdge : Theme.glassEdgeStrong
+                                    }
                                 }
-                                contentItem: Text {
-                                    text: "×"
-                                    color: removeImage.hovered ? Theme.textInverse : Theme.textPrimary
-                                    font.family: Theme.sansFamily
-                                    font.pixelSize: 13
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
+                                contentItem: Icon {
+                                    anchors.centerIn: parent
+                                    width: 10; height: 10
+                                    name: "close"
+                                    ink: removeImage.hovered ? Theme.textInverse : Theme.textPrimary
                                 }
                                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.PointingHandCursor }
                             }

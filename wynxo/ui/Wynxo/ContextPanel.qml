@@ -29,7 +29,7 @@ Item {
             IconButton {
                 width: 28; height: 28; iconSize: 12
                 iconName: "paperclip"
-                tooltip: "Add files, folders or a capture"
+                tooltip: "Attach a file"
                 onClicked: if (bridge) bridge.attachFile()
             }
         }
@@ -102,6 +102,7 @@ Item {
             topMargin: Theme.s2
             bottomMargin: Theme.s4
             boundsBehavior: Flickable.StopAtBounds
+            reuseItems: true
             ScrollBar.vertical: WScrollBar {
                 policy: ScrollBar.AsNeeded
             }
@@ -177,17 +178,21 @@ Item {
                             }
                             Text {
                                 readonly property int tokens: entry.modelData.tokens || 0
-                                visible: tokens > 0 && !hover.hovered
+                                visible: tokens > 0 && !(hover.hovered || removeButton.visualFocus)
                                 text: tokens > 999 ? (tokens / 1000).toFixed(1) + "k" : String(tokens)
                                 color: Theme.textDisabled
                                 font.family: Theme.monoFamily; font.pixelSize: Theme.micro
                             }
                             IconButton {
-                                Layout.preferredWidth: 24; Layout.preferredHeight: 24
+                                id: removeButton
+                                Layout.preferredWidth: Theme.controlSmall
+                                Layout.preferredHeight: Theme.controlSmall
                                 iconSize: 11
-                                visible: !!entry.modelData.removable && hover.hovered
+                                visible: !!entry.modelData.removable
+                                opacity: hover.hovered || visualFocus ? 1 : 0
                                 iconName: "close"
                                 tooltip: "Remove from context"
+                                Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
                                 onClicked: if (root.dock) root.dock.removeContext(entry.modelData.id)
                             }
                         }

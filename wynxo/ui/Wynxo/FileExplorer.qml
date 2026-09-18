@@ -282,6 +282,8 @@ Item {
             model: root.dock ? root.dock.fileMatches : []
             boundsBehavior: Flickable.StopAtBounds
             currentIndex: count > 0 ? 0 : -1
+            reuseItems: true
+            cacheBuffer: 400
             topMargin: Theme.s1
             bottomMargin: Theme.s3
             ScrollBar.vertical: WScrollBar {
