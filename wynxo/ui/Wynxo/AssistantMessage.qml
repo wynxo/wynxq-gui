@@ -20,6 +20,10 @@ Item {
     property bool thinkDone: false
     property bool latest: false
     property int row: -1
+    readonly property var dock: bridge ? bridge.workspaceDock : null
+    readonly property bool showGitSummary: latest && !streaming && bridge
+        && bridge.taskMode === "work" && dock && dock.isRepository
+        && dock.changes && dock.changes.length > 0
     signal linkClicked(string link)
     signal branched()
 
@@ -150,6 +154,52 @@ Item {
                 if (root.tailKind === "code") {
                     item.blockLanguage = Qt.binding(function() { return root.tailLanguage; });
                     item.blockLabel = Qt.binding(function() { return root.tailLabel; });
+                }
+            }
+        }
+
+        AbstractButton {
+            id: gitSummary
+            width: Math.min(gitRow.implicitWidth + Theme.s3 * 2, parent.width)
+            height: root.showGitSummary ? 28 : 0
+            visible: root.showGitSummary
+            hoverEnabled: true
+            Accessible.name: "Open changed files: " + (root.dock ? root.dock.changesSummary : "")
+            onClicked: if (root.dock) root.dock.openTab("changes")
+            background: GlassSurface {
+                radius: Theme.r2
+                solid: false
+                glassEnabled: gitSummary.hovered || gitSummary.visualFocus
+                tint: Theme.glassTintHover
+                fillOpacity: gitSummary.hovered ? 0.46 : 0.0
+                outlineVisible: true
+                edgeColor: gitSummary.visualFocus ? Theme.accentEdge : Theme.borderSubtle
+                active: gitSummary.visualFocus
+                sheen: gitSummary.hovered
+            }
+            contentItem: Row {
+                id: gitRow
+                spacing: Theme.s2
+                leftPadding: Theme.s2
+                Icon {
+                    name: "branch"
+                    ink: Theme.accent
+                    width: 12; height: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: root.dock ? root.dock.changesSummary : ""
+                    color: Theme.textSecondary
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.micro
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: root.dock && root.dock.branch ? "· " + root.dock.branch : ""
+                    color: Theme.textMuted
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.micro
+                    anchors.verticalCenter: parent.verticalCenter
                 }
             }
         }

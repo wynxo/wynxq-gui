@@ -41,6 +41,7 @@ Sheet {
         { id: "browser", group: "Workspace", label: "Browser", detail: "Read a page beside the task", icon: "globe", shortcut: "Ctrl+Shift+W", workOnly: true },
         { id: "preview", group: "Workspace", label: "Preview", detail: "Images and captures, full size", icon: "image", shortcut: "Ctrl+Shift+U", workOnly: true },
         { id: "dock", group: "Workspace", label: "Show or hide the workspace dock", icon: "panel", shortcut: "Ctrl+Shift+B", workOnly: true },
+        { id: "reset-dock-tools", group: "Workspace", label: "Reset workspace tool layout", detail: "Restore tool order and hidden tools", icon: "retry", workOnly: true },
 
         { id: "project", group: "Project", label: "Open a project folder…", icon: "folder" },
         { id: "reveal", group: "Project", label: "Reveal project in file manager", icon: "launch" },

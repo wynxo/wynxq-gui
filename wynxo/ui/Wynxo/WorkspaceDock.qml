@@ -25,6 +25,7 @@ Item {
     property int panelWidth: 380
     property bool planSelected: false
     property bool userSelectedWorkspaceTab: false
+    property bool filesTerminalPinned: false
     property string observedTaskId: bridge ? bridge.taskId : ""
     property string pendingFilePath: ""
     readonly property alias resizing: resizer.dragging
@@ -236,8 +237,21 @@ Item {
                     SplitView.minimumHeight: 120
                     active: !root.planSelected && root.tab === "files"
                     sourceComponent: FileViewer {
+                        terminalSplitActive: root.filesTerminalPinned
                         onClosed: root.closeFileRequested()
                         onFocusRequested: root.focusEditorRequested()
+                        onTerminalSplitRequested: root.filesTerminalPinned = !root.filesTerminalPinned
+                    }
+                }
+
+                Loader {
+                    id: filesTerminalLoader
+                    visible: root.filesTerminalPinned
+                    active: visible
+                    SplitView.preferredHeight: root.filesTerminalPinned ? Math.round(root.height * 0.28) : 0
+                    SplitView.minimumHeight: root.filesTerminalPinned ? 110 : 0
+                    sourceComponent: TerminalPanel {
+                        onRevealDirectory: function(path) { root.revealDirectoryInFiles(path); }
                     }
                 }
             }

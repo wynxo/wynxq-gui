@@ -651,6 +651,7 @@ ApplicationWindow {
         case "shortcuts": shortcuts.open(); break;
         case "sidebar": window.toggleSidebar(); break;
         case "dock": window.toggleDock(); break;
+        case "reset-dock-tools": if (window.dockState) window.dockState.resetTabLayout(); break;
         case "files": window.openDock("files"); break;
         case "focus-editor": if (window.dockState && window.dockState.filePath) editorFocus.open(); else window.openDock("files"); break;
         case "terminal-panel": window.openDock("terminal"); break;

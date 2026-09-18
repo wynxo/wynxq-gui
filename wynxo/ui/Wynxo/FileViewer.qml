@@ -14,7 +14,9 @@ Item {
     id: root
     signal closed()
     signal focusRequested()
+    signal terminalSplitRequested()
     property bool allowFocus: true
+    property bool terminalSplitActive: false
 
     readonly property var dock: bridge ? bridge.workspaceDock : null
     readonly property var record: dock ? dock.file : ({})
@@ -269,6 +271,14 @@ Item {
                 tooltip: root.wrap ? "Stop wrapping long lines" : "Wrap long lines"
                 active: root.wrap
                 onClicked: root.wrap = !root.wrap
+            }
+            IconButton {
+                width: 28; height: 28; iconSize: 12
+                visible: root.hasFile && root.allowFocus
+                iconName: "terminal"
+                tooltip: root.terminalSplitActive ? "Close terminal split" : "Pin terminal below editor"
+                active: root.terminalSplitActive
+                onClicked: root.terminalSplitRequested()
             }
             IconButton {
                 width: 28; height: 28; iconSize: 12

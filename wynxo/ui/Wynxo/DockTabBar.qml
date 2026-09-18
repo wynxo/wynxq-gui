@@ -117,6 +117,7 @@ Item {
             delegate: AbstractButton {
                 id: tab
                 required property var modelData
+                required property int index
                 Layout.alignment: Qt.AlignHCenter
                 implicitWidth: 34
                 implicitHeight: 34
@@ -180,6 +181,31 @@ Item {
                     color: Theme.accent
                 }
 
+                WMenu {
+                    id: tabMenu
+                    anchorX: -menuWidth
+                    menuWidth: 210
+                    items: [
+                        { id: "up", label: "Move up", icon: "up", disabled: tab.index === 0 },
+                        { id: "down", label: "Move down", icon: "down",
+                          disabled: tab.index === root.entries.length - 1 },
+                        { separator: true },
+                        { id: "hide", label: "Hide from rail", icon: "close" },
+                    ]
+                    onPicked: function(id) {
+                        if (!bridge || !bridge.workspaceDock) return;
+                        if (id === "up") bridge.workspaceDock.moveTab(tab.modelData.id, -1);
+                        else if (id === "down") bridge.workspaceDock.moveTab(tab.modelData.id, 1);
+                        else if (id === "hide") bridge.workspaceDock.setTabHidden(tab.modelData.id, true);
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: tabMenu.open()
+                }
                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.PointingHandCursor }
             }
         }

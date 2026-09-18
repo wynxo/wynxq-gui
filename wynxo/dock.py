@@ -393,6 +393,17 @@ class DockController(QObject):
         self._width = max(MIN_WIDTH, min(int(setting("dock_width", DEFAULT_WIDTH) or DEFAULT_WIDTH), MAX_WIDTH))
         tab = str(setting("dock_tab", "files") or "files")
         self._tab = tab if tab in TABS else "files"
+        stored_order = setting("dock_tab_order", []) or []
+        self._tab_order = []
+        for name in stored_order:
+            name = str(name)
+            if name in TABS and name not in self._tab_order:
+                self._tab_order.append(name)
+        self._tab_order.extend(name for name in TABS if name not in self._tab_order)
+        self._hidden_tabs = {str(name) for name in (setting("dock_hidden_tabs", []) or [])
+                             if str(name) in TABS}
+        if len(self._hidden_tabs) >= len(TABS):
+            self._hidden_tabs.clear()
         # Set the moment the user clicks a tab. While it is set, nothing in the
         # app is allowed to change the visible panel underneath them.
         self._tab_pinned = bool(setting("dock_tab_pinned", False))
@@ -462,9 +473,54 @@ class DockController(QObject):
     def tab(self):
         return self._tab
 
-    @Property("QVariantList", constant=True)
+    @Property("QVariantList", notify=changed)
     def tabs(self):
-        return [{"id": name, **TAB_META[name]} for name in TABS]
+        return [{"id": name, **TAB_META[name]}
+                for name in self._tab_order if name not in self._hidden_tabs]
+
+    @Slot(str, int)
+    def moveTab(self, name, direction):
+        name = str(name or "")
+        if name not in self._tab_order:
+            return
+        old = self._tab_order.index(name)
+        new = max(0, min(len(self._tab_order) - 1, old + int(direction or 0)))
+        if new == old:
+            return
+        self._tab_order.pop(old)
+        self._tab_order.insert(new, name)
+        self._remember("dock_tab_order", list(self._tab_order))
+        self.changed.emit()
+
+    @Slot(str, bool)
+    def setTabHidden(self, name, hidden):
+        name = str(name or "")
+        if name not in TABS:
+            return
+        hidden = bool(hidden)
+        if hidden and name not in self._hidden_tabs:
+            if len(TABS) - len(self._hidden_tabs) <= 1:
+                self.toast.emit("Keep at least one workspace tool on the rail.")
+                return
+            self._hidden_tabs.add(name)
+        elif not hidden and name in self._hidden_tabs:
+            self._hidden_tabs.remove(name)
+        else:
+            return
+        self._remember("dock_hidden_tabs", sorted(self._hidden_tabs))
+        if self._tab in self._hidden_tabs:
+            visible = [item for item in self._tab_order if item not in self._hidden_tabs]
+            if visible:
+                self._select_tab(visible[0])
+        self.changed.emit()
+
+    @Slot()
+    def resetTabLayout(self):
+        self._tab_order = list(TABS)
+        self._hidden_tabs.clear()
+        self._remember("dock_tab_order", list(self._tab_order))
+        self._remember("dock_hidden_tabs", [])
+        self.changed.emit()
 
     @Property(int, constant=True)
     def minimumWidth(self):
@@ -520,6 +576,10 @@ class DockController(QObject):
         name = str(name or "")
         if name not in TABS:
             return
+        if name in self._hidden_tabs:
+            self._hidden_tabs.remove(name)
+            self._remember("dock_hidden_tabs", sorted(self._hidden_tabs))
+            self.changed.emit()
         if self._visible and self._tab == name:
             self.setVisible(False)
             return

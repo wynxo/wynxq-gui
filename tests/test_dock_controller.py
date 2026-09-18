@@ -99,6 +99,41 @@ def test_every_tab_names_a_label_an_icon_and_a_shortcut(dock):
         assert entry["label"] and entry["icon"] and entry["shortcut"]
 
 
+def test_workspace_tools_can_be_reordered_hidden_and_restored(dock):
+    original = [entry["id"] for entry in dock.tabs]
+    dock.moveTab("terminal", -1)
+    moved = [entry["id"] for entry in dock.tabs]
+    assert moved.index("terminal") == max(0, original.index("terminal") - 1)
+
+    dock.setTabHidden("browser", True)
+    assert "browser" not in {entry["id"] for entry in dock.tabs}
+
+    dock.openTab("browser")
+    assert "browser" in {entry["id"] for entry in dock.tabs}
+
+    dock.resetTabLayout()
+    assert [entry["id"] for entry in dock.tabs] == list(TABS)
+
+
+def test_workspace_tool_layout_persists(application, tmp_path):
+    path = tmp_path / "dock-layout.sqlite3"
+    store = Store(path)
+    first = DockController(store=store)
+    first.moveTab("preview", -1)
+    first.setTabHidden("memory", True)
+    expected = [entry["id"] for entry in first.tabs]
+    first.shutdown()
+    store.close()
+
+    store = Store(path)
+    second = DockController(store=store)
+    try:
+        assert [entry["id"] for entry in second.tabs] == expected
+    finally:
+        second.shutdown()
+        store.close()
+
+
 def test_the_width_is_clamped_to_something_usable(dock):
     dock.setWidth(10)
     assert dock.width == dock.minimumWidth
