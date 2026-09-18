@@ -292,6 +292,7 @@ def test_composer_image_actions_have_real_hit_targets_and_icons():
     text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
     assert text.count("width: Theme.controlSmall; height: Theme.controlSmall") >= 2
     assert 'name: "close"' in text
+    assert "imagePreviewHit.containsMouse || hovered || visualFocus" in text
     assert 'text: "×"' not in text
 
 

@@ -175,6 +175,7 @@ Item {
                                     smooth: true
                                 }
                                 MouseArea {
+                                    id: imagePreviewHit
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
@@ -226,6 +227,7 @@ Item {
                                 anchors.margins: Theme.s1
                                 hoverEnabled: true
                                 focusPolicy: Qt.StrongFocus
+                                opacity: imagePreviewHit.containsMouse || hovered || visualFocus ? 1 : 0
                                 Accessible.name: "Remove " + modelData.title
                                 onClicked: if (bridge) bridge.removeAttachment(modelData.id)
                                 background: Item {
@@ -245,6 +247,10 @@ Item {
                                     width: 10; height: 10
                                     name: "close"
                                     ink: removeImage.hovered ? Theme.textInverse : Theme.textPrimary
+                                }
+                                Behavior on opacity {
+                                    enabled: !Theme.reducedMotion
+                                    NumberAnimation { duration: Theme.fast }
                                 }
                                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.PointingHandCursor }
                             }
