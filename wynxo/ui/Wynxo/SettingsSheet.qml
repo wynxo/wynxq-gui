@@ -68,6 +68,14 @@ Sheet {
         return bridge.tokenUsage[name] || ({ tokens: 0, outputTokens: 0, promptTokens: 0, runs: 0, averageRate: 0 });
     }
 
+    function maxUsage(rows) {
+        var maximum = 1;
+        rows = rows || [];
+        for (var i = 0; i < rows.length; i++)
+            maximum = Math.max(maximum, Number(rows[i].tokens || 0));
+        return maximum;
+    }
+
     onPageChanged: if (visible && page === usagePage && bridge) bridge.refreshTokenUsage()
 
     onOpened: {
@@ -838,6 +846,105 @@ Sheet {
                                         width: parent.width
                                         height: 1
                                         color: Theme.borderSubtle
+                                    }
+                                }
+                            }
+                        }
+
+                        Group {
+                            title: "Last 7 days"
+                            description: "A quiet local trend from exact completed runs — no cloud analytics."
+                            visible: bridge && bridge.tokenUsageDays && bridge.tokenUsageDays.length > 0
+
+                            RowLayout {
+                                width: parent.width
+                                spacing: Theme.s3
+                                Repeater {
+                                    model: bridge ? bridge.tokenUsageDays : []
+                                    delegate: ColumnLayout {
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        spacing: Theme.s1
+
+                                        Item {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 48
+                                            Rectangle {
+                                                anchors.bottom: parent.bottom
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                width: Math.max(8, parent.width * 0.48)
+                                                height: Math.max(2, parent.height
+                                                    * (Number(modelData.tokens || 0)
+                                                       / sheet.maxUsage(bridge ? bridge.tokenUsageDays : [])))
+                                                radius: Theme.r1
+                                                color: Number(modelData.tokens || 0) > 0 ? Theme.accent : Theme.surfaceHover
+                                            }
+                                        }
+                                        Text {
+                                            Layout.alignment: Qt.AlignHCenter
+                                            text: modelData.label || ""
+                                            color: Theme.textMuted
+                                            font.family: Theme.monoFamily
+                                            font.pixelSize: Theme.micro
+                                        }
+                                        Text {
+                                            Layout.alignment: Qt.AlignHCenter
+                                            text: sheet.formatUsageCount(modelData.tokens || 0)
+                                            color: Theme.textSecondary
+                                            font.family: Theme.monoFamily
+                                            font.pixelSize: Theme.micro
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Group {
+                            title: "Models · last 30 days"
+                            description: "Which local models handled the work, ranked by exact input + output tokens."
+                            visible: bridge && bridge.tokenUsageModels && bridge.tokenUsageModels.length > 0
+                            readonly property real maximum: sheet.maxUsage(bridge ? bridge.tokenUsageModels : [])
+
+                            Repeater {
+                                model: bridge ? bridge.tokenUsageModels : []
+                                delegate: Column {
+                                    required property var modelData
+                                    width: parent ? parent.width : 0
+                                    spacing: Theme.s1
+
+                                    RowLayout {
+                                        width: parent.width
+                                        spacing: Theme.s3
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.name || "Unknown model"
+                                            color: Theme.textSecondary
+                                            font.family: Theme.monoFamily
+                                            font.pixelSize: Theme.caption
+                                            elide: Text.ElideMiddle
+                                        }
+                                        Text {
+                                            text: sheet.formatUsageCount(modelData.tokens || 0)
+                                                  + ((modelData.averageRate || 0) > 0
+                                                     ? " · " + Number(modelData.averageRate).toFixed(1) + " tok/s" : "")
+                                            color: Theme.textMuted
+                                            font.family: Theme.monoFamily
+                                            font.pixelSize: Theme.micro
+                                        }
+                                    }
+                                    Rectangle {
+                                        width: parent.width
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.surfaceSunken
+                                        Rectangle {
+                                            width: Math.max(parent.height, parent.width
+                                                * (Number(modelData.tokens || 0)
+                                                   / Math.max(1, parent.parent.parent.maximum)))
+                                            height: parent.height
+                                            radius: parent.radius
+                                            color: Theme.accent
+                                        }
                                     }
                                 }
                             }

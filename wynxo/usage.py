@@ -51,6 +51,8 @@ class TokenUsageTracker:
         self.store = store
         self._clock = clock or time.monotonic
         self._summary = _blank_summary()
+        self._daily: list[dict] = []
+        self._models: list[dict] = []
         self.refresh()
         self.reset()
 
@@ -77,12 +79,28 @@ class TokenUsageTracker:
     def summary(self) -> dict:
         return copy.deepcopy(self._summary)
 
+    @property
+    def daily(self) -> list[dict]:
+        return copy.deepcopy(self._daily)
+
+    @property
+    def models(self) -> list[dict]:
+        return copy.deepcopy(self._models)
+
     def refresh(self) -> bool:
-        """Refresh day/week/month buckets when a long-running UI asks for them."""
+        """Refresh period totals plus the small trend/model views shown in Settings."""
         summary = getattr(self.store, "token_usage_summary", None)
+        daily = getattr(self.store, "token_usage_daily", None)
+        models = getattr(self.store, "token_usage_models", None)
         fresh = summary() if callable(summary) else _blank_summary()
-        changed = fresh != self._summary
+        fresh_daily = daily() if callable(daily) else []
+        fresh_models = models() if callable(models) else []
+        changed = (fresh != self._summary
+                   or fresh_daily != self._daily
+                   or fresh_models != self._models)
         self._summary = fresh
+        self._daily = fresh_daily
+        self._models = fresh_models
         return changed
 
     def stream(self, text: str) -> bool:

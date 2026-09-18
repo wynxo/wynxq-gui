@@ -190,3 +190,41 @@ def test_conversation_usage_counts_prompt_plus_output_once(tmp_path):
     assert chat["runs"] == 2
     assert store.conversation_token_usage("")["tokens"] == 0
     store.close()
+
+
+def test_daily_trend_fills_empty_days_and_model_breakdown(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    now = datetime(2026, 9, 9, 12, 0, 0).timestamp()
+
+    store.record_token_usage("a", "qwen", metrics(10, 90, rate=5.0),
+                             created_at=datetime(2026, 9, 9, 8, 0, 0).timestamp())
+    store.record_token_usage("b", "qwen", metrics(20, 80, rate=10.0),
+                             created_at=datetime(2026, 9, 7, 8, 0, 0).timestamp())
+    store.record_token_usage("c", "llama", metrics(5, 45, rate=20.0),
+                             created_at=datetime(2026, 9, 8, 8, 0, 0).timestamp())
+
+    days = store.token_usage_daily(days=4, now=now)
+    assert len(days) == 4
+    assert [day["date"] for day in days] == [
+        "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09"
+    ]
+    assert [day["tokens"] for day in days] == [0, 100, 50, 100]
+
+    models = store.token_usage_models(days=30, now=now)
+    assert [model["name"] for model in models] == ["qwen", "llama"]
+    assert models[0]["tokens"] == 200
+    assert models[0]["runs"] == 2
+    assert models[1]["tokens"] == 50
+    store.close()
+
+
+def test_tracker_refreshes_daily_and_model_views(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    tracker = TokenUsageTracker(store)
+    tracker.exact_metrics(metrics(10, 20, rate=4.0))
+    assert tracker.finalize("chat", "qwen") is True
+    assert len(tracker.daily) == 7
+    assert tracker.daily[-1]["tokens"] >= 30
+    assert tracker.models[0]["name"] == "qwen"
+    assert tracker.models[0]["tokens"] >= 30
+    store.close()

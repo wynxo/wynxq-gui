@@ -481,6 +481,14 @@ class WorkspaceController(Controller):
     def tokenUsage(self):
         return self._usage.summary
 
+    @Property("QVariantList", notify=usageChanged)
+    def tokenUsageDays(self):
+        return self._usage.daily
+
+    @Property("QVariantList", notify=usageChanged)
+    def tokenUsageModels(self):
+        return self._usage.models
+
     @Slot()
     def refreshTokenUsage(self):
         if self._usage.refresh():
