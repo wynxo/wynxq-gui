@@ -327,6 +327,7 @@ class WorkspaceController(Controller):
     planChanged = Signal()
     usageChanged = Signal()
     contextStateChanged = Signal()
+    checkpointChanged = Signal()
     VALID_TASK_MODES = {"chat", "work"}
     LAST_TASK_KEY = "workspace:last_task"
     DRAFT_KEY_PREFIX = "workspace:draft:"
@@ -818,7 +819,7 @@ class WorkspaceController(Controller):
             self._persist_plan()
             self.modeChanged.emit()
 
-    @Property(bool, notify=changed)
+    @Property(bool, notify=checkpointChanged)
     def canUndoRun(self):
         checkpoint = self._workspace_checkpoint
         return bool(
@@ -827,7 +828,7 @@ class WorkspaceController(Controller):
             and checkpoint.get("task") == self._task_id
         )
 
-    @Property(str, notify=changed)
+    @Property(str, notify=checkpointChanged)
     def undoRunSummary(self):
         checkpoint = self._workspace_checkpoint or {}
         count = len(checkpoint.get("before", {}))
@@ -837,6 +838,7 @@ class WorkspaceController(Controller):
 
     def _begin_workspace_checkpoint(self):
         self._workspace_checkpoint = None
+        self.checkpointChanged.emit()
         if self._task_mode != "work" or not self._working_directory:
             return
         before = _snapshot_git_workspace(self._working_directory)
@@ -854,6 +856,7 @@ class WorkspaceController(Controller):
             return
         if checkpoint.get("root") != str(Path(self._working_directory).resolve()):
             self._workspace_checkpoint = None
+            self.checkpointChanged.emit()
             self.changed.emit()
             return
         after = _snapshot_git_workspace(checkpoint["root"])
@@ -867,6 +870,7 @@ class WorkspaceController(Controller):
         else:
             checkpoint["before"] = before
             checkpoint["after"] = after
+        self.checkpointChanged.emit()
         self.changed.emit()
 
     @Slot()
@@ -886,6 +890,7 @@ class WorkspaceController(Controller):
             return
         viewer_path = self.dock.filePath
         self._workspace_checkpoint = None
+        self.checkpointChanged.emit()
         self.dock.refreshFiles()
         self.dock.refreshChanges()
         if viewer_path and not self.dock.fileModified:
