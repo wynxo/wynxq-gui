@@ -212,6 +212,18 @@ Item {
             }
         }
 
+        WButton {
+            visible: root.latest && !root.streaming && bridge && bridge.canUndoRun
+            width: Math.min(implicitWidth, parent.width)
+            text: bridge && bridge.undoRunSummary ? bridge.undoRunSummary : "Undo this run"
+            iconName: "retry"
+            variant: "ghost"
+            compactPadding: true
+            ToolTip.visible: hovered
+            ToolTip.text: "Restore only files changed by the last agent run. Refuses if a file changed afterward."
+            onClicked: if (bridge) bridge.undoLastRun()
+        }
+
         FocusScope {
             id: actions
             objectName: "responseActions"
@@ -286,6 +298,9 @@ Item {
             { id: "branch", label: "Branch from here", icon: "branch" },
             { id: "changes", label: "Review current changes", icon: "branch",
               hidden: !root.showGitSummary },
+            { id: "undo-run", label: bridge && bridge.undoRunSummary ? bridge.undoRunSummary : "Undo this run",
+              detail: "Restore only files changed by the last agent run", icon: "retry",
+              hidden: !root.latest || !bridge || !bridge.canUndoRun },
         ]
         onPicked: function(id) {
             if (!bridge) return;
@@ -296,6 +311,7 @@ Item {
             else if (id === "retry-deep") root.retryWithPreset("Deep");
             else if (id === "branch") root.branched();
             else if (id === "changes" && root.dock) root.dock.openTab("changes");
+            else if (id === "undo-run" && bridge) bridge.undoLastRun();
         }
     }
 

@@ -17,6 +17,9 @@ from __future__ import annotations
 
 import copy
 import ipaddress
+import os
+from pathlib import Path
+import subprocess
 import time
 from urllib.parse import urlsplit
 
@@ -34,6 +37,129 @@ from .usage import TokenUsageTracker
 
 PLAN_STATES = {"pending", "in_progress", "completed", "failed", "skipped"}
 _PLAN_PROMPT_MARKER = "Use update_plan for genuine multi-step work"
+
+_CHECKPOINT_MAX_FILES = 2500
+_CHECKPOINT_MAX_FILE_BYTES = 8 * 1024 * 1024
+_CHECKPOINT_MAX_TOTAL_BYTES = 64 * 1024 * 1024
+
+
+def _checkpoint_entry(path: Path):
+    """Capture one project path without following symlinks."""
+    if path.is_symlink():
+        return ("link", os.readlink(path))
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return ("missing",)
+    if not path.is_file():
+        raise ValueError(f"Unsupported checkpoint path: {path}")
+    if stat.st_size > _CHECKPOINT_MAX_FILE_BYTES:
+        raise OverflowError(f"{path.name} is too large for a safe run checkpoint")
+    return ("file", stat.st_mode & 0o777, path.read_bytes())
+
+
+def _git_checkpoint_paths(root: Path):
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--cached", "--others",
+             "--exclude-standard", "-z"],
+            check=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=6,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    paths = []
+    for raw in completed.stdout.split(b"\0"):
+        if not raw:
+            continue
+        relative = os.fsdecode(raw)
+        candidate = Path(relative)
+        if candidate.is_absolute() or ".." in candidate.parts:
+            return None
+        paths.append(relative)
+    return paths
+
+
+def _snapshot_git_workspace(root: str | Path, selected=None):
+    """Snapshot source-controlled + nonignored project files for one run.
+
+    This is intentionally bounded. If a workspace is too large to snapshot
+    safely, Undo is simply unavailable rather than pretending a partial restore
+    could be trusted.
+    """
+    base = Path(root).expanduser().resolve()
+    paths = list(selected) if selected is not None else _git_checkpoint_paths(base)
+    if paths is None or len(paths) > _CHECKPOINT_MAX_FILES:
+        return None
+    snapshot, total = {}, 0
+    try:
+        for relative in paths:
+            candidate = Path(relative)
+            if candidate.is_absolute() or ".." in candidate.parts:
+                return None
+            entry = _checkpoint_entry(base / candidate)
+            if entry[0] == "file":
+                total += len(entry[2])
+            elif entry[0] == "link":
+                total += len(os.fsencode(entry[1]))
+            if total > _CHECKPOINT_MAX_TOTAL_BYTES:
+                return None
+            snapshot[relative] = entry
+    except (OSError, ValueError, OverflowError):
+        return None
+    return snapshot
+
+
+def _checkpoint_delta(before: dict, after: dict):
+    missing = ("missing",)
+    paths = sorted(set(before) | set(after))
+    changed = [path for path in paths
+               if before.get(path, missing) != after.get(path, missing)]
+    if not changed:
+        return {}, {}
+    return ({path: before.get(path, missing) for path in changed},
+            {path: after.get(path, missing) for path in changed})
+
+
+def _restore_workspace_checkpoint(root: str | Path, before: dict, after: dict):
+    """Restore only paths changed by the run, refusing to clobber newer work."""
+    base = Path(root).expanduser().resolve()
+    paths = sorted(set(before) | set(after))
+    current = _snapshot_git_workspace(base, paths)
+    if current is None:
+        raise RuntimeError("The workspace can no longer be verified safely.")
+    missing = ("missing",)
+    for relative in paths:
+        if current.get(relative, missing) != after.get(relative, missing):
+            raise RuntimeError("A file changed after the agent run. Undo was cancelled to protect newer work.")
+
+    for relative in paths:
+        target = base / Path(relative)
+        entry = before.get(relative, missing)
+        kind = entry[0]
+        if kind == "missing":
+            if target.is_symlink() or target.exists():
+                if target.is_dir() and not target.is_symlink():
+                    raise RuntimeError(f"Refusing to remove directory {relative}.")
+                target.unlink()
+            continue
+
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.is_symlink() or target.exists():
+            if target.is_dir() and not target.is_symlink():
+                raise RuntimeError(f"Refusing to replace directory {relative}.")
+            target.unlink()
+
+        if kind == "link":
+            target.symlink_to(entry[1])
+        elif kind == "file":
+            target.write_bytes(entry[2])
+            target.chmod(entry[1])
+        else:
+            raise RuntimeError(f"Unknown checkpoint entry for {relative}.")
+    return len(paths)
 
 
 def _install_plan_tool() -> None:
@@ -220,6 +346,7 @@ class WorkspaceController(Controller):
         self._workspace_shutdown = False
         self._project_instructions_summary = project_instructions.summary(self._working_directory)
         self._context_omitted_turns = 0
+        self._workspace_checkpoint: dict | None = None
         # Draft text is cheap state worth surviving a restart, but attachments are
         # intentionally one-turn context and are never serialized here. Debounce
         # SQLite writes so typing does not become one transaction per keypress.
@@ -691,7 +818,83 @@ class WorkspaceController(Controller):
             self._persist_plan()
             self.modeChanged.emit()
 
+    @Property(bool, notify=changed)
+    def canUndoRun(self):
+        checkpoint = self._workspace_checkpoint
+        return bool(
+            checkpoint and checkpoint.get("before") and not self._busy
+            and checkpoint.get("root") == str(Path(self._working_directory).resolve())
+            and checkpoint.get("task") == self._task_id
+        )
+
+    @Property(str, notify=changed)
+    def undoRunSummary(self):
+        checkpoint = self._workspace_checkpoint or {}
+        count = len(checkpoint.get("before", {}))
+        if not count:
+            return ""
+        return f"Undo this run · {count} file{'s' if count != 1 else ''}"
+
+    def _begin_workspace_checkpoint(self):
+        self._workspace_checkpoint = None
+        if self._task_mode != "work" or not self._working_directory:
+            return
+        before = _snapshot_git_workspace(self._working_directory)
+        if before is None:
+            return
+        self._workspace_checkpoint = {
+            "root": str(Path(self._working_directory).resolve()),
+            "task": self._task_id,
+            "before_all": before,
+        }
+
+    def _finalize_workspace_checkpoint(self):
+        checkpoint = self._workspace_checkpoint
+        if not checkpoint or "before_all" not in checkpoint:
+            return
+        if checkpoint.get("root") != str(Path(self._working_directory).resolve()):
+            self._workspace_checkpoint = None
+            self.changed.emit()
+            return
+        after = _snapshot_git_workspace(checkpoint["root"])
+        if after is None:
+            self._workspace_checkpoint = None
+            self.changed.emit()
+            return
+        before, after = _checkpoint_delta(checkpoint.pop("before_all"), after)
+        if not before:
+            self._workspace_checkpoint = None
+        else:
+            checkpoint["before"] = before
+            checkpoint["after"] = after
+        self.changed.emit()
+
+    @Slot()
+    def undoLastRun(self):
+        if self._busy:
+            self.toast.emit("Stop the current run before undoing it.")
+            return
+        if not self.canUndoRun:
+            self.toast.emit("There is no safe agent checkpoint to undo.")
+            return
+        checkpoint = self._workspace_checkpoint
+        try:
+            count = _restore_workspace_checkpoint(
+                checkpoint["root"], checkpoint["before"], checkpoint["after"])
+        except (OSError, RuntimeError) as exc:
+            self.toast.emit(str(exc))
+            return
+        viewer_path = self.dock.filePath
+        self._workspace_checkpoint = None
+        self.dock.refreshFiles()
+        self.dock.refreshChanges()
+        if viewer_path and not self.dock.fileModified:
+            self.dock.openFile(viewer_path)
+        self.changed.emit()
+        self.toast.emit(f"Undid agent changes in {count} file{'s' if count != 1 else ''}.")
+
     def _start_run(self, history):
+        self._begin_workspace_checkpoint()
         self._refresh_project_instructions()
         if self._context_omitted_turns:
             self._context_omitted_turns = 0
@@ -785,11 +988,13 @@ class WorkspaceController(Controller):
         outcome = "cancelled" if stopped else ("failed" if self._error else "completed")
         self._finalize_usage()
         super()._run_done(self._strip_plan_history(history))
+        self._finalize_workspace_checkpoint()
         self._settle_plan(outcome)
 
     def _run_failed(self, message):
         self._finalize_usage()
         super()._run_failed(message)
+        self._finalize_workspace_checkpoint()
         self._settle_plan("failed")
 
     @Slot(str)
