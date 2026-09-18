@@ -18,6 +18,12 @@ Item {
         editing = false;
         editor.text = "";
         text.deselect();
+        messageMenu.close();
+    }
+    function startEditing() {
+        editor.text = root.body;
+        root.editing = true;
+        editor.forceActiveFocus();
     }
     Accessible.role: Accessible.StaticText
     Accessible.name: "You said: " + root.body
@@ -112,11 +118,7 @@ Item {
                 width: 27; height: 27; iconSize: 12
                 iconName: "edit"
                 tooltip: "Edit and run again"
-                onClicked: {
-                    editor.text = root.body;
-                    root.editing = true;
-                    editor.forceActiveFocus();
-                }
+                onClicked: root.startEditing()
             }
             IconButton {
                 width: 27; height: 27; iconSize: 12
@@ -124,6 +126,30 @@ Item {
                 tooltip: "Copy"
                 onClicked: if (bridge) bridge.copyText(root.body)
             }
+        }
+    }
+
+    WMenu {
+        id: messageMenu
+        preferredEdge: "above"
+        menuWidth: 210
+        items: [
+            { id: "edit", label: "Edit and run again", icon: "edit" },
+            { id: "copy", label: "Copy message", icon: "copy" },
+        ]
+        onPicked: function(id) {
+            if (id === "edit") root.startEditing();
+            else if (id === "copy" && bridge) bridge.copyText(root.body);
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton
+        propagateComposedEvents: true
+        onClicked: function(mouse) {
+            messageMenu.anchorX = mouse.x;
+            messageMenu.open();
         }
     }
 

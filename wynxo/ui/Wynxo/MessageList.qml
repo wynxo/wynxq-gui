@@ -68,6 +68,15 @@ ListView {
         required property bool streaming
         required property real thinkSeconds
         required property bool thinkDone
+        readonly property bool wideAnswer: {
+            if (kind !== "assistant") return false;
+            if (tailKind === "code") return true;
+            var items = blocks || [];
+            for (var i = 0; i < items.length; i++)
+                if (items[i].kind === "code") return true;
+            var prose = String(body || "") + "\n" + String(tail || "");
+            return prose.indexOf("|---") >= 0 || prose.indexOf("| ---") >= 0;
+        }
 
         width: list.width
         height: loader.implicitHeight
@@ -78,8 +87,10 @@ ListView {
 
         Loader {
             id: loader
-            // Leave the scrollbar its own lane rather than running text under it.
-            width: Math.min(parent.width - Theme.s4, Theme.readingWidth)
+            // Prose keeps a comfortable reading measure. Code and tables can
+            // breathe without turning every normal answer into a wide page.
+            width: Math.min(parent.width - Theme.s4,
+                            rowItem.wideAnswer ? Theme.wideReadingWidth : Theme.readingWidth)
             anchors.horizontalCenter: parent.horizontalCenter
             sourceComponent: kind === "user" ? userTurn : kind === "activity" ? activityTurn : assistantTurn
         }

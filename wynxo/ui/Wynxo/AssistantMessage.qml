@@ -29,7 +29,15 @@ Item {
 
     implicitHeight: column.implicitHeight
     property bool thoughtOpen: false
-    function resetTransientState() { thoughtOpen = false; }
+    function resetTransientState() {
+        thoughtOpen = false;
+        responseMenu.close();
+    }
+    function retryWithPreset(name) {
+        if (!bridge || !bridge.canRegenerate) return;
+        bridge.applyRuntimePreset(name);
+        bridge.regenerate();
+    }
     Accessible.role: Accessible.StaticText
     Accessible.name: (root.streaming ? "Agent is replying: " : "Agent said: ") + root.body
 
@@ -258,6 +266,49 @@ Item {
     }
 
     HoverHandler { id: hover }
+
+    WMenu {
+        id: responseMenu
+        preferredEdge: "above"
+        menuWidth: 238
+        items: [
+            { id: "copy", label: "Copy response", icon: "copy" },
+            { separator: true },
+            { id: "retry", label: "Retry", detail: bridge ? "Current " + bridge.runtimePreset + " runtime" : "", icon: "retry",
+              disabled: !bridge || !bridge.canRegenerate },
+            { id: "retry-fast", label: "Retry · Fast", detail: "Smaller context and action budget", icon: "bolt",
+              disabled: !bridge || !bridge.canRegenerate },
+            { id: "retry-balanced", label: "Retry · Balanced", detail: "Everyday runtime", icon: "sliders",
+              disabled: !bridge || !bridge.canRegenerate },
+            { id: "retry-deep", label: "Retry · Deep", detail: "More context and action budget", icon: "layers",
+              disabled: !bridge || !bridge.canRegenerate },
+            { separator: true },
+            { id: "branch", label: "Branch from here", icon: "branch" },
+            { id: "changes", label: "Review current changes", icon: "branch",
+              hidden: !root.showGitSummary },
+        ]
+        onPicked: function(id) {
+            if (!bridge) return;
+            if (id === "copy") bridge.copyText(root.body);
+            else if (id === "retry") bridge.regenerate();
+            else if (id === "retry-fast") root.retryWithPreset("Fast");
+            else if (id === "retry-balanced") root.retryWithPreset("Balanced");
+            else if (id === "retry-deep") root.retryWithPreset("Deep");
+            else if (id === "branch") root.branched();
+            else if (id === "changes" && root.dock) root.dock.openTab("changes");
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton
+        propagateComposedEvents: true
+        cursorShape: Qt.ArrowCursor
+        onClicked: function(mouse) {
+            responseMenu.anchorX = mouse.x;
+            responseMenu.open();
+        }
+    }
 
     Component {
         id: proseBlock
