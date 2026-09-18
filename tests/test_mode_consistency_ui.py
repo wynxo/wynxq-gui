@@ -36,7 +36,12 @@ def test_tool_starters_promote_a_fresh_task_to_work():
     assert 'command: "terminal-panel", needs: "work"' in text
     assert 'label: "Read my screen", icon: "eye", needs: "work"' in text
     assert 'label: "Run a command", icon: "bolt", needs: "work"' in text
-    assert 'command: "browser", needs: "work"' in text
+    # Browser is intentionally not permanent home chrome; it remains available
+    # from the Work dock and universal quick-open.
+    assert 'command: "browser", needs: "work"' not in text
+    palette = PALETTE.read_text(encoding="utf-8")
+    browser_line = next(line for line in palette.splitlines() if 'id: "browser"' in line)
+    assert "workOnly: true" in browser_line
     assert 'needs: "codex"' not in text
 
 

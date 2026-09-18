@@ -28,7 +28,7 @@ def test_composer_usage_is_informational_not_a_dashboard_or_button():
 def test_settings_owns_exact_period_usage():
     qml = (MODULE / "SettingsSheet.qml").read_text(encoding="utf-8")
     assert "readonly property int usagePage" in qml
-    assert '{ label: "Usage", icon: "bolt" }' in qml
+    assert 'label: "Usage", icon: "bolt"' in qml
     assert "bridge.refreshTokenUsage()" in qml
     assert "bridge.tokenUsage" in qml
     assert "bridge.conversationTokens" in qml

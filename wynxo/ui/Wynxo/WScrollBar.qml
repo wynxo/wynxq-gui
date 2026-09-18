@@ -5,6 +5,7 @@ import QtQuick.Controls
 // handler observes the viewport without consuming clicks or wheel events.
 ScrollBar {
     id: control
+    objectName: "wynxoScrollBar"
     property Item hoverTarget: parent
     readonly property bool viewportMoving: hoverTarget
         && ((hoverTarget.moving === true)
@@ -19,7 +20,7 @@ ScrollBar {
     implicitWidth: orientation === Qt.Vertical ? 12 : 40
     implicitHeight: orientation === Qt.Horizontal ? 12 : 40
     opacity: revealed ? 1 : 0
-    Behavior on opacity { NumberAnimation { duration: Theme.fast } }
+    Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
 
     HoverHandler {
         id: viewportHover
@@ -33,7 +34,7 @@ ScrollBar {
         radius: 3
         color: control.pressed ? Theme.textMuted : Theme.borderStrong
         opacity: control.hovered || control.pressed ? 1 : 0.65
-        Behavior on opacity { NumberAnimation { duration: Theme.fast } }
+        Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
     }
     background: Item {}
 }

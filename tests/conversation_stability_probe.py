@@ -110,7 +110,11 @@ def main():
         QTest.qWait(200)
         # Drive the actual scrollbar thumb, rather than assigning contentY.
         bars = [obj for obj in listing.findChildren(QObject)
-                if obj.metaObject().className().startswith("ScrollBar_")]
+                if obj.objectName() == "wynxoScrollBar"]
+        if not bars:
+            bars = [obj for obj in visual_descendants(listing)
+                    if obj.objectName() == "wynxoScrollBar"]
+        assert bars, "conversation scrollbar was not instantiated"
         scrollbar = bars[0]
         position = float(scrollbar.property("position"))
         size = float(scrollbar.property("size"))
