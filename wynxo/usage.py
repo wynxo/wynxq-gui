@@ -57,6 +57,7 @@ class TokenUsageTracker:
     def reset(self) -> None:
         self.live_output_tokens = 0
         self.live_rate = 0.0
+        self._live_rate_exact = False
         self._segment_text = ""
         self._segment_started: float | None = None
         self._exact_base = 0
@@ -67,6 +68,10 @@ class TokenUsageTracker:
     @property
     def metrics(self) -> dict:
         return dict(self._metrics)
+
+    @property
+    def live_rate_exact(self) -> bool:
+        return bool(self._live_rate_exact)
 
     @property
     def summary(self) -> dict:
@@ -91,10 +96,14 @@ class TokenUsageTracker:
         if not text:
             return False
         now = float(self._clock())
-        if self._segment_started is None:
-            self._segment_started = now
         before_tokens = self.live_output_tokens
         before_rate = self.live_rate
+        if self._segment_started is None:
+            self._segment_started = now
+            # A new model pass must not display the previous pass's exact
+            # throughput while the next pass has not produced a measurement.
+            self.live_rate = 0.0
+            self._live_rate_exact = False
         self._segment_text += text
         estimate = max(0, int(ctx.estimate_tokens(self._segment_text)))
         self.live_output_tokens = self._exact_base + estimate
@@ -131,6 +140,7 @@ class TokenUsageTracker:
         self._exact_base = total_output
         self.live_output_tokens = total_output
         self.live_rate = rate or self._metrics["tokens_per_second"]
+        self._live_rate_exact = bool(self.live_rate)
         self._segment_text = ""
         self._segment_started = None
         return (before_tokens != self.live_output_tokens

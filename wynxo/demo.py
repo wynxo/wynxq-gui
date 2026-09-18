@@ -235,7 +235,7 @@ class DemoController(WorkspaceController):
         theme = {"empty-violet": "Violet", "empty-ember": "Ember", "conversation-ion": "Ion"}.get(scene)
         if theme:
             store.set_setting("theme", theme)
-        connected = scene in ("desktop", "conversation", "run", "empty-work-locked")
+        connected = scene in ("desktop", "conversation", "run", "usage", "empty-work-locked")
         # A preview must never read or write the real memory file.
         super().__init__(store=store, desktop=DemoDesktop(connected), autoconnect=False,
                          memory=Memory(Path(directory) / "memory.md"))
@@ -308,6 +308,26 @@ class DemoController(WorkspaceController):
         self._run_metrics = {"tokens": 427, "prompt_tokens": 1243, "cached_prompt_tokens": 792,
                              "load_ms": 812.0, "total_ms": 7360.0, "tokens_per_second": 18.6}
         self._token_rate = "18.6 tok/s"
+        self.store.record_token_usage(self._task_id, "qwen2.5vl:7b", self._run_metrics,
+                                      created_at=now - 90)
+        if self.scene == "usage":
+            for conversation, offset, output, prompt, cached, rate in (
+                (created[1], 2 * 3600, 780, 4120, 1200, 18.4),
+                (created[2], 2 * 86400, 2320, 11800, 4600, 20.2),
+                (created[3], 10 * 86400, 4400, 24500, 9100, 16.8),
+                (created[4], 40 * 86400, 9800, 58200, 18000, 14.9),
+            ):
+                self.store.record_token_usage(
+                    conversation["id"], "qwen2.5vl:7b",
+                    {"tokens": output, "prompt_tokens": prompt,
+                     "cached_prompt_tokens": cached, "load_ms": 0.0,
+                     "total_ms": 0.0, "tokens_per_second": rate},
+                    created_at=now - offset,
+                )
+        self._usage.refresh()
+        self._conversation_tokens = self._read_conversation_tokens()
+        self._usage.exact_metrics(self._run_metrics)
+        self.usageChanged.emit()
 
         if self.scene.startswith("dock-"):
             self._seed_dock_scene(self.scene[len("dock-"):])
@@ -318,6 +338,7 @@ class DemoController(WorkspaceController):
             self._task_mode = "chat"
             self._task_mode_locked = False
             self._onboarded = False
+            self._reset_usage_context()
             self.changed.emit()
             return
         if self.scene.startswith("empty"):
@@ -329,11 +350,13 @@ class DemoController(WorkspaceController):
                 self._task_mode, self._task_mode_locked = "chat", True
             else:
                 self._task_mode, self._task_mode_locked = "chat", False
+            self._reset_usage_context()
             self.changed.emit()
             return
         if self.scene.startswith("context"):
             self._task_mode, self._task_mode_locked = "chat", False
             self._seed_context_scene()
+            self._reset_usage_context()
             return
 
         if self.scene == "work-run":
@@ -525,6 +548,7 @@ SCENES = [
     ("23-dock-context", "dock-context", ""),
     ("24-dock-activity", "dock-activity", ""),
     ("27-dock-memory", "dock-memory", ""),
+    ("28-usage", "usage", "usageSettings"),
     ("25-system", "conversation", "system"),
     ("26-code-run", "work-run", ""),
 ]

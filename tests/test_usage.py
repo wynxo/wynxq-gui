@@ -153,3 +153,40 @@ def test_minimal_store_keeps_live_usage_without_requiring_persistence():
     tracker.exact_metrics(metrics(9, 11, rate=3.0))
     assert tracker.live_output_tokens == 9
     assert tracker.finalize("", "") is False
+
+
+def test_live_rate_marks_stream_estimates_and_exact_ollama_metrics(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    now = [10.0]
+    tracker = TokenUsageTracker(store, clock=lambda: now[0])
+    tracker.stream("first chunk")
+    now[0] += 1.0
+    tracker.stream(" second chunk with enough text to measure")
+    assert tracker.live_rate > 0
+    assert tracker.live_rate_exact is False
+
+    tracker.exact_metrics(metrics(12, 34, rate=6.25))
+    assert tracker.live_rate == 6.25
+    assert tracker.live_rate_exact is True
+
+    now[0] += 1.0
+    tracker.stream("new pass")
+    assert tracker.live_rate == 0
+    assert tracker.live_rate_exact is False
+    store.close()
+
+
+def test_conversation_usage_counts_prompt_plus_output_once(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    store.record_token_usage("chat-a", "model", metrics(10, 90, cached=70))
+    store.record_token_usage("chat-a", "model", metrics(5, 15, cached=10))
+    store.record_token_usage("chat-b", "model", metrics(999, 999, cached=999))
+
+    chat = store.conversation_token_usage("chat-a")
+    assert chat["outputTokens"] == 15
+    assert chat["promptTokens"] == 105
+    assert chat["cachedTokens"] == 80
+    assert chat["tokens"] == 120
+    assert chat["runs"] == 2
+    assert store.conversation_token_usage("")["tokens"] == 0
+    store.close()

@@ -1,66 +1,43 @@
-"""The composer token display is part of the product, not screenshot decoration."""
+"""Composer usage stays compact; detailed accounting lives in Settings."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "wynxo" / "ui" / "Wynxo"
 
 
-def test_composer_pins_token_usage_next_to_run_controls():
+def test_composer_keeps_usage_summary_next_to_run_controls():
     composer = (MODULE / "Composer.qml").read_text(encoding="utf-8")
     assert "TokenUsage {" in composer
     assert composer.index("TokenUsage {") < composer.index("ModelPicker {")
-    assert 'compact: root.tight' in composer
+    assert "compact: root.tight" in composer
 
 
-def test_token_usage_has_live_count_rate_and_every_requested_period():
+def test_composer_usage_is_informational_not_a_dashboard_or_button():
     qml = (MODULE / "TokenUsage.qml").read_text(encoding="utf-8")
-    for feature in (
-        "bridge.liveOutputTokens",
-        "bridge.liveTokenRate",
-        '"today"',
-        '"week"',
-        '"month"',
-        '"allTime"',
-        '"TODAY"',
-        '"THIS WEEK"',
-        '"THIS MONTH"',
-        '"ALL TIME"',
-        '" tokens/s"',
-    ):
-        assert feature in qml
+    assert "bridge.liveTokenRate" in qml
+    assert "bridge.liveTokenRateExact" in qml
+    assert "bridge.conversationTokens" in qml
+    assert "Accessible.StaticText" in qml
+    assert "Popover {" not in qml
+    assert "AbstractButton {" not in qml
+    assert "bridge.tokenUsage" not in qml
+    for period in ('"today"', '"week"', '"month"', '"allTime"'):
+        assert period not in qml
 
 
-def test_idle_popover_shows_real_period_usage_not_a_fake_zero_run():
-    qml = (MODULE / "TokenUsage.qml").read_text(encoding="utf-8")
-    assert "readonly property bool hasLiveRun" in qml
-    assert 'root.hasLiveRun ? "LATEST RUN" : "USAGE TODAY"' in qml
-    assert 'root.formatCount(animatedValue) + " total"' in qml
-    assert 'root.bucket("today").runs + " run"' in qml
+def test_settings_owns_exact_period_usage():
+    qml = (MODULE / "SettingsSheet.qml").read_text(encoding="utf-8")
+    assert "readonly property int usagePage" in qml
+    assert '{ label: "Usage", icon: "bolt" }' in qml
+    assert "bridge.refreshTokenUsage()" in qml
+    assert "bridge.tokenUsage" in qml
+    assert "bridge.conversationTokens" in qml
+    for label in ("TODAY", "THIS WEEK", "THIS MONTH", "ALL TIME"):
+        assert label in qml
+    assert "cached input is already part of input and is never counted twice" in qml
 
 
-def test_live_and_period_token_numbers_animate_and_honor_reduced_motion():
-    qml = (MODULE / "TokenUsage.qml").read_text(encoding="utf-8")
-    assert "Behavior on implicitWidth" in qml
-    assert "Behavior on displayedTokens" in qml
-    assert "Behavior on displayedRate" in qml
-    assert "function revealTotal()" in qml
-    assert "SequentialAnimation {" in qml
-    assert "PauseAnimation { duration: stat.index * 45 }" in qml
-    assert 'property: "displayedTotal"' in qml
-    assert "to: stat.targetTotal" in qml
-    assert "if (Theme.reducedMotion)" in qml
-    # Property Behaviors in this control must still become instant when the
-    # user enables reduced motion. The staggered card reveal is skipped by
-    # revealTotal() entirely in that mode.
-    behavior_count = qml.count("Behavior on ")
-    assert behavior_count >= 6
-    assert qml.count("enabled: !Theme.reducedMotion") >= behavior_count
-
-
-def test_usage_control_is_accessible_and_transient_not_permanent_glass():
-    qml = (MODULE / "TokenUsage.qml").read_text(encoding="utf-8")
-    assert 'Accessible.name: "Token usage"' in qml
-    assert "Popover {" in qml
-    # Idle toolbar state is transparent; glass/outline arrives only for hover,
-    # focus or the open popover.
-    assert 'usageButton.hovered ? 0.32 : 0.0' in qml
+def test_composer_does_not_send_while_ime_is_composing():
+    composer = (MODULE / "Composer.qml").read_text(encoding="utf-8")
+    assert composer.count("input.inputMethodComposing") >= 2
+    assert composer.index("input.inputMethodComposing") < composer.index("root.send(); event.accepted = true;")

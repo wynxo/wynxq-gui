@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
-from PySide6.QtCore import QMetaObject, QObject, QTimer, QUrl, Qt
+from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtGui import QFont
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -37,32 +36,13 @@ def main(target: str, state: str = "live") -> int:
     app.setFont(QFont("Inter", 10))
 
     controller = DemoController("conversation")
-    now = time.time()
-    # Multiple periods deliberately have different totals so visual regressions
-    # cannot hide behind four identical zero cards. These rows also drive the
-    # composer's idle "… today" state when no generation is active.
-    for offset, output, prompt, rate in (
-        (90, 780, 4_120, 18.4),
-        (3_600, 1_140, 6_340, 17.1),
-        (86_400, 2_320, 11_800, 20.2),
-        (6 * 86_400, 4_400, 24_500, 16.8),
-        (35 * 86_400, 9_800, 58_200, 14.9),
-    ):
-        controller.store.record_token_usage(
-            "preview", "qwen2.5vl:7b", metric(output, prompt, rate),
-            created_at=now - offset,
-        )
-    controller._usage.refresh()
-
     if state == "live":
-        # Demonstrates the exact requested live shape: "45 tokens · 2.5 tokens/s"
-        # while the persisted cards remain exact completed-run accounting.
+        controller._usage.reset()
         controller._usage.exact_metrics(metric(45, 120, 2.5))
         controller._busy = True
         controller._status = "Writing"
     else:
-        # No provisional generation state: the composer must fall back to the
-        # exact persisted period total, while the popover says LATEST RUN.
+        controller._usage.reset()
         controller._busy = False
         controller._status = "Ready"
     controller.usageChanged.emit()
@@ -83,18 +63,6 @@ def main(target: str, state: str = "live") -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     result = {"ok": False}
 
-    def open_usage():
-        item = root.findChild(QObject, "tokenUsage")
-        if item is None:
-            print("tokenUsage object not found", file=sys.stderr)
-            app.exit(2)
-            return
-        if not QMetaObject.invokeMethod(item, "showUsage", Qt.DirectConnection):
-            print("could not invoke token usage popover", file=sys.stderr)
-            app.exit(3)
-            return
-        QTimer.singleShot(650, capture)
-
     def capture():
         result["ok"] = root.grabWindow().save(str(output))
         if result["ok"]:
@@ -104,7 +72,7 @@ def main(target: str, state: str = "live") -> int:
         root.close()
         QTimer.singleShot(0, app.quit)
 
-    QTimer.singleShot(900, open_usage)
+    QTimer.singleShot(900, capture)
     code = app.exec()
     controller.shutdown()
     return code if code else (0 if result["ok"] else 4)

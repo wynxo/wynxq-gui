@@ -180,6 +180,8 @@ jobs:
         run: |
           python tests/token_usage_snapshot.py "$WYNXO_SCREENSHOT_DIR/token-usage-live.png" live
           python tests/token_usage_snapshot.py "$WYNXO_SCREENSHOT_DIR/token-usage-idle.png" idle
+      - name: Render compact conversation
+        run: python -m wynxo --ui-preview conversation --size 760x640 --screenshot "$WYNXO_SCREENSHOT_DIR/compact-chat.png"
       - name: Check every scene rendered
         run: |
           count=$(ls "$WYNXO_SCREENSHOT_DIR"/screenshots/*.png | wc -l)
@@ -187,6 +189,7 @@ jobs:
           test "$count" -eq "$expected" || { echo "expected $expected screenshots, got $count"; exit 1; }
           test -s "$WYNXO_SCREENSHOT_DIR/token-usage-live.png" || { echo "live token usage snapshot missing"; exit 1; }
           test -s "$WYNXO_SCREENSHOT_DIR/token-usage-idle.png" || { echo "idle token usage snapshot missing"; exit 1; }
+          test -s "$WYNXO_SCREENSHOT_DIR/compact-chat.png" || { echo "compact chat snapshot missing"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: wynxo-screenshots

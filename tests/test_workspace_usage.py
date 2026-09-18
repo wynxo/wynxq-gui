@@ -65,3 +65,52 @@ def test_workspace_period_summary_refreshes_after_exact_run(tmp_path):
     assert bridge.tokenUsage["allTime"]["tokens"] == 100
     bridge.shutdown()
     store.close()
+
+
+def test_current_chat_usage_is_cached_and_switching_clears_stale_live_speed(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    first = store.create_conversation("first", "model")
+    second = store.create_conversation("second", "model")
+    store.record_token_usage(first["id"], "model", {
+        "tokens": 10, "prompt_tokens": 90, "cached_prompt_tokens": 70,
+        "tokens_per_second": 5.0,
+    })
+    bridge = WorkspaceController(store=store, desktop=Desktop(), autoconnect=False)
+
+    bridge.openTask(first["id"])
+    assert bridge.conversationTokens == 100
+    bridge._usage.exact_metrics({
+        "tokens": 7, "prompt_tokens": 13, "cached_prompt_tokens": 9,
+        "tokens_per_second": 3.5,
+    })
+    bridge.usageChanged.emit()
+    assert bridge.liveTokenRate == 3.5
+    assert bridge.liveTokenRateExact is True
+
+    bridge.openTask(second["id"])
+    assert bridge.conversationTokens == 0
+    assert bridge.liveOutputTokens == 0
+    assert bridge.liveTokenRate == 0
+    assert bridge.liveTokenRateExact is False
+    bridge.shutdown()
+    store.close()
+
+
+def test_completed_run_updates_current_chat_total_once(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    task = store.create_conversation("usage", "model")
+    bridge = WorkspaceController(store=store, desktop=Desktop(), autoconnect=False)
+    bridge.openTask(task["id"])
+    bridge._model = "model"
+    bridge._usage.exact_metrics({
+        "tokens": 11, "prompt_tokens": 29, "cached_prompt_tokens": 20,
+        "tokens_per_second": 4.0,
+    })
+
+    assert bridge._finalize_usage() is True
+    assert bridge.conversationTokens == 40
+    assert bridge._finalize_usage() is False
+    assert bridge.conversationTokens == 40
+    assert store.conversation_token_usage(task["id"])["tokens"] == 40
+    bridge.shutdown()
+    store.close()

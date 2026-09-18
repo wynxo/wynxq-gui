@@ -260,6 +260,34 @@ class Store:
                 }
         return summary
 
+    def conversation_token_usage(self, conversation_id: str) -> dict[str, int]:
+        """Return exact recorded usage for one conversation without period scans.
+
+        Cached prompt tokens are metadata about the prompt count, not extra
+        input, so the total is always prompt + output exactly once.
+        """
+        conversation_id = str(conversation_id or "")
+        if not conversation_id:
+            return {"tokens": 0, "outputTokens": 0, "promptTokens": 0,
+                    "cachedTokens": 0, "runs": 0}
+        with self._lock:
+            row = self._db.execute(
+                "SELECT COALESCE(SUM(output_tokens),0) output_tokens, "
+                "COALESCE(SUM(prompt_tokens),0) prompt_tokens, "
+                "COALESCE(SUM(cached_prompt_tokens),0) cached_prompt_tokens, "
+                "COUNT(*) runs FROM token_usage WHERE conversation_id=?",
+                (conversation_id,),
+            ).fetchone()
+        output = int(row["output_tokens"] or 0)
+        prompt = int(row["prompt_tokens"] or 0)
+        return {
+            "tokens": output + prompt,
+            "outputTokens": output,
+            "promptTokens": prompt,
+            "cachedTokens": int(row["cached_prompt_tokens"] or 0),
+            "runs": int(row["runs"] or 0),
+        }
+
     def get_setting(self, key: str, default: Any = None) -> Any:
         with self._lock:
             row = self._db.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()

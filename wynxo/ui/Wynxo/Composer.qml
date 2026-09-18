@@ -224,10 +224,12 @@ Item {
                     Accessible.description: placeholderText
 
                     Keys.onReturnPressed: function(event) {
+                        if (input.inputMethodComposing) { event.accepted = false; return; }
                         if (event.modifiers & Qt.ShiftModifier) { event.accepted = false; return; }
                         root.send(); event.accepted = true;
                     }
                     Keys.onEnterPressed: function(event) {
+                        if (input.inputMethodComposing) { event.accepted = false; return; }
                         if (event.modifiers & Qt.ShiftModifier) { event.accepted = false; return; }
                         root.send(); event.accepted = true;
                     }

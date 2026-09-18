@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 /*!
-    Six sections, each answering one question.
+    Seven sections, each answering one question.
 
     Anything with a home in the interface itself is not repeated here: models
     are chosen in the composer, the project is chosen in the sidebar, and
@@ -21,8 +21,9 @@ Sheet {
     readonly property int modelPage: 1
     readonly property int agentPage: 2
     readonly property int workspacePage: 3
-    readonly property int appearancePage: 4
-    readonly property int advancedPage: 5
+    readonly property int usagePage: 4
+    readonly property int appearancePage: 5
+    readonly property int advancedPage: 6
 
     property int page: 0
     readonly property var pages: [
@@ -30,13 +31,30 @@ Sheet {
         { label: "Model & runtime", icon: "layers" },
         { label: "Agent", icon: "cursor" },
         { label: "Workspace", icon: "panel" },
+        { label: "Usage", icon: "bolt" },
         { label: "Appearance", icon: "sun" },
         { label: "Advanced", icon: "shield" },
     ]
 
     function show(index) { page = index; open(); }
 
+    function formatUsageCount(value) {
+        var count = Math.max(0, Math.round(Number(value) || 0));
+        if (count >= 1000000000) return (count / 1000000000).toFixed(count >= 10000000000 ? 1 : 2) + "B";
+        if (count >= 1000000) return (count / 1000000).toFixed(count >= 10000000 ? 1 : 2) + "M";
+        if (count >= 1000) return (count / 1000).toFixed(count >= 10000 ? 1 : 2) + "K";
+        return String(count);
+    }
+
+    function usageBucket(name) {
+        if (!bridge || !bridge.tokenUsage) return ({ tokens: 0, outputTokens: 0, promptTokens: 0, runs: 0, averageRate: 0 });
+        return bridge.tokenUsage[name] || ({ tokens: 0, outputTokens: 0, promptTokens: 0, runs: 0, averageRate: 0 });
+    }
+
+    onPageChanged: if (visible && page === usagePage && bridge) bridge.refreshTokenUsage()
+
     onOpened: {
+        if (bridge) bridge.refreshTokenUsage();
         endpointField.text = bridge ? bridge.endpoint : "";
         accentField.text = bridge ? bridge.accentColor : "";
         ctxField.text = bridge ? bridge.numCtx : "";
@@ -703,6 +721,105 @@ Sheet {
                                           : "The project folder is not a Git repository."
                                     color: Theme.textSecondary
                                     font.family: Theme.sansFamily; font.pixelSize: Theme.caption
+                                }
+                            }
+                        }
+                    }
+
+
+                    // --------------------------------------------------- USAGE
+                    Column {
+                        spacing: Theme.s6
+                        Group {
+                            title: "Recorded token usage"
+                            description: "Exact completed Ollama accounting. Total is input + output; cached input is already part of input and is never counted twice."
+
+                            Repeater {
+                                model: [
+                                    { key: "today", label: "TODAY" },
+                                    { key: "week", label: "THIS WEEK" },
+                                    { key: "month", label: "THIS MONTH" },
+                                    { key: "allTime", label: "ALL TIME" },
+                                ]
+                                delegate: Column {
+                                    required property var modelData
+                                    required property int index
+                                    readonly property var bucketData: sheet.usageBucket(modelData.key)
+                                    width: parent ? parent.width : 0
+                                    spacing: Theme.s2
+
+                                    RowLayout {
+                                        width: parent.width
+                                        spacing: Theme.s4
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 2
+                                            Text {
+                                                text: modelData.label
+                                                color: Theme.textMuted
+                                                font.family: Theme.sansFamily
+                                                font.pixelSize: Theme.micro
+                                                font.weight: Font.DemiBold
+                                            }
+                                            Text {
+                                                text: sheet.formatUsageCount(bucketData.tokens || 0) + " tokens"
+                                                color: Theme.textPrimary
+                                                font.family: Theme.monoFamily
+                                                font.pixelSize: Theme.heading
+                                                font.weight: Font.DemiBold
+                                            }
+                                        }
+                                        ColumnLayout {
+                                            Layout.alignment: Qt.AlignRight
+                                            spacing: 2
+                                            Text {
+                                                Layout.alignment: Qt.AlignRight
+                                                text: sheet.formatUsageCount(bucketData.promptTokens || 0) + " input · "
+                                                      + sheet.formatUsageCount(bucketData.outputTokens || 0) + " output"
+                                                color: Theme.textSecondary
+                                                font.family: Theme.monoFamily
+                                                font.pixelSize: Theme.caption
+                                            }
+                                            Text {
+                                                Layout.alignment: Qt.AlignRight
+                                                text: (bucketData.runs || 0) + " run" + ((bucketData.runs || 0) === 1 ? "" : "s")
+                                                      + ((bucketData.averageRate || 0) > 0
+                                                         ? " · " + Number(bucketData.averageRate).toFixed(1) + " tok/s avg"
+                                                         : "")
+                                                color: Theme.textMuted
+                                                font.family: Theme.monoFamily
+                                                font.pixelSize: Theme.micro
+                                            }
+                                        }
+                                    }
+                                    Rectangle {
+                                        visible: index < 3
+                                        width: parent.width
+                                        height: 1
+                                        color: Theme.borderSubtle
+                                    }
+                                }
+                            }
+                        }
+
+                        Group {
+                            title: "Current chat"
+                            description: "Completed runs recorded for the conversation that is open now. A run is added only after Ollama reports exact token metrics."
+                            RowLayout {
+                                width: parent.width
+                                Text {
+                                    text: bridge ? sheet.formatUsageCount(bridge.conversationTokens) + " tokens" : "0 tokens"
+                                    color: Theme.textPrimary
+                                    font.family: Theme.monoFamily
+                                    font.pixelSize: Theme.heading
+                                    font.weight: Font.DemiBold
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: "input + output"
+                                    color: Theme.textMuted
+                                    font.family: Theme.sansFamily
+                                    font.pixelSize: Theme.caption
                                 }
                             }
                         }

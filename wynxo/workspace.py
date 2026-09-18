@@ -216,6 +216,7 @@ class WorkspaceController(Controller):
         engine_module.validate_endpoint = validate_workspace_endpoint
         super().__init__(*args, **kwargs)
         self._usage = TokenUsageTracker(self.store)
+        self._conversation_tokens = 0
         self._workspace_shutdown = False
         self._project_instructions_summary = project_instructions.summary(self._working_directory)
         self._context_omitted_turns = 0
@@ -434,6 +435,32 @@ class WorkspaceController(Controller):
             self.contextStateChanged.emit()
             self.changed.emit()
 
+    def _read_conversation_tokens(self, task_id: str | None = None) -> int:
+        getter = getattr(self.store, "conversation_token_usage", None)
+        target = str(self._task_id if task_id is None else task_id or "")
+        if not target or not callable(getter):
+            return 0
+        try:
+            return max(0, int((getter(target) or {}).get("tokens", 0) or 0))
+        except (TypeError, ValueError):
+            return 0
+
+    def _reset_usage_context(self) -> None:
+        """Reset transient run metrics and load one exact chat total."""
+        self._usage.reset()
+        self._conversation_tokens = self._read_conversation_tokens()
+        self.usageChanged.emit()
+
+    def _finalize_usage(self) -> bool:
+        """Record one run and update the cached current-chat total exactly once."""
+        if not self._usage.finalize(self._task_id, self._model):
+            return False
+        metrics = self._usage.metrics
+        self._conversation_tokens += max(0, int(metrics.get("tokens", 0) or 0))
+        self._conversation_tokens += max(0, int(metrics.get("prompt_tokens", 0) or 0))
+        self.usageChanged.emit()
+        return True
+
     @Property(int, notify=usageChanged)
     def liveOutputTokens(self):
         return int(self._usage.live_output_tokens)
@@ -441,6 +468,14 @@ class WorkspaceController(Controller):
     @Property(float, notify=usageChanged)
     def liveTokenRate(self):
         return round(float(self._usage.live_rate), 1)
+
+    @Property(bool, notify=usageChanged)
+    def liveTokenRateExact(self):
+        return bool(self._usage.live_rate_exact)
+
+    @Property(int, notify=usageChanged)
+    def conversationTokens(self):
+        return int(self._conversation_tokens)
 
     @Property("QVariantMap", notify=usageChanged)
     def tokenUsage(self):
@@ -536,6 +571,7 @@ class WorkspaceController(Controller):
         if mode not in self.VALID_TASK_MODES or self._busy:
             return
         super().newTask()
+        self._reset_usage_context()
         self._set_last_task("")
         self._set_plan([], persist=False)
         if self._task_id or self._busy:
@@ -553,6 +589,7 @@ class WorkspaceController(Controller):
             super().newTask()
             return
         super().newTask()
+        self._reset_usage_context()
         self._set_last_task("")
         self._set_plan([], persist=False)
         if not self._task_id:
@@ -573,6 +610,7 @@ class WorkspaceController(Controller):
         super().openTask(task_id)
         if self._task_id != task_id:
             return
+        self._reset_usage_context()
         self._set_last_task(task_id)
         self._task_mode = self._saved_mode(task_id)
         self._task_mode_locked = True
@@ -737,18 +775,14 @@ class WorkspaceController(Controller):
     def _run_done(self, history):
         stopped = self._run_job is not None and self._run_job.cancel.is_set()
         outcome = "cancelled" if stopped else ("failed" if self._error else "completed")
-        usage_recorded = self._usage.finalize(self._task_id, self._model)
+        self._finalize_usage()
         super()._run_done(self._strip_plan_history(history))
         self._settle_plan(outcome)
-        if usage_recorded:
-            self.usageChanged.emit()
 
     def _run_failed(self, message):
-        usage_recorded = self._usage.finalize(self._task_id, self._model)
+        self._finalize_usage()
         super()._run_failed(message)
         self._settle_plan("failed")
-        if usage_recorded:
-            self.usageChanged.emit()
 
     @Slot(str)
     def deleteTask(self, task_id):
@@ -764,6 +798,7 @@ class WorkspaceController(Controller):
         task_id = self._task_id
         super().clearTask()
         if task_id and self._task_id == task_id:
+            self._reset_usage_context()
             self._set_plan([])
 
     @Slot()
