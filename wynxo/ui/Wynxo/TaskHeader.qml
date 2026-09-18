@@ -116,10 +116,15 @@ Item {
 
             AbstractButton {
                 id: projectButton
+                objectName: "projectButton"
+                leftPadding: 10
+                rightPadding: 10
+                topPadding: 0
+                bottomPadding: 0
                 visible: bridge && bridge.projectName
                 readonly property real budget: Math.max(110, Math.min(230, root.width * 0.24))
-                implicitHeight: 26
-                implicitWidth: Math.min(projectRow.implicitWidth + Theme.s2 * 2, budget)
+                implicitHeight: 30
+                implicitWidth: Math.min(projectLabel.implicitWidth + 9 + Theme.s1 + leftPadding + rightPadding, budget)
                 Layout.maximumWidth: budget
                 hoverEnabled: true
                 Accessible.name: bridge ? "Project " + bridge.projectName : ""
@@ -141,13 +146,15 @@ Item {
                     spacing: Theme.s1
                     clip: true
                     Text {
+                        id: projectLabel
+                        objectName: "projectButtonLabel"
                         anchors.verticalCenter: parent.verticalCenter
                         text: bridge ? bridge.projectName : ""
                         color: Theme.textMuted
                         font.family: Theme.monoFamily
                         font.pixelSize: Theme.caption
                         elide: Text.ElideMiddle
-                        width: Math.min(implicitWidth, projectButton.budget - 22)
+                        width: Math.max(0, projectButton.availableWidth - 9 - projectRow.spacing)
                     }
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
@@ -248,8 +255,9 @@ Item {
         // ------------------------------------------------ Chat / Work mode
         Rectangle {
             id: modeSurface
-            Layout.preferredHeight: 30
-            Layout.preferredWidth: modeRow.implicitWidth + 4
+            objectName: "modeSurface"
+            Layout.preferredHeight: 34
+            Layout.preferredWidth: modeRow.implicitWidth + 8
             radius: Theme.r2
             color: Theme.surfaceSunken
             border.width: 1
@@ -268,8 +276,10 @@ Item {
                     delegate: AbstractButton {
                         id: choice
                         required property var modelData
-                        width: choiceContent.implicitWidth + Theme.s3 * 2
+                        objectName: "modeChoice_" + modelData.id
+                        width: 82
                         height: 26
+                        padding: 0
                         enabled: root.canChooseMode
                         hoverEnabled: true
                         readonly property bool chosen: root.resolvedMode === modelData.id
@@ -284,30 +294,34 @@ Item {
                             radius: Theme.r1
                             solid: choice.chosen
                             autoGlass: false
-                            glassEnabled: choice.chosen || choice.hovered || choice.visualFocus
+                            glassEnabled: choice.hovered || choice.visualFocus
+                            sheen: choice.hovered
+                            strongEdge: choice.visualFocus
                             tint: choice.chosen ? Theme.surfaceSelected : Theme.glassTintHover
                             fillOpacity: choice.chosen ? 1 : choice.hovered && choice.enabled ? 0.42 : 0
                             outlineVisible: choice.chosen || choice.visualFocus
-                            edgeColor: choice.visualFocus ? Theme.accentEdge : Theme.glassEdgeStrong
+                            edgeColor: choice.visualFocus ? Theme.accentEdge : Theme.borderSubtle
                         }
-                        contentItem: Row {
-                            id: choiceContent
-                            anchors.centerIn: parent
-                            spacing: Theme.s1
-                            Icon {
-                                name: choice.modelData.icon
-                                ink: choice.chosen ? Theme.textPrimary : Theme.textMuted
-                                width: 12
-                                height: 12
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                            Text {
-                                text: choice.modelData.label
-                                color: choice.chosen ? Theme.textPrimary : Theme.textSecondary
-                                font.family: Theme.sansFamily
-                                font.pixelSize: Theme.caption
-                                font.weight: choice.chosen ? Font.DemiBold : Font.Normal
-                                anchors.verticalCenter: parent.verticalCenter
+                        contentItem: Item {
+                            Row {
+                                id: choiceContent
+                                anchors.centerIn: parent
+                                spacing: Theme.s1
+                                Icon {
+                                    name: choice.modelData.icon
+                                    ink: choice.chosen ? Theme.textPrimary : Theme.textMuted
+                                    width: 12
+                                    height: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                Text {
+                                    text: choice.modelData.label
+                                    color: choice.chosen ? Theme.textPrimary : Theme.textSecondary
+                                    font.family: Theme.sansFamily
+                                    font.pixelSize: Theme.caption
+                                    font.weight: choice.chosen ? Font.DemiBold : Font.Normal
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
                             }
                         }
                         MouseArea {
@@ -349,30 +363,32 @@ Item {
                          ? Theme.accentEdge
                          : autonomyButton.hovered ? Theme.glassEdgeStrong : Theme.borderSubtle
             }
-            contentItem: Row {
-                id: autonomyRow
-                anchors.centerIn: parent
-                spacing: Theme.s1
-                StatusDot {
-                    width: 6
-                    height: 6
-                    tone: bridge && bridge.permissionMode === "full" ? Theme.warning : Theme.accent
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                Text {
-                    text: bridge ? root.permissionLabel(bridge.permissionMode) : "Safe"
-                    color: Theme.textSecondary
-                    font.family: Theme.monoFamily
-                    font.pixelSize: Theme.micro
-                    font.weight: Font.Medium
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                Icon {
-                    name: "down"
-                    ink: Theme.textMuted
-                    width: 9
-                    height: 9
-                    anchors.verticalCenter: parent.verticalCenter
+            contentItem: Item {
+                Row {
+                    id: autonomyRow
+                    anchors.centerIn: parent
+                    spacing: Theme.s1
+                    StatusDot {
+                        width: 6
+                        height: 6
+                        tone: bridge && bridge.permissionMode === "full" ? Theme.warning : Theme.accent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        text: bridge ? root.permissionLabel(bridge.permissionMode) : "Safe"
+                        color: Theme.textSecondary
+                        font.family: Theme.monoFamily
+                        font.pixelSize: Theme.micro
+                        font.weight: Font.Medium
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Icon {
+                        name: "down"
+                        ink: Theme.textMuted
+                        width: 9
+                        height: 9
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
             }
             MouseArea {

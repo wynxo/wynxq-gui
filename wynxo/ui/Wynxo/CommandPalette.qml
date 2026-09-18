@@ -160,7 +160,7 @@ Sheet {
             model: palette.filtered
             currentIndex: palette.highlighted
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: WScrollBar { policy: ScrollBar.AsNeeded }
             onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
 
             delegate: Item {

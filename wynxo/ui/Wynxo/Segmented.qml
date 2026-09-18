@@ -32,7 +32,8 @@ Item {
         radius: Theme.r1
         tint: Theme.surfaceSelected
         fillOpacity: 1
-        glassEnabled: true
+        glassEnabled: false
+        sheen: false
         edgeColor: Theme.glassEdgeStrong
         width: root.segmentWidth
         x: 3 + root.segmentWidth * root.currentIndex

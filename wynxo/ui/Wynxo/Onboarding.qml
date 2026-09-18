@@ -76,7 +76,7 @@ Popup {
             contentHeight: onboardingText.implicitHeight
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+            ScrollBar.vertical: WScrollBar {}
             Text {
                 id: onboardingText
                 width: bodyScroll.availableWidth

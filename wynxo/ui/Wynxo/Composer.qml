@@ -81,7 +81,7 @@ Item {
                 contentHeight: attachmentFlow.implicitHeight
                 clip: true
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                ScrollBar.vertical: WScrollBar {}
 
                 Flow {
                     id: attachmentFlow
@@ -195,7 +195,7 @@ Item {
                     Math.max(root.homeMode ? 48 : 38, input.implicitHeight + Theme.s1))
                 clip: true
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                ScrollBar.vertical: WScrollBar {}
 
                 TextArea {
                     id: input
@@ -340,29 +340,12 @@ Item {
                     ToolTip.text: "Screen control is managed in Agent settings"
                 }
 
-                Row {
-                    visible: bridge && bridge.contextFraction > 0.75 && root.width > 700 && !root.homeMode
-                    spacing: Theme.s2
-                    Text {
-                        text: bridge ? Math.round(bridge.contextFraction * 100) + "%" : ""
-                        color: bridge && bridge.contextFraction > 0.9 ? Theme.warning : Theme.textMuted
-                        font.family: Theme.monoFamily; font.pixelSize: Theme.micro
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    Meter {
-                        width: 38
-                        value: bridge ? bridge.contextFraction : 0
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    HoverHandler { id: meterHover }
-                    ToolTip.visible: meterHover.hovered
-                    ToolTip.text: bridge ? bridge.contextSummary : ""
-                }
-
                 Item { Layout.fillWidth: true }
 
                 TokenUsage {
                     id: tokenUsage
+                    Layout.maximumWidth: Math.max(100, root.width * 0.4)
+                    Layout.rightMargin: Theme.s3
                     Layout.preferredHeight: 30
                     compact: root.tight
                 }

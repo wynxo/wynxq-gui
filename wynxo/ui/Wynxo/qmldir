@@ -77,3 +77,5 @@ SettingsSheet 1.0 SettingsSheet.qml
 ShortcutsSheet 1.0 ShortcutsSheet.qml
 PermissionPrompt 1.0 PermissionPrompt.qml
 Onboarding 1.0 Onboarding.qml
+
+WScrollBar 1.0 WScrollBar.qml

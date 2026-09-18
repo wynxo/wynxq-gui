@@ -49,22 +49,24 @@ AbstractButton {
         Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
     }
 
-    contentItem: Row {
-        id: row
-        anchors.centerIn: parent
-        spacing: Theme.s2
-        Text {
-            text: !bridge ? "No model"
-                : button.compact ? bridge.modelShortName : bridge.model
-            color: button.hovered || popover.opened ? Theme.textPrimary : Theme.textSecondary
-            font.family: Theme.sansFamily; font.pixelSize: Theme.caption
-            anchors.verticalCenter: parent.verticalCenter
-            elide: Text.ElideMiddle
-            width: Math.min(implicitWidth, 190)
-        }
-        Icon {
-            name: "down"; ink: Theme.textMuted; width: 11; height: 11
-            anchors.verticalCenter: parent.verticalCenter
+    contentItem: Item {
+        Row {
+            id: row
+            anchors.centerIn: parent
+            spacing: Theme.s2
+            Text {
+                text: !bridge ? "No model"
+                    : button.compact ? bridge.modelShortName : bridge.model
+                color: button.hovered || popover.opened ? Theme.textPrimary : Theme.textSecondary
+                font.family: Theme.sansFamily; font.pixelSize: Theme.caption
+                anchors.verticalCenter: parent.verticalCenter
+                elide: Text.ElideMiddle
+                width: Math.min(implicitWidth, 190)
+            }
+            Icon {
+                name: "down"; ink: Theme.textMuted; width: 11; height: 11
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
     }
 

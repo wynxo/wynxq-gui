@@ -57,7 +57,7 @@ Button {
     background: GlassSurface {
         radius: Theme.r2
         solid: !control.isGhost && !control.isDanger
-        glassEnabled: control.interacting || (!control.isGhost && !control.isDanger)
+        glassEnabled: control.interacting
         tint: control.isPrimary
               ? (control.down ? Qt.darker(Theme.accent, 1.08)
                  : control.hovered ? Theme.accentHover : Theme.accent)
@@ -74,7 +74,7 @@ Button {
         strongEdge: control.interacting
         active: control.visualFocus
         elevated: control.isPrimary && control.hovered
-        sheen: control.interacting || (!control.isGhost && !control.isDanger)
+        sheen: control.interacting
         edgeColor: control.visualFocus ? Theme.accentEdge
                  : control.isDanger ? Theme.alpha(Theme.danger, control.interacting ? 0.42 : 0.24)
                  : control.isPrimary ? Theme.alpha(Theme.textPrimary, control.interacting ? 0.18 : 0.10)

@@ -149,9 +149,8 @@ Item {
             cacheBuffer: 600
             topMargin: Theme.s1
             bottomMargin: Theme.s3
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: WScrollBar {
                 policy: ScrollBar.AsNeeded
-                contentItem: Rectangle { implicitWidth: 3; radius: 2; color: Theme.borderStrong }
             }
 
             delegate: AbstractButton {
@@ -285,9 +284,8 @@ Item {
             currentIndex: count > 0 ? 0 : -1
             topMargin: Theme.s1
             bottomMargin: Theme.s3
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: WScrollBar {
                 policy: ScrollBar.AsNeeded
-                contentItem: Rectangle { implicitWidth: 3; radius: 2; color: Theme.borderStrong }
             }
 
             delegate: AbstractButton {

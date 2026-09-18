@@ -105,8 +105,8 @@ Rectangle {
         contentHeight: codeLoader.item ? codeLoader.item.implicitHeight : 0
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded }
-        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        ScrollBar.horizontal: WScrollBar { policy: ScrollBar.AsNeeded }
+        ScrollBar.vertical: WScrollBar { policy: ScrollBar.AsNeeded }
 
         Loader {
             id: codeLoader

@@ -85,9 +85,8 @@ Item {
                                                          : plain.contentHeight) + Theme.s4
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
-                ScrollBar.vertical: ScrollBar {
+                ScrollBar.vertical: WScrollBar {
                     policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitWidth: 4; radius: 2; color: Theme.borderStrong }
                 }
 
                 // `source` is the Markdown; `text` is what Python renders from

@@ -75,6 +75,7 @@ Sheet {
         clip: true
         contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical: WScrollBar {}
 
         Column {
             id: body

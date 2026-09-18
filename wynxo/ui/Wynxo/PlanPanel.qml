@@ -42,9 +42,8 @@ Item {
             bottomMargin: Theme.s4
             cacheBuffer: 400
 
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: WScrollBar {
                 policy: ScrollBar.AsNeeded
-                contentItem: Rectangle { implicitWidth: 3; radius: 2; color: Theme.borderStrong }
             }
 
             delegate: PlanTaskRow {

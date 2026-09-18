@@ -63,6 +63,8 @@ class Store:
             );
             CREATE INDEX IF NOT EXISTS token_usage_created_at
                 ON token_usage(created_at);
+            CREATE INDEX IF NOT EXISTS token_usage_conversation
+                ON token_usage(conversation_id);
         """)
         self._db.commit()
         columns = {row["name"] for row in self._db.execute("PRAGMA table_info(conversations)")}

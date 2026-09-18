@@ -135,9 +135,8 @@ Item {
             contentWidth: width
             contentHeight: editor.implicitHeight + Theme.s3 * 2
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: WScrollBar {
                 policy: ScrollBar.AsNeeded
-                contentItem: Rectangle { implicitWidth: 3; radius: 2; color: Theme.borderStrong }
             }
 
             TextEdit {

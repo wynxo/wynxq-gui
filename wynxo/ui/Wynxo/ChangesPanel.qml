@@ -101,9 +101,8 @@ Item {
             model: root.entries
             boundsBehavior: Flickable.StopAtBounds
             reuseItems: true
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: WScrollBar {
                 policy: ScrollBar.AsNeeded
-                contentItem: Rectangle { implicitWidth: 3; radius: 2; color: Theme.borderStrong }
             }
 
             delegate: AbstractButton {

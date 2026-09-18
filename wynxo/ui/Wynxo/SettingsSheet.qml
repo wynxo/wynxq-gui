@@ -11,6 +11,7 @@ import QtQuick.Layouts
 */
 Sheet {
     id: sheet
+    objectName: "settingsSheet"
     title: "Settings"
     width: Math.min(820, parent ? parent.width - Theme.s6 : 820)
     height: Math.min(620, parent ? parent.height - Theme.s6 : 620)
@@ -136,6 +137,7 @@ Sheet {
             clip: true
             contentWidth: availableWidth
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical: WScrollBar {}
 
             Item {
                 width: sheet.width - 186

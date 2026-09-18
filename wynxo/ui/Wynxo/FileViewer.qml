@@ -440,13 +440,11 @@ Item {
                 contentHeight: Math.max(height, editor.contentHeight + Theme.s3 * 2)
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
-                ScrollBar.vertical: ScrollBar {
+                ScrollBar.vertical: WScrollBar {
                     policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitWidth: 4; radius: 2; color: Theme.borderStrong }
                 }
-                ScrollBar.horizontal: ScrollBar {
+                ScrollBar.horizontal: WScrollBar {
                     policy: root.wrap ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitHeight: 4; radius: 2; color: Theme.borderStrong }
                 }
 
                 // One Text, not one per line: a 12 000-line file would

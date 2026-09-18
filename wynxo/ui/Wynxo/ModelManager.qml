@@ -53,7 +53,7 @@ Sheet {
             spacing: 1
             model: bridge ? bridge.modelCatalog : []
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: WScrollBar { policy: ScrollBar.AsNeeded }
 
             delegate: AbstractButton {
                 id: entry

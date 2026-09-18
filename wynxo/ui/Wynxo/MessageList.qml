@@ -26,15 +26,11 @@ ListView {
     readonly property bool atBottom: atYEnd || contentHeight + topMargin + bottomMargin <= height
         || contentY + height >= originY + contentHeight - 1
 
-    ScrollBar.vertical: ScrollBar {
+    ScrollBar.vertical: WScrollBar {
         policy: ScrollBar.AsNeeded
         onPressedChanged: {
             if (pressed) list.following = false;
             else list.following = list.atBottom;
-        }
-        contentItem: Rectangle {
-            implicitWidth: 4; radius: 2
-            color: parent.pressed ? Theme.borderStrong : Theme.borderSubtle
         }
     }
 

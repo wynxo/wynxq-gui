@@ -124,7 +124,7 @@ Popup {
             contentHeight: review.implicitHeight
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+            ScrollBar.vertical: WScrollBar {}
 
             ColumnLayout {
                 id: review

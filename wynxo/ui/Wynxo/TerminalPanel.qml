@@ -131,9 +131,8 @@ Item {
                 onCountChanged: if (following) Qt.callLater(positionViewAtEnd)
                 onContentHeightChanged: if (following) positionViewAtEnd()
 
-                ScrollBar.vertical: ScrollBar {
+                ScrollBar.vertical: WScrollBar {
                     policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitWidth: 4; radius: 2; color: Theme.borderStrong }
                 }
 
                 // An Item wraps the row so the model's `text` role cannot

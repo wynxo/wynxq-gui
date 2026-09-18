@@ -90,13 +90,11 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 topMargin: Theme.s2
                 bottomMargin: Theme.s2
-                ScrollBar.vertical: ScrollBar {
+                ScrollBar.vertical: WScrollBar {
                     policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitWidth: 4; radius: 2; color: Theme.borderStrong }
                 }
-                ScrollBar.horizontal: ScrollBar {
+                ScrollBar.horizontal: WScrollBar {
                     policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitHeight: 4; radius: 2; color: Theme.borderStrong }
                 }
                 contentWidth: width
 
