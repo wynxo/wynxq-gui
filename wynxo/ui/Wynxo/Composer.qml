@@ -133,6 +133,7 @@ Item {
                             id: attachment
                             required property var modelData
                             readonly property bool isImage: !!modelData.image
+                            readonly property bool included: modelData.enabled !== false
                             width: isImage ? 70 : Math.min(fileChip.implicitWidth, attachmentFlow.width)
                             height: isImage ? 70 : fileChip.implicitHeight
 
@@ -144,6 +145,14 @@ Item {
                                 subtitle: modelData.subtitle
                                 iconName: ContextKinds.icon(modelData.kind)
                                 removable: true
+                                interactive: true
+                                selected: attachment.included
+                                tone: attachment.included ? Theme.accent : Theme.textDisabled
+                                ToolTip.visible: hovered
+                                ToolTip.text: (attachment.included ? "Included in the next message" : "Held for a later message")
+                                    + (modelData.subtitle ? " · " + modelData.subtitle : "")
+                                    + (modelData.tokens ? " · ≈" + modelData.tokens + " tokens" : "")
+                                onClicked: if (bridge) bridge.setAttachmentEnabled(modelData.id, !attachment.included)
                                 onRemoved: if (bridge) bridge.removeAttachment(modelData.id)
                             }
 
@@ -152,6 +161,8 @@ Item {
                                 anchors.fill: parent
                                 radius: Theme.r2
                                 color: Theme.surfaceSunken
+                                opacity: attachment.included ? 1.0 : 0.46
+                                Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
                                 border.width: 1
                                 border.color: Theme.borderSubtle
                                 clip: true
@@ -169,6 +180,33 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: preview.open()
                                 }
+                            }
+
+                            AbstractButton {
+                                id: includeImage
+                                visible: attachment.isImage
+                                z: 4
+                                width: 20; height: 20
+                                anchors.left: parent.left
+                                anchors.bottom: parent.bottom
+                                anchors.margins: 4
+                                hoverEnabled: true
+                                Accessible.name: attachment.included ? "Hold image for a later message" : "Include image in next message"
+                                onClicked: if (bridge) bridge.setAttachmentEnabled(modelData.id, !attachment.included)
+                                background: GlassSurface {
+                                    radius: Theme.rPill
+                                    tint: attachment.included ? Theme.accent : Theme.glassTintStrong
+                                    fillOpacity: attachment.included ? 0.84 : 0.76
+                                    strongEdge: true
+                                }
+                                contentItem: Icon {
+                                    anchors.centerIn: parent
+                                    width: 10; height: 10
+                                    name: attachment.included ? "check" : "plus"
+                                    ink: attachment.included ? Theme.onAccent : Theme.textSecondary
+                                }
+                                ToolTip.visible: hovered
+                                ToolTip.text: attachment.included ? "Included now" : "Held for later"
                             }
 
                             AbstractButton {

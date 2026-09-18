@@ -635,7 +635,9 @@ class Controller(QObject):
         """A problem the user should see before sending, not after it fails."""
         if not self._online or self._capability_probe_active or self._capability_error:
             return ""
-        if ctx.needs_vision(self._attachments) and "vision" not in self._model_capabilities:
+        active_attachments = [item for item in self._attachments
+                              if item.get("enabled", True) is not False]
+        if ctx.needs_vision(active_attachments) and "vision" not in self._model_capabilities:
             return f"{self._model} cannot read images. Attached pictures will be ignored — pick a vision model to use them."
         if self.contextFraction > 0.92:
             return ("This conversation nearly fills the model's context window. Start a new chat, "
@@ -842,7 +844,8 @@ class Controller(QObject):
     def contextUsed(self):
         """Approximate prompt tokens in play, including pending attachments."""
         used = int(self._run_metrics.get("prompt_tokens", 0) or 0) or self._history_tokens
-        return used + sum(int(item.get("tokens", 0)) for item in self._attachments)
+        return used + sum(int(item.get("tokens", 0)) for item in self._attachments
+                          if item.get("enabled", True) is not False)
     @Property(float, notify=changed)
     def contextFraction(self):
         return min(1.0, self.contextUsed / float(self._num_ctx)) if self._num_ctx else 0.0
@@ -880,6 +883,9 @@ class Controller(QObject):
     def attachments(self): return self._attachments
     @Property(int, notify=attachmentsChanged)
     def attachmentCount(self): return len(self._attachments)
+    @Property(int, notify=attachmentsChanged)
+    def includedAttachmentCount(self):
+        return sum(item.get("enabled", True) is not False for item in self._attachments)
     # --------------------------------------------------------- the project
     # The folder Wynxo is working in is the first thing the interface states,
     # so it gets a name, a short path, and a list of places to go back to.
@@ -1511,6 +1517,22 @@ class Controller(QObject):
             self.attachmentsChanged.emit()
             self.changed.emit()
 
+    @Slot(str, bool)
+    def setAttachmentEnabled(self, attachment_id, enabled):
+        attachment_id = str(attachment_id or "")
+        enabled = bool(enabled)
+        for index, item in enumerate(self._attachments):
+            if str(item.get("id", "")) != attachment_id:
+                continue
+            if bool(item.get("enabled", True)) == enabled:
+                return
+            updated = dict(item)
+            updated["enabled"] = enabled
+            self._attachments[index] = updated
+            self.attachmentsChanged.emit()
+            self.changed.emit()
+            return
+
     def attach_web_page(self, page: dict) -> None:
         """Attach the page the browser is showing, on the user's request."""
         if not page or not page.get("text"):
@@ -1798,7 +1820,10 @@ class Controller(QObject):
         if not self._task_id:
             task = self.store.create_conversation(derive_title(text), self._model)
             self._task_id, self._task_title = task["id"], task["title"]
-        attachments = list(self._attachments)
+        attachments = [item for item in self._attachments
+                       if item.get("enabled", True) is not False]
+        deferred_attachments = [item for item in self._attachments
+                                if item.get("enabled", True) is False]
         vision_ready = "vision" in self._model_capabilities
         extra = ctx.build_messages([a for a in attachments if vision_ready or not a.get("image")])
         self._history.extend(extra)
@@ -1813,7 +1838,12 @@ class Controller(QObject):
         self.messages.append_message("user", text)
         if attachments and not vision_ready and ctx.needs_vision(attachments):
             self.toast.emit(f"{self._model} cannot read images, so pictures were left out.")
-        self.clearAttachments()
+        if deferred_attachments:
+            self._attachments = deferred_attachments
+            self.attachmentsChanged.emit()
+            self.changed.emit()
+        else:
+            self.clearAttachments()
         self._start_run(list(self._history))
         self.scrollToEnd.emit()
 
