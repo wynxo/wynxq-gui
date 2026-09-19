@@ -19,66 +19,98 @@ Item {
     }
     readonly property real segmentWidth: repeater.count > 0 ? (width - 6) / repeater.count : 0
 
-    Rectangle {
+    GlassSurface {
         anchors.fill: parent
         radius: Theme.r2
-        color: Theme.surface
-        border.width: 1
-        border.color: Theme.borderSubtle
+        tint: Theme.surface
+        fillOpacity: 1
+        solid: true
+        glassEnabled: false
+        sheen: false
+        edgeColor: Theme.borderSubtle
     }
 
     GlassSurface {
-        y: 3; height: parent.height - 6
+        y: 3
+        height: parent.height - 6
+        width: root.segmentWidth
+        x: 3 + root.segmentWidth * root.currentIndex
         radius: Theme.r1
         tint: Theme.surfaceSelected
         fillOpacity: 1
+        solid: true
         glassEnabled: false
         sheen: false
         edgeColor: Theme.glassEdgeStrong
-        width: root.segmentWidth
-        x: 3 + root.segmentWidth * root.currentIndex
-        Behavior on x { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.base; easing.type: Theme.easing } }
+        Behavior on x {
+            enabled: !Theme.reducedMotion
+            NumberAnimation { duration: Theme.base; easing.type: Theme.easing }
+        }
     }
 
     Row {
         id: row
         anchors.fill: parent
         anchors.margins: 3
+
         Repeater {
             id: repeater
             model: root.options
+
             delegate: AbstractButton {
+                id: segment
                 required property var modelData
                 required property int index
                 width: root.width > 0 ? root.segmentWidth : implicitWidth
                 height: parent.height
                 hoverEnabled: true
+                focusPolicy: Qt.StrongFocus
                 text: modelData.label
+                scale: down ? Theme.pressScale : 1
+
                 Accessible.role: Accessible.RadioButton
                 Accessible.name: modelData.label
                 Accessible.checked: index === root.currentIndex
                 onClicked: root.selected(modelData.id)
+
                 ToolTip.visible: hovered && !!modelData.detail
                 ToolTip.text: modelData.detail || ""
-                ToolTip.delay: 600
+                ToolTip.delay: Theme.tooltipDelay
 
-                background: Rectangle {
-                    radius: Theme.r1
-                    color: "transparent"
-                    border.width: parent.visualFocus ? 2 : 0
-                    border.color: Theme.accentEdge
+                Behavior on scale {
+                    enabled: !Theme.reducedMotion
+                    NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
                 }
+
+                background: GlassSurface {
+                    radius: Theme.r1
+                    solid: false
+                    glassEnabled: segment.hovered || segment.down || segment.visualFocus
+                    tint: segment.down ? Theme.glassTintStrong : Theme.glassTintHover
+                    fillOpacity: segment.down ? 0.46
+                               : segment.hovered ? 0.28
+                               : segment.visualFocus ? 0.20 : 0.0
+                    outlineVisible: segment.visualFocus
+                    strongEdge: segment.visualFocus
+                    active: segment.visualFocus
+                    sheen: segment.hovered || segment.down
+                    edgeColor: segment.visualFocus ? Theme.accentEdge : "transparent"
+                }
+
                 contentItem: Text {
-                    text: modelData.label
-                    color: index === root.currentIndex ? Theme.textPrimary
-                         : parent.hovered ? Theme.textSecondary : Theme.textMuted
+                    text: segment.modelData.label
+                    color: segment.index === root.currentIndex ? Theme.textPrimary
+                         : segment.hovered ? Theme.textSecondary : Theme.textMuted
                     font.family: Theme.sansFamily
                     font.pixelSize: Theme.caption
-                    font.weight: index === root.currentIndex ? Font.DemiBold : Font.Medium
+                    font.weight: segment.index === root.currentIndex ? Font.DemiBold : Font.Medium
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
-                    Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
+                    Behavior on color {
+                        enabled: !Theme.reducedMotion
+                        ColorAnimation { duration: Theme.fast }
+                    }
                 }
 
                 MouseArea {

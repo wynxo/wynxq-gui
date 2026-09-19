@@ -155,6 +155,16 @@ QtObject {
     readonly property int slow: reducedMotion ? 0 : 230
     readonly property int easing: Easing.OutCubic
 
+    // Shared micro-interaction vocabulary. Keeping these values here prevents
+    // individual controls from slowly drifting into different products.
+    readonly property real pressScale: 0.97
+    readonly property real disabledOpacity: 0.42
+    readonly property int tooltipDelay: 500
+    readonly property real popupScale: 0.97
+    readonly property real popupBlur: 0.76
+    readonly property real floatingControlFill: 0.62
+    readonly property real floatingControlHoverFill: 0.80
+
     function stateColor(name) {
         if (name === "done") return success;
         if (name === "failed") return danger;

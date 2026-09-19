@@ -15,6 +15,8 @@ AbstractButton {
     signal switched(bool value)
 
     hoverEnabled: true
+    focusPolicy: Qt.StrongFocus
+    opacity: enabled ? 1 : Theme.disabledOpacity
     implicitHeight: Math.max(Theme.control, layout.implicitHeight)
     implicitWidth: 260
     Accessible.role: Accessible.CheckBox
@@ -22,6 +24,11 @@ AbstractButton {
     Accessible.description: description
     Accessible.checked: checked
     onClicked: root.switched(!root.checked)
+
+    Behavior on opacity {
+        enabled: !Theme.reducedMotion
+        NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+    }
 
     background: Item {}
 
@@ -54,6 +61,11 @@ AbstractButton {
             Layout.preferredHeight: 22
             Layout.alignment: Qt.AlignVCenter
             radius: height / 2
+            scale: root.down ? Theme.pressScale : 1
+            Behavior on scale {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+            }
             solid: true
             glassEnabled: root.checked || root.hovered || root.visualFocus
             tint: root.checked ? Theme.accent

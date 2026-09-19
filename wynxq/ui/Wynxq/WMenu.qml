@@ -63,7 +63,7 @@ Popup {
         fillOpacity: Theme.glassStrongOpacity
         glassEnabled: true
         backdropBlur: true
-        blurAmount: 0.78
+        blurAmount: Theme.popupBlur
         elevated: true
         strongEdge: true
         sheen: true
@@ -72,7 +72,7 @@ Popup {
     enter: Transition {
         ParallelAnimation {
             NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.fast }
-            NumberAnimation { property: "scale"; from: 0.965; to: 1; duration: Theme.fast; easing.type: Theme.easing }
+            NumberAnimation { property: "scale"; from: Theme.popupScale; to: 1; duration: Theme.fast; easing.type: Theme.easing }
         }
     }
     exit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.fast } }
@@ -120,17 +120,21 @@ Popup {
         GlassSurface {
             property var entry: ({})
             readonly property bool on: area.containsMouse || menu.highlighted === entry.id
+            readonly property bool pressed: area.pressed && !entry.disabled
             readonly property real textLeft: entry.icon ? Theme.s3 + 14 + Theme.s3 : Theme.s3
             height: entry.detail ? menu.itemHeight + 14 : menu.itemHeight
             radius: Theme.r2
             solid: false
-            glassEnabled: on && !entry.disabled
-            tint: entry.checked ? Theme.accent : Theme.glassTintHover
-            fillOpacity: on && !entry.disabled ? 0.52 : entry.checked ? 0.12 : 0.0
-            outlineVisible: on && !entry.disabled
-            strongEdge: on && !entry.disabled
-            sheen: on && !entry.disabled
-            opacity: entry.disabled ? 0.4 : 1
+            glassEnabled: (on || pressed) && !entry.disabled
+            tint: entry.checked ? Theme.accent
+                  : pressed ? Theme.glassTintStrong : Theme.glassTintHover
+            fillOpacity: pressed ? 0.64
+                       : on && !entry.disabled ? 0.52
+                       : entry.checked ? 0.12 : 0.0
+            outlineVisible: (on || pressed) && !entry.disabled
+            strongEdge: (on || pressed) && !entry.disabled
+            sheen: (on || pressed) && !entry.disabled
+            opacity: entry.disabled ? Theme.disabledOpacity : 1
 
             Icon {
                 visible: !!entry.icon

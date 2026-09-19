@@ -425,23 +425,18 @@ ApplicationWindow {
         iconName: "panelLeft"
         tooltip: "Show sidebar"
         shortcut: "Ctrl+B"
-        scale: down ? 0.92 : hovered ? 1.035 : 1.0
         onClicked: window.toggleSidebar()
         background: GlassSurface {
             radius: Theme.r2
             solid: false
             glassEnabled: true
             tint: Theme.glassTintStrong
-            fillOpacity: sidebarRestore.hovered ? 0.82 : 0.62
+            fillOpacity: sidebarRestore.hovered ? Theme.floatingControlHoverFill : Theme.floatingControlFill
             outlineVisible: true
             strongEdge: sidebarRestore.hovered || sidebarRestore.visualFocus
             active: sidebarRestore.visualFocus
             sheen: sidebarRestore.hovered
             edgeColor: sidebarRestore.visualFocus ? Theme.accentEdge : Theme.glassEdge
-        }
-        Behavior on scale {
-            enabled: !Theme.reducedMotion
-            NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
         }
     }
 
@@ -460,23 +455,18 @@ ApplicationWindow {
         iconName: "panelRight"
         tooltip: "Show workspace"
         shortcut: "Ctrl+Shift+B"
-        scale: down ? 0.92 : hovered ? 1.035 : 1.0
         onClicked: window.toggleDock()
         background: GlassSurface {
             radius: Theme.r2
             solid: false
             glassEnabled: true
             tint: Theme.glassTintStrong
-            fillOpacity: dockRestore.hovered ? 0.82 : 0.62
+            fillOpacity: dockRestore.hovered ? Theme.floatingControlHoverFill : Theme.floatingControlFill
             outlineVisible: true
             strongEdge: dockRestore.hovered || dockRestore.visualFocus
             active: dockRestore.visualFocus
             sheen: dockRestore.hovered
             edgeColor: dockRestore.visualFocus ? Theme.accentEdge : Theme.glassEdge
-        }
-        Behavior on scale {
-            enabled: !Theme.reducedMotion
-            NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
         }
     }
 

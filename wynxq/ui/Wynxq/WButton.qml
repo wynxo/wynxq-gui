@@ -20,14 +20,19 @@ Button {
     implicitHeight: Theme.control
     implicitWidth: row.implicitWidth + (compactPadding ? Theme.s3 : Theme.s4) * 2
     hoverEnabled: true
-    opacity: enabled ? 1 : 0.42
-    scale: down ? 0.97 : 1
+    focusPolicy: Qt.StrongFocus
+    opacity: enabled ? 1 : Theme.disabledOpacity
+    scale: down ? Theme.pressScale : 1
     font.family: Theme.sansFamily
     font.pixelSize: Theme.label
     font.weight: Font.Medium
     Accessible.name: text || iconName
 
     Behavior on scale {
+        enabled: !Theme.reducedMotion
+        NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+    }
+    Behavior on opacity {
         enabled: !Theme.reducedMotion
         NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
     }
@@ -43,6 +48,7 @@ Button {
                 ink: control.ink
                 width: 14; height: 14
                 anchors.verticalCenter: parent.verticalCenter
+                Behavior on ink { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
             }
             Text {
                 visible: !!control.text
@@ -50,6 +56,7 @@ Button {
                 color: control.ink
                 font: control.font
                 anchors.verticalCenter: parent.verticalCenter
+                Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
             }
         }
     }

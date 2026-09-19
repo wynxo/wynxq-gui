@@ -29,7 +29,7 @@ AbstractButton {
     focusPolicy: interactive ? Qt.StrongFocus : Qt.NoFocus
     Accessible.role: interactive ? Accessible.Button : Accessible.StaticText
     Accessible.name: subtitle ? text + ", " + subtitle : text
-    ToolTip.delay: 500
+    ToolTip.delay: Theme.tooltipDelay
 
     background: GlassSurface {
         radius: Theme.rPill

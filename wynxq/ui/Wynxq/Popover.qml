@@ -48,7 +48,7 @@ Popup {
         fillOpacity: Theme.glassStrongOpacity
         glassEnabled: true
         backdropBlur: true
-        blurAmount: 0.76
+        blurAmount: Theme.popupBlur
         elevated: true
         strongEdge: true
         sheen: true
@@ -56,11 +56,11 @@ Popup {
 
     enter: Transition {
         ParallelAnimation {
-            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.reducedMotion ? 0 : Theme.fast }
-            NumberAnimation { property: "scale"; from: 0.965; to: 1; duration: Theme.reducedMotion ? 0 : Theme.fast; easing.type: Theme.easing }
+            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.fast }
+            NumberAnimation { property: "scale"; from: Theme.popupScale; to: 1; duration: Theme.fast; easing.type: Theme.easing }
         }
     }
-    exit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.reducedMotion ? 0 : Theme.fast } }
+    exit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.fast } }
 
     contentItem: Item {
         implicitWidth: holder.implicitWidth

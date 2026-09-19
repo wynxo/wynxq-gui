@@ -17,7 +17,14 @@ TextField {
     rightPadding: Theme.s3
     selectByMouse: true
     hoverEnabled: true
+    focusPolicy: Qt.StrongFocus
+    opacity: enabled ? 1 : Theme.disabledOpacity
     Accessible.name: placeholderText
+
+    Behavior on opacity {
+        enabled: !Theme.reducedMotion
+        NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+    }
 
     background: GlassSurface {
         radius: Theme.r2
@@ -41,5 +48,6 @@ TextField {
         width: 13; height: 13
         x: Theme.s3
         anchors.verticalCenter: parent.verticalCenter
+        Behavior on ink { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
     }
 }

@@ -18,12 +18,12 @@ Button {
     implicitHeight: Theme.control
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
-    opacity: enabled ? 1 : 0.34
+    opacity: enabled ? 1 : Theme.disabledOpacity
 
     // Hover scaling made dense toolbars look like they were wobbling as the
     // pointer crossed them. Keep the control geometrically stable and reserve
     // motion for the physical press itself.
-    scale: down ? 0.96 : 1
+    scale: down ? Theme.pressScale : 1
     Accessible.name: tooltip || iconName
 
     Behavior on scale {
@@ -37,7 +37,7 @@ Button {
 
     ToolTip.visible: hovered && enabled && tooltip.length > 0
     ToolTip.text: shortcut ? tooltip + " · " + shortcut : tooltip
-    ToolTip.delay: 500
+    ToolTip.delay: Theme.tooltipDelay
 
     contentItem: Item {
         Icon {
