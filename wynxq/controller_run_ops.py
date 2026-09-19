@@ -89,7 +89,7 @@ def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
     browser_open = (lambda target: self._request_builtin_browser_for(task_id, target)) \
         if self.dock.browserAvailable else None
     engine = engine_class(
-        OllamaClient(state["endpoint"]), run_desktop, self._memory_for_run(),
+        self.OLLAMA_CLIENT(state["endpoint"]), run_desktop, self._memory_for_run(),
         browser_open=browser_open,
     )
     enabled = self.desktopEnabled if desktop_enabled is None else bool(desktop_enabled)
@@ -748,7 +748,7 @@ def pullModel(self, model):
     endpoint = self._endpoint
 
     def pull(cancel, emit):
-        for progress in OllamaClient(endpoint).pull(model, cancel):
+        for progress in self.OLLAMA_CLIENT(endpoint).pull(model, cancel):
             emit(progress)
 
     def progress(data):
