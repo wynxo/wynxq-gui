@@ -5,7 +5,8 @@ compatibility. These checks make the split explicit: implementations live in
 focused modules while existing imports remain stable.
 """
 
-from wynxq import (agent_tools, conversation, controller, controller_support, desktop,\n                   desktop_backends, desktop_common, dock, dock_models, engine)
+from wynxq import (agent_tools, conversation, controller, controller_support, desktop,
+                   desktop_backends, desktop_common, dock, dock_models, engine)
 
 
 def test_controller_reexports_conversation_model_and_helpers():
