@@ -11,7 +11,7 @@ import subprocess
 
 LOG = logging.getLogger(__name__)
 
-APP_ID = "io.github.wynxo.Wynxq"
+APP_ID = "io.github.wynxq.Wynxq"
 # Runs shorter than this are not worth interrupting the user for.
 MIN_SECONDS = 12.0
 
