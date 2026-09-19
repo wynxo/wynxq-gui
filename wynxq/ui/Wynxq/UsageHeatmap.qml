@@ -114,7 +114,7 @@ Item {
 
                         SequentialAnimation {
                             running: cell.hasDay && !Theme.reducedMotion
-                            PauseAnimation { duration: cell.dataIndex * 14 }
+                            PauseAnimation { duration: Math.max(0, cell.dataIndex) * 14 }
                             NumberAnimation {
                                 target: cell; property: "opacity"
                                 from: 0; to: 1; duration: 130; easing.type: Theme.easing
