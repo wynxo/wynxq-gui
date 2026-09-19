@@ -336,7 +336,8 @@ def test_ctrl_v_attaches_images_without_breaking_text_paste():
     controller = (Path(__file__).resolve().parents[1] / "wynxq" / "controller.py").read_text()
     assert "@Slot(result=bool)\n    def pasteImage" in controller
     assert "if image.isNull():\n            return False" in controller
-    assert "return True" in controller.split("def pasteImage", 1)[1].split("def _capture", 1)[0]
+    assert "return self._attach_clipboard_png(image_png)" in controller
+    assert "def _attach_clipboard_png" in controller
 
 
 def test_sent_attachments_render_inside_the_user_turn():

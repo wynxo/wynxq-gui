@@ -1617,6 +1617,17 @@ class Controller(QObject):
         except ctx.ContextError as exc:
             self.toast.emit(str(exc))
 
+    def _attach_clipboard_png(self, image_png: bytes) -> bool:
+        """Attach already-encoded clipboard pixels; split out for deterministic tests."""
+        if not image_png:
+            return False
+        try:
+            self._add_attachment(ctx.from_clipboard(image_png=bytes(image_png)))
+        except ctx.ContextError as exc:
+            self.toast.emit(str(exc))
+            return False
+        return True
+
     @Slot(result=bool)
     def pasteImage(self):
         from PySide6.QtCore import QBuffer, QByteArray
@@ -1625,14 +1636,13 @@ class Controller(QObject):
             return False
         buffer = QBuffer(QByteArray())
         buffer.open(QBuffer.WriteOnly)
-        image.save(buffer, "PNG")
         try:
-            self._add_attachment(ctx.from_clipboard(image_png=bytes(buffer.data())))
-        except ctx.ContextError as exc:
-            self.toast.emit(str(exc))
+            if not image.save(buffer, "PNG"):
+                return False
+            image_png = bytes(buffer.data())
         finally:
             buffer.close()
-        return True
+        return self._attach_clipboard_png(image_png)
 
     @Slot(str)
     def _navigate_builtin_browser(self, target):

@@ -1065,42 +1065,12 @@ def test_builtin_browser_tool_routes_to_dock_without_system_browser(tmp_path):
     bridge.shutdown()
 
 
-def test_paste_image_returns_false_for_text_and_true_for_an_image(tmp_path, monkeypatch):
-    import wynxq.controller as controller_module
 
+def test_encoded_clipboard_image_becomes_an_attachment_without_native_clipboard(tmp_path):
     bridge = controller(tmp_path)
-
-    class FakeImage:
-        def __init__(self, empty):
-            self.empty = empty
-
-        def isNull(self):
-            return self.empty
-
-        def save(self, buffer, _format):
-            buffer.write(b"\x89PNG fake clipboard image")
-            return True
-
-    class FakeClipboard:
-        def __init__(self):
-            self.image_value = FakeImage(True)
-
-        def image(self):
-            return self.image_value
-
-    clipboard = FakeClipboard()
-
-    class FakeGuiApplication:
-        @staticmethod
-        def clipboard():
-            return clipboard
-
-    monkeypatch.setattr(controller_module, "QGuiApplication", FakeGuiApplication)
-    assert bridge.pasteImage() is False
+    assert bridge._attach_clipboard_png(b"") is False
     assert bridge.attachmentCount == 0
-
-    clipboard.image_value = FakeImage(False)
-    assert bridge.pasteImage() is True
+    assert bridge._attach_clipboard_png(b"\x89PNG fake clipboard image") is True
     assert bridge.attachmentCount == 1
     assert bridge.attachments[0]["kind"] == ctx.IMAGE
     assert bridge.attachments[0]["image"]
