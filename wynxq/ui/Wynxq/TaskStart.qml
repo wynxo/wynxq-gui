@@ -12,6 +12,31 @@ Item {
 
     property bool showSculpture: true
 
+    function playEntrance() {
+        if (Theme.reducedMotion) {
+            column.opacity = 1;
+            column.scale = 1;
+            return;
+        }
+        column.opacity = 0;
+        column.scale = 0.985;
+        entrance.restart();
+    }
+
+    Component.onCompleted: Qt.callLater(root.playEntrance)
+
+    ParallelAnimation {
+        id: entrance
+        NumberAnimation {
+            target: column; property: "opacity"
+            from: 0; to: 1; duration: Theme.slow; easing.type: Theme.easing
+        }
+        NumberAnimation {
+            target: column; property: "scale"
+            from: 0.985; to: 1; duration: Theme.slow; easing.type: Theme.easing
+        }
+    }
+
     readonly property string mode: bridge ? bridge.taskMode : "chat"
     readonly property bool hasProject: !!(bridge && bridge.projectPath)
     readonly property string modeLabel: mode === "work" ? "WORK" : "CHAT"
@@ -106,8 +131,8 @@ Item {
         UsageHeatmap {
             visible: root.showSculpture
             Layout.topMargin: visible ? Theme.s3 : 0
-            Layout.preferredWidth: Math.min(420, root.width)
-            Layout.maximumWidth: 420
+            Layout.preferredWidth: Math.min(360, root.width)
+            Layout.maximumWidth: 360
             Layout.alignment: Qt.AlignHCenter
         }
     }

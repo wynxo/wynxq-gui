@@ -357,3 +357,48 @@ def test_activity_and_message_spacing_stays_compact():
     assert "root.steps.length > 3 ? 24 : 0" in activity
     assert "stepColumn.implicitHeight + Theme.s1" in activity
     assert "height: 22" in assistant
+
+
+def test_collapsed_side_surfaces_leave_only_restore_affordances():
+    main = (UI / "Main.qml").read_text(encoding="utf-8")
+    sidebar = (MODULE / "WorkspaceSidebar.qml").read_text(encoding="utf-8")
+    dock = (MODULE / "WorkspaceDock.qml").read_text(encoding="utf-8")
+    header = (MODULE / "TaskHeader.qml").read_text(encoding="utf-8")
+    assert "sidebarCollapsed ? 0" in main
+    assert 'objectName: "sidebarRestoreButton"' in main
+    assert 'objectName: "dockRestoreButton"' in main
+    assert "Collapsed state intentionally renders nothing" in sidebar
+    assert "implicitWidth: panelOpen ? Theme.railWidth + panelWidth + 5 : 0" in dock
+    assert "visible: root.panelOpen" in dock
+    assert "visible: false // Collapsed navigation is restored" in header
+    assert "visible: root.dockAvailable && root.dockOpen" in header
+
+
+def test_motion_language_is_restrained_and_reduced_motion_aware():
+    glyph = (MODULE / "ActivityGlyph.qml").read_text(encoding="utf-8")
+    composer = (MODULE / "Composer.qml").read_text(encoding="utf-8")
+    task = (MODULE / "TaskStart.qml").read_text(encoding="utf-8")
+    messages = (MODULE / "MessageList.qml").read_text(encoding="utf-8")
+    assert "Theme.success" in glyph
+    assert "running: root.running && root.visible && !Theme.reducedMotion" in glyph
+    assert "scale: down ? 0.90" in composer
+    assert "function playEntrance()" in task
+    assert "from: 0.985; to: 1" in task
+    assert 'property: "scale"; from: 0.985; to: 1' in messages
+
+
+def test_usage_activity_is_a_real_seven_row_contribution_grid():
+    heatmap = (MODULE / "UsageHeatmap.qml").read_text(encoding="utf-8")
+    assert "rows: 7" in heatmap
+    assert "flow: Grid.TopToBottom" in heatmap
+    assert 'text: "Less"' in heatmap
+    assert 'text: "More"' in heatmap
+    assert "Theme.success" in heatmap
+
+
+def test_live_assistant_uses_the_activity_glyph():
+    assistant = (MODULE / "AssistantMessage.qml").read_text(encoding="utf-8")
+    header = (MODULE / "TaskHeader.qml").read_text(encoding="utf-8")
+    assert "ActivityGlyph {" in assistant
+    assert "Thinking through the task" in assistant
+    assert "ActivityGlyph {" in header

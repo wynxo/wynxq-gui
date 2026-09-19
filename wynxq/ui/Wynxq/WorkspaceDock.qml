@@ -5,10 +5,10 @@ import QtQuick.Layouts
 /*!
     The right-hand workspace: the tools, beside the conversation.
 
-    The rail is always there; the panel opens beside it. Only the visible panel
-    is instantiated, and each one keeps its state once it has been opened, so
-    switching tabs is instant and a terminal does not restart because you
-    looked at the files.
+    The tool rail belongs to the open workspace, not to the collapsed state.
+    Closing the workspace removes the entire right side; Main.qml leaves one
+    small restore affordance in the lower corner. Only the visible panel is
+    instantiated, and each one keeps its state once it has been opened.
 
     Files and the file viewer share the column: the tree above, the open file
     below, because opening a file from a tree that then disappears is a worse
@@ -35,7 +35,7 @@ Item {
     readonly property var dock: bridge ? bridge.workspaceDock : null
     readonly property string tab: dock ? dock.tab : "files"
 
-    implicitWidth: Theme.railWidth + (panelOpen ? panelWidth + 5 : 0)
+    implicitWidth: panelOpen ? Theme.railWidth + panelWidth + 5 : 0
 
     function focusPanel() {
         if (planSelected) return;
@@ -319,7 +319,8 @@ Item {
         }
 
         DockTabBar {
-            Layout.preferredWidth: Theme.railWidth
+            visible: root.panelOpen
+            Layout.preferredWidth: root.panelOpen ? Theme.railWidth : 0
             Layout.fillHeight: true
             current: root.tab
             panelOpen: root.panelOpen

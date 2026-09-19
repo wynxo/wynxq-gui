@@ -135,6 +135,9 @@ ListView {
 
     add: Transition {
         enabled: !Theme.reducedMotion
-        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.base; easing.type: Theme.easing }
+        ParallelAnimation {
+            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.base; easing.type: Theme.easing }
+            NumberAnimation { property: "scale"; from: 0.985; to: 1; duration: Theme.base; easing.type: Theme.easing }
+        }
     }
 }

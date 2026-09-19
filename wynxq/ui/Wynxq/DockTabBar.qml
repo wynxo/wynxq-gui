@@ -3,12 +3,11 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 /*!
-    The dock's rail: one icon per tool, always on the right edge.
+    The dock's rail: one icon per tool while the workspace is open.
 
-    The rail is the dock's affordance. It stays even when the panel is closed,
-    so the tools are one click away and the window never loses its right-hand
-    anchor. Clicking the tab that is already showing closes the panel — the same
-    gesture opens and dismisses.
+    Closing the workspace removes this rail as well. Main.qml owns the lone
+    restore button, so collapse produces a clean edge instead of a second,
+    thinner sidebar. Clicking the chosen tab still closes the workspace.
 
     Plan is intentionally a presentation tab rather than another backend tool.
     It shows the agent-authored, persisted execution plan while Activity remains

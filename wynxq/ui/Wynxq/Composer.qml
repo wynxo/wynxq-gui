@@ -547,7 +547,12 @@ Item {
                     tooltip: bridge && bridge.busy ? "Stop" : "Send"
                     shortcut: bridge && bridge.busy ? "Esc" : "Enter"
                     enabled: (bridge && bridge.busy) || root.canSend
+                    scale: down ? 0.90 : hovered && enabled ? 1.025 : 1.0
                     onClicked: bridge && bridge.busy ? bridge.stop() : root.send()
+                    Behavior on scale {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+                    }
                     background: Rectangle {
                         radius: width / 2
                         color: bridge && bridge.busy

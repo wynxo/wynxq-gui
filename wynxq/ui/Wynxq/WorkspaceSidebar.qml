@@ -13,6 +13,8 @@ import QtQuick.Layouts
 Item {
     id: root
     property bool collapsed: false
+    clip: true
+    enabled: !collapsed
     signal newTask()
     signal newModeTask(string mode)
     signal openSettings()
@@ -382,58 +384,7 @@ Item {
         }
     }
 
-    // ---------------------------------------------------------- collapsed
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: Theme.s2
-        anchors.topMargin: Theme.s2
-        spacing: Theme.s1
-        visible: root.collapsed
+    // Collapsed state intentionally renders nothing. Main.qml owns the single
+    // floating restore affordance, so hiding navigation does not leave a rail.
 
-        Item { Layout.alignment: Qt.AlignHCenter; Layout.preferredHeight: 30; Layout.preferredWidth: 30
-            Mark { anchors.centerIn: parent; width: 18; height: 18 }
-        }
-
-        IconButton {
-            Layout.alignment: Qt.AlignHCenter
-            iconName: "plus"
-            tooltip: root.inWork ? "New work task" : "New task"
-            shortcut: "Ctrl+N"
-            onClicked: root.inWork ? root.newModeTask("work") : root.newTask()
-        }
-        IconButton {
-            Layout.alignment: Qt.AlignHCenter
-            iconName: "search"; tooltip: "Search tasks"; shortcut: "Ctrl+K"
-            onClicked: { root.collapseRequested(false); Qt.callLater(root.focusSearch); }
-        }
-
-        Divider { Layout.fillWidth: true; Layout.topMargin: Theme.s1; Layout.bottomMargin: Theme.s1 }
-
-        IconButton {
-            Layout.alignment: Qt.AlignHCenter
-            iconName: root.inWork ? "cursor" : "chat"
-            tooltip: "Wynxq GUI · " + (root.inWork ? "Work" : "Chat")
-            active: true
-            onClicked: root.collapseRequested(false)
-        }
-        IconButton {
-            Layout.alignment: Qt.AlignHCenter
-            iconName: bridge && bridge.projectPath ? "folderOpen" : "folder"
-            tooltip: bridge && bridge.projectLabel ? "Project · " + bridge.projectLabel : "Open project"
-            onClicked: root.collapseRequested(false)
-        }
-
-        Item { Layout.fillHeight: true }
-
-        IconButton {
-            Layout.alignment: Qt.AlignHCenter
-            iconName: "panel"; tooltip: "Show sidebar"; shortcut: "Ctrl+B"
-            onClicked: root.collapseRequested(false)
-        }
-        IconButton {
-            Layout.alignment: Qt.AlignHCenter
-            iconName: "sliders"; tooltip: "Settings"; shortcut: "Ctrl+,"
-            onClicked: root.openSettings()
-        }
-    }
 }

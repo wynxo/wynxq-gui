@@ -82,7 +82,7 @@ Item {
 
         IconButton {
             objectName: "headerSidebarToggle"
-            visible: root.sidebarCollapsed && !root.drawerOpen
+            visible: false // Collapsed navigation is restored from the lower-left affordance.
             Layout.preferredWidth: 30
             Layout.preferredHeight: 30
             iconSize: 14
@@ -438,11 +438,11 @@ Item {
                 anchors.leftMargin: Theme.s3
                 anchors.rightMargin: Theme.s1
                 spacing: Theme.s2
-                StatusDot {
-                    tone: bridge && bridge.permissionPending ? Theme.warning : Theme.accent
-                    pulsing: true
-                    width: 7
-                    height: 7
+                ActivityGlyph {
+                    running: true
+                    tone: bridge && bridge.permissionPending ? Theme.warning : Theme.success
+                    Layout.preferredWidth: implicitWidth
+                    Layout.preferredHeight: implicitHeight
                 }
                 Text {
                     text: !bridge ? ""
@@ -557,14 +557,14 @@ Item {
 
         Divider {
             vertical: true
-            visible: root.dockAvailable
+            visible: root.dockAvailable && root.dockOpen
             Layout.leftMargin: Theme.s1
             Layout.rightMargin: Theme.s1
         }
 
         IconButton {
             objectName: "headerDockToggle"
-            visible: root.dockAvailable
+            visible: root.dockAvailable && root.dockOpen
             iconSize: 14
             iconName: "panel"
             tooltip: root.dockOpen ? "Hide the workspace dock" : "Show the workspace dock"

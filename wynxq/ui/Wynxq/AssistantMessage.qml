@@ -47,16 +47,17 @@ Item {
 
         Row {
             visible: root.streaming
-            height: visible ? 16 : 0
+            height: visible ? 18 : 0
             spacing: Theme.s2
-            StatusDot {
-                width: 6; height: 6
-                tone: Theme.accent
-                pulsing: true
+            ActivityGlyph {
+                running: root.streaming
+                tone: Theme.success
                 anchors.verticalCenter: parent.verticalCenter
             }
             Text {
-                text: bridge && bridge.taskMode === "work" ? "Agent is working" : "Wynxq is replying"
+                text: root.body.length === 0
+                    ? (bridge && bridge.taskMode === "work" ? "Thinking through the task" : "Thinking")
+                    : (bridge && bridge.taskMode === "work" ? "Working" : "Writing")
                 color: Theme.textMuted
                 font.family: Theme.monoFamily
                 font.pixelSize: Theme.micro

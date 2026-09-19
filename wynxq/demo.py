@@ -362,6 +362,12 @@ class DemoController(WorkspaceController):
         if self.scene == "sent-context":
             self._seed_sent_context_scene()
             return
+        if self.scene == "collapsed-shell":
+            self._seed_collapsed_shell()
+            return
+        if self.scene == "thinking":
+            self._seed_thinking_scene()
+            return
         if self.scene == "work-run":
             self._seed_code_run()
             return
@@ -418,6 +424,31 @@ class DemoController(WorkspaceController):
             "context stays with your message, so the conversation reads as one turn "
             "instead of a detached tool event.",
         )
+        self.changed.emit()
+
+    def _seed_collapsed_shell(self):
+        """Both side surfaces hidden, leaving only the lower restore controls."""
+        self._task_mode, self._task_mode_locked = "work", True
+        self._sidebar_collapsed = True
+        self.dock.setVisible(False)
+        self.messages.replace([])
+        self.messages.append_message(
+            "user", "Keep the workspace out of the way while I read this answer.")
+        self.messages.append_message(
+            "assistant", "Both side surfaces are fully hidden. The canvas keeps only one "
+            "restore control in each lower corner, so there is no leftover icon rail.")
+        self.changed.emit()
+
+    def _seed_thinking_scene(self):
+        """A deterministic live response for motion/status screenshot QA."""
+        self._task_mode, self._task_mode_locked = "work", True
+        self.messages.replace([])
+        self.messages.append_message("user", "Inspect the project and plan the cleanest fix.")
+        self.messages.append_message(
+            "assistant", thought="Reading the request and mapping the smallest safe change…",
+            streaming=True)
+        self._busy = True
+        self._status = "Thinking"
         self.changed.emit()
 
     def _seed_code_run(self):
@@ -582,6 +613,8 @@ SCENES = [
     ("27-dock-memory", "dock-memory", ""),
     ("28-usage", "usage", "usageSettings"),
     ("29-sent-context", "sent-context", ""),
+    ("30-collapsed-shell", "collapsed-shell", ""),
+    ("31-thinking", "thinking", ""),
     ("25-system", "conversation", "system"),
     ("26-code-run", "work-run", ""),
 ]

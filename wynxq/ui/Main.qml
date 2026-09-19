@@ -39,7 +39,9 @@ ApplicationWindow {
     readonly property bool hasPresentablePlan: !!(bridge && bridge.planSteps && bridge.planSteps.length >= 2)
     readonly property bool workspaceAvailable: !!(bridge && (bridge.taskMode !== "chat" || hasPresentablePlan))
     property int sidebarUserWidth: 272
-    readonly property int sidebarWidth: sidebarCollapsed ? 52
+    // Collapsed means gone, not a permanent icon rail. The only affordance
+    // left behind is the small restore button over the conversation.
+    readonly property int sidebarWidth: sidebarCollapsed ? 0
         : Math.max(200, Math.min(sidebarUserWidth, Math.round(width * 0.3)))
 
     readonly property var dockState: bridge ? bridge.workspaceDock : null
@@ -52,6 +54,11 @@ ApplicationWindow {
         && !!(dockState && dockState.visible)
 
     property bool closing: false
+
+    onHomeModeChanged: {
+        if (homeMode)
+            Qt.callLater(function() { if (homeIntro) homeIntro.playEntrance(); });
+    }
 
     // ------------------------------------------------------------- setup
     Binding { target: Theme; property: "bridge"; value: bridge }
@@ -398,6 +405,78 @@ ApplicationWindow {
                 enabled: !Theme.reducedMotion && !dock.resizing
                 NumberAnimation { duration: Theme.base; easing.type: Theme.easing }
             }
+        }
+    }
+
+    // ----------------------------------------------- collapsed affordances
+    // A hidden side genuinely leaves the canvas. These two quiet controls are
+    // the only restore affordances, keeping the window clean instead of
+    // replacing full panels with permanent strips of icons.
+    IconButton {
+        id: sidebarRestore
+        objectName: "sidebarRestoreButton"
+        visible: (!window.sidebarDocked || window.sidebarCollapsed) && !sidebarDrawer.opened
+        z: 40
+        width: 32; height: 32; iconSize: 14
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: Theme.s3
+        anchors.bottomMargin: Theme.s3
+        iconName: "panelLeft"
+        tooltip: "Show sidebar"
+        shortcut: "Ctrl+B"
+        scale: down ? 0.92 : hovered ? 1.035 : 1.0
+        onClicked: window.toggleSidebar()
+        background: GlassSurface {
+            radius: Theme.r2
+            solid: false
+            glassEnabled: true
+            tint: Theme.glassTintStrong
+            fillOpacity: sidebarRestore.hovered ? 0.82 : 0.62
+            outlineVisible: true
+            strongEdge: sidebarRestore.hovered || sidebarRestore.visualFocus
+            active: sidebarRestore.visualFocus
+            sheen: sidebarRestore.hovered
+            edgeColor: sidebarRestore.visualFocus ? Theme.accentEdge : Theme.glassEdge
+        }
+        Behavior on scale {
+            enabled: !Theme.reducedMotion
+            NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+        }
+    }
+
+    IconButton {
+        id: dockRestore
+        objectName: "dockRestoreButton"
+        visible: window.workspaceAvailable
+                 && (!window.roomForDock || !window.dockOpen)
+                 && !dockDrawer.opened
+        z: 40
+        width: 32; height: 32; iconSize: 14
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.rightMargin: Theme.s3
+        anchors.bottomMargin: Theme.s3
+        iconName: "panelRight"
+        tooltip: "Show workspace"
+        shortcut: "Ctrl+Shift+B"
+        scale: down ? 0.92 : hovered ? 1.035 : 1.0
+        onClicked: window.toggleDock()
+        background: GlassSurface {
+            radius: Theme.r2
+            solid: false
+            glassEnabled: true
+            tint: Theme.glassTintStrong
+            fillOpacity: dockRestore.hovered ? 0.82 : 0.62
+            outlineVisible: true
+            strongEdge: dockRestore.hovered || dockRestore.visualFocus
+            active: dockRestore.visualFocus
+            sheen: dockRestore.hovered
+            edgeColor: dockRestore.visualFocus ? Theme.accentEdge : Theme.glassEdge
+        }
+        Behavior on scale {
+            enabled: !Theme.reducedMotion
+            NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
         }
     }
 

@@ -13,6 +13,7 @@ Divider 1.0 Divider.qml
 SectionLabel 1.0 SectionLabel.qml
 KeyHint 1.0 KeyHint.qml
 StatusDot 1.0 StatusDot.qml
+ActivityGlyph 1.0 ActivityGlyph.qml
 Meter 1.0 Meter.qml
 
 # Controls
