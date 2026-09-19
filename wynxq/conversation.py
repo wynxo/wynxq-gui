@@ -15,7 +15,7 @@ from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 
 from . import context as ctx
 from . import markdown as md
-from .engine import action_summary
+from .agent_tools import action_summary
 
 
 def derive_title(text: str, limit: int = 52) -> str:
