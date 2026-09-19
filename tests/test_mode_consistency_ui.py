@@ -3,19 +3,19 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-UI = ROOT / "wynxo" / "ui"
-WYNXO_UI = UI / "Wynxo"
-STARTERS = WYNXO_UI / "TaskStarters.qml"
-COMPOSER = WYNXO_UI / "Composer.qml"
-TASK_START = WYNXO_UI / "TaskStart.qml"
-HEADER = WYNXO_UI / "TaskHeader.qml"
-SIDEBAR = WYNXO_UI / "WorkspaceSidebar.qml"
-TASK_ROW = WYNXO_UI / "TaskRow.qml"
-QUICK_BAR = WYNXO_UI / "QuickBarContent.qml"
-ONBOARDING = WYNXO_UI / "Onboarding.qml"
-PALETTE = WYNXO_UI / "CommandPalette.qml"
+UI = ROOT / "wynxq" / "ui"
+WYNXQ_UI = UI / "Wynxq"
+STARTERS = WYNXQ_UI / "TaskStarters.qml"
+COMPOSER = WYNXQ_UI / "Composer.qml"
+TASK_START = WYNXQ_UI / "TaskStart.qml"
+HEADER = WYNXQ_UI / "TaskHeader.qml"
+SIDEBAR = WYNXQ_UI / "WorkspaceSidebar.qml"
+TASK_ROW = WYNXQ_UI / "TaskRow.qml"
+QUICK_BAR = WYNXQ_UI / "QuickBarContent.qml"
+ONBOARDING = WYNXQ_UI / "Onboarding.qml"
+PALETTE = WYNXQ_UI / "CommandPalette.qml"
 MAIN = UI / "Main.qml"
-DEMO = ROOT / "wynxo" / "demo.py"
+DEMO = ROOT / "wynxq" / "demo.py"
 README = ROOT / "README.md"
 RETIRED_WYNXI_SCREENSHOT = ROOT / "docs" / "screenshots" / "16-wynxi-home.png"
 
@@ -113,7 +113,7 @@ def test_preview_scenes_use_the_same_chat_and_work_modes_as_the_app():
 def test_readme_describes_the_current_modes_repo_and_preview_names():
     text = README.read_text(encoding="utf-8")
     assert "Wynxi" not in text
-    assert "wynxo-gui-ai-agent" not in text
+    assert "wynxq-gui-ai-agent" not in text
     assert "--ui-preview codex-run" not in text
     assert "git clone https://github.com/wynxo/wynxq-gui.git" in text
     assert "--ui-preview work-run" in text

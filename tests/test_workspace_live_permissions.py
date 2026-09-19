@@ -3,8 +3,8 @@ import threading
 
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.storage import Store
-from wynxo.workspace import WorkspaceController
+from wynxq.storage import Store
+from wynxq.workspace import WorkspaceController
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 
@@ -43,8 +43,8 @@ def test_workspace_passes_a_live_permission_provider_to_the_engine(tmp_path, mon
         fn(threading.Event(), lambda payload: None)
         return None
 
-    monkeypatch.setattr("wynxo.workspace.PlanningAgentEngine", SpyEngine)
-    monkeypatch.setattr("wynxo.workspace.OllamaClient", lambda endpoint: None)
+    monkeypatch.setattr("wynxq.workspace.PlanningAgentEngine", SpyEngine)
+    monkeypatch.setattr("wynxq.workspace.OllamaClient", lambda endpoint: None)
     monkeypatch.setattr(bridge, "_job", synchronous_job)
 
     bridge.send("do a task")

@@ -3,13 +3,13 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wynxo"
+name = "wynxq"
 version = "1.0.0"
 description = "A local Ollama copilot for the Linux desktop"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
-authors = [{name = "Wynxo contributors"}]
+authors = [{name = "Wynxq contributors"}]
 dependencies = [
   "PySide6>=6.8,<7",
   "httpx>=0.27,<1",
@@ -19,16 +19,16 @@ dependencies = [
 ]
 
 [project.scripts]
-wynxo = "wynxo.__main__:main"
+wynxq = "wynxq.__main__:main"
 
 [project.urls]
-Repository = "https://github.com/wynxo/wynxo-gui-ai-agent"
+Repository = "https://github.com/wynxo/wynxq-gui"
 
 [tool.setuptools.packages.find]
-include = ["wynxo*"]
+include = ["wynxq*"]
 
 [tool.setuptools.package-data]
-wynxo = [
+wynxq = [
   "ui/*.qml", "ui/**/*.qml", "ui/*.svg", "ui/**/qmldir",
   "ui/fonts/*.ttf", "ui/fonts/*.txt",
   "qml/*.qml", "qml/**/*.qml", "assets/*", "assets/**/*",

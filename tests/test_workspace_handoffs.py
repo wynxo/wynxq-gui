@@ -2,7 +2,7 @@
 from pathlib import Path
 
 
-MODULE = Path(__file__).resolve().parents[1] / "wynxo" / "ui" / "Wynxo"
+MODULE = Path(__file__).resolve().parents[1] / "wynxq" / "ui" / "Wynxq"
 
 
 def qml(name: str) -> str:

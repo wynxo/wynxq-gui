@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.demo import CATALOG, SCENES, DemoController
+from wynxq.demo import CATALOG, SCENES, DemoController
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 
@@ -18,8 +18,8 @@ def test_preview_never_touches_the_user_history(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_DATA_HOME", str(home))
     bridge = DemoController("conversation")
     try:
-        assert str(bridge.store.path).startswith("/tmp") or "wynxo-preview-" in str(bridge.store.path)
-        assert not (home / "wynxo").exists()
+        assert str(bridge.store.path).startswith("/tmp") or "wynxq-preview-" in str(bridge.store.path)
+        assert not (home / "wynxq").exists()
     finally:
         bridge.shutdown()
 
@@ -157,7 +157,7 @@ def test_the_browser_scene_serves_a_real_page():
     page. The scene serves one from loopback so the snapshot job needs no
     network and the image is of Qt WebEngine, not of an empty state."""
     import urllib.request
-    from wynxo.demo import serve_preview_page
+    from wynxq.demo import serve_preview_page
 
     server, url = serve_preview_page()
     try:

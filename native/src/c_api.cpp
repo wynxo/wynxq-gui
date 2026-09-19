@@ -1,4 +1,4 @@
-#include <wynxo/native_core.h>
+#include <wynxq/native_core.h>
 
 #include "permission_policy.hpp"
 #include "project_scanner.hpp"
@@ -26,24 +26,24 @@ void set_error(const std::exception& error) {
 
 extern "C" {
 
-const char* wynxo_native_version(void) {
+const char* wynxq_native_version(void) {
     return "0.2.0";
 }
 
-const char* wynxo_normalize_permission_mode(const char* mode) {
-    const auto normalized = wynxo::native::normalize_permission_mode(safe_view(mode));
+const char* wynxq_normalize_permission_mode(const char* mode) {
+    const auto normalized = wynxq::native::normalize_permission_mode(safe_view(mode));
     switch (normalized) {
-        case wynxo::native::PermissionMode::Manual: return "manual";
-        case wynxo::native::PermissionMode::Safe: return "safe";
-        case wynxo::native::PermissionMode::Auto: return "auto";
-        case wynxo::native::PermissionMode::Full: return "full";
+        case wynxq::native::PermissionMode::Manual: return "manual";
+        case wynxq::native::PermissionMode::Safe: return "safe";
+        case wynxq::native::PermissionMode::Auto: return "auto";
+        case wynxq::native::PermissionMode::Full: return "full";
     }
     return "safe";
 }
 
-int wynxo_command_is_destructive(const char* command) {
+int wynxq_command_is_destructive(const char* command) {
     try {
-        return wynxo::native::command_is_destructive(safe_view(command)) ? 1 : 0;
+        return wynxq::native::command_is_destructive(safe_view(command)) ? 1 : 0;
     } catch (...) {
         // A policy failure must fail closed. If parsing ever throws, require
         // confirmation rather than letting an unknown command run unattended.
@@ -51,24 +51,24 @@ int wynxo_command_is_destructive(const char* command) {
     }
 }
 
-int wynxo_permission_needs_confirmation(const char* action, const char* mode,
+int wynxq_permission_needs_confirmation(const char* action, const char* mode,
                                         const char* command) {
     try {
-        const auto normalized = wynxo::native::normalize_permission_mode(safe_view(mode));
-        return wynxo::native::needs_confirmation(safe_view(action), normalized,
+        const auto normalized = wynxq::native::normalize_permission_mode(safe_view(mode));
+        return wynxq::native::needs_confirmation(safe_view(action), normalized,
                                                   safe_view(command)) ? 1 : 0;
     } catch (...) {
         return 1;
     }
 }
 
-const char* wynxo_scan_directory_json(const char* directory,
+const char* wynxq_scan_directory_json(const char* directory,
                                       size_t max_entries) {
     try {
         if (directory == nullptr || *directory == '\0') {
             throw std::invalid_argument("project directory is empty");
         }
-        scan_result = wynxo::native::scan_directory_json(directory, max_entries);
+        scan_result = wynxq::native::scan_directory_json(directory, max_entries);
         last_error.clear();
         return scan_result.c_str();
     } catch (const std::exception& error) {
@@ -81,7 +81,7 @@ const char* wynxo_scan_directory_json(const char* directory,
     }
 }
 
-const char* wynxo_native_last_error(void) {
+const char* wynxq_native_last_error(void) {
     return last_error.c_str();
 }
 

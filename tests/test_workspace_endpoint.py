@@ -1,7 +1,7 @@
 """Network policy for the desktop workspace."""
 import pytest
 
-from wynxo.workspace import endpoint_scope, validate_workspace_endpoint
+from wynxq.workspace import endpoint_scope, validate_workspace_endpoint
 
 
 @pytest.mark.parametrize("value,expected", [

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-THEME = Path(__file__).resolve().parents[1] / "wynxo" / "ui" / "Wynxo" / "Theme.qml"
+THEME = Path(__file__).resolve().parents[1] / "wynxq" / "ui" / "Wynxq" / "Theme.qml"
 
 # WCAG 2.1: 4.5:1 for body text, 3:1 for large text and non-text indicators.
 BODY = 4.5
@@ -41,7 +41,7 @@ def terminal_palette() -> dict[str, str]:
 
 
 def theme_accents() -> dict[str, str]:
-    from wynxo.controller import Controller
+    from wynxq.controller import Controller
     return dict(Controller.THEMES)
 
 
@@ -119,7 +119,7 @@ def test_diff_ink_is_readable_on_its_own_row_fill_and_on_the_panel():
 
 
 def test_python_and_qml_agree_on_the_syntax_palette():
-    from wynxo.markdown import DEFAULT_PALETTE
+    from wynxq.markdown import DEFAULT_PALETTE
     assert set(DEFAULT_PALETTE) == set(code_palette())
 
 

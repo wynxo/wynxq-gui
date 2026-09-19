@@ -1,5 +1,5 @@
 """Plain folders should never spawn Git just to learn they are plain folders."""
-from wynxo import diffs
+from wynxq import diffs
 
 
 def test_plain_folder_is_rejected_before_any_git_subprocess(tmp_path, monkeypatch):

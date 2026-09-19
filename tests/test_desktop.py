@@ -7,7 +7,7 @@ import threading
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
-from wynxo.desktop import (DesktopController, DesktopError, DesktopCancelled,
+from wynxq.desktop import (DesktopController, DesktopError, DesktopCancelled,
                            _PortalBackend, _X11Backend, _application_inventory, _keysym)
 
 
@@ -117,7 +117,7 @@ class DesktopTests(unittest.TestCase):
 
     def test_two_point_drag_interpolates_and_releases(self):
         self.enabled()
-        with patch("wynxo.desktop._pause"):
+        with patch("wynxq.desktop._pause"):
             self.desktop.execute("drag", {"points": [[0, 0], [60, 60]], "duration": .1}, self.cancel)
         moves = [event for event in self.backend.events if event[0] == "move"]
         self.assertGreater(len(moves), 2)
@@ -145,9 +145,9 @@ class DesktopTests(unittest.TestCase):
         self.assertFalse(self.desktop.status()["connected"])
         inventory = [{"id": "org.kde.kolourpaint.desktop", "name": "KolourPaint",
                       "description": "Paint", "path": "/usr/share/applications/org.kde.kolourpaint.desktop"}]
-        with patch("wynxo.desktop._application_inventory", return_value=inventory), \
-             patch("wynxo.desktop.shutil.which", return_value="/usr/bin/gio"), \
-             patch("wynxo.desktop.subprocess.run") as run:
+        with patch("wynxq.desktop._application_inventory", return_value=inventory), \
+             patch("wynxq.desktop.shutil.which", return_value="/usr/bin/gio"), \
+             patch("wynxq.desktop.subprocess.run") as run:
             run.return_value.returncode = 0
             self.desktop.execute("open_app", {"app": "KolourPaint"}, self.cancel)
             self.assertEqual(run.call_args.args[0], ["/usr/bin/gio", "launch", inventory[0]["path"]])
@@ -158,7 +158,7 @@ class DesktopTests(unittest.TestCase):
             run.assert_not_called()
 
     def test_list_apps_is_read_only_and_hides_internal_paths(self):
-        with patch("wynxo.desktop._application_inventory", return_value=[{"id": "a", "name": "A", "path": "/local/file"}]):
+        with patch("wynxq.desktop._application_inventory", return_value=[{"id": "a", "name": "A", "path": "/local/file"}]):
             self.assertEqual(self.desktop.execute("list_apps", {}), {"ok": True, "apps": [{"id": "a", "name": "A"}]})
         self.assertFalse(self.desktop.status()["connected"])
 
@@ -360,11 +360,11 @@ if __name__ == "__main__":
 
 class WaylandSessionTests(unittest.IsolatedAsyncioTestCase):
     """The portal handshake, driven against a recorded fake rather than a real
-    compositor. These assert the options Wynxo sends and what it does with the
+    compositor. These assert the options Wynxq sends and what it does with the
     replies; they cannot prove any particular desktop honours them."""
 
     def _portal(self, tokens=None, version=2, start=None):
-        from wynxo.desktop import SessionTokens
+        from wynxq.desktop import SessionTokens
         portal = _PortalBackend([{"x": 0, "y": 0, "width": 1920, "height": 1080}],
                                 tokens=tokens if tokens is not None else SessionTokens())
         portal.calls = []
@@ -388,7 +388,7 @@ class WaylandSessionTests(unittest.IsolatedAsyncioTestCase):
         return portal
 
     async def test_a_remembered_session_is_offered_back_to_the_portal(self):
-        from wynxo.desktop import SessionTokens
+        from wynxq.desktop import SessionTokens
         tokens = SessionTokens()
         tokens.save("saved-token")
         portal = self._portal(tokens=tokens)
@@ -410,7 +410,7 @@ class WaylandSessionTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("restore_token", devices)
 
     async def test_declining_to_persist_leaves_nothing_stored(self):
-        from wynxo.desktop import SessionTokens
+        from wynxq.desktop import SessionTokens
         tokens = SessionTokens()
         portal = self._portal(tokens=tokens, start={
             "devices": 3, "streams": [(7, {"position": [0, 0], "size": [1920, 1080]})]})
@@ -420,7 +420,7 @@ class WaylandSessionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_a_token_the_portal_will_not_restore_is_thrown_away(self):
         """Keeping a rejected token would fail the same way on every launch."""
-        from wynxo.desktop import SessionTokens
+        from wynxq.desktop import SessionTokens
         tokens = SessionTokens()
         tokens.save("stale-token")
         portal = self._portal(tokens=tokens, start={"devices": 1, "streams": []})
@@ -433,7 +433,7 @@ class GlobalStopTests(unittest.IsolatedAsyncioTestCase):
     """The stop key that has to work while another window has focus."""
 
     def _shortcut(self, on_stop, version=2, bound=None, fail=False):
-        from wynxo.desktop import GlobalStop
+        from wynxq.desktop import GlobalStop
         portal = _PortalBackend([{"x": 0, "y": 0, "width": 1920, "height": 1080}])
         portal._version = AsyncMock(return_value=version)
 

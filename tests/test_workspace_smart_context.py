@@ -1,9 +1,9 @@
 """Integration coverage for smart inference context in WorkspaceController's engine."""
 from threading import Event
 
-from wynxo import context_budget, project_context, project_instructions
-from wynxo.controller import AgentEngine
-from wynxo.workspace import PlanningAgentEngine
+from wynxq import context_budget, project_context, project_instructions
+from wynxq.controller import AgentEngine
+from wynxq.workspace import PlanningAgentEngine
 
 
 class DummyDesktop:
@@ -90,7 +90,7 @@ def test_chat_mode_does_not_read_project_rules(tmp_path, monkeypatch):
 
 def test_context_panel_and_header_expose_smart_context_state():
     from pathlib import Path
-    root = Path(__file__).parents[1] / "wynxo" / "ui" / "Wynxo"
+    root = Path(__file__).parents[1] / "wynxq" / "ui" / "Wynxq"
     context_ui = (root / "ContextPanel.qml").read_text()
     header_ui = (root / "TaskHeader.qml").read_text()
 

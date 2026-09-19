@@ -4,8 +4,8 @@ import time
 
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.product import ProductController
-from wynxo.storage import Store
+from wynxq.product import ProductController
+from wynxq.storage import Store
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 
@@ -124,7 +124,7 @@ def test_product_job_body_runs_on_python_thread_and_callback_returns_to_gui(tmp_
     bridge._job(work, done, event=event)
     assert settle(lambda: observed.get("result") == "ok" and "event" in observed)
     assert observed["worker"] is not caller
-    assert observed["worker"].name == "wynxo-product-job"
+    assert observed["worker"].name == "wynxq-product-job"
     assert type(observed["worker"]).__name__ != "_DummyThread"
     assert observed["callback"] is caller
     assert observed["event_thread"] is caller
@@ -133,7 +133,7 @@ def test_product_job_body_runs_on_python_thread_and_callback_returns_to_gui(tmp_
 
 def test_runtime_entrypoint_uses_the_live_product_controller():
     from pathlib import Path
-    entrypoint = Path(__file__).resolve().parents[1] / "wynxo" / "__main__.py"
+    entrypoint = Path(__file__).resolve().parents[1] / "wynxq" / "__main__.py"
     text = entrypoint.read_text(encoding="utf-8")
     assert "from .product import ProductController" in text
     assert "controller = ProductController(" in text

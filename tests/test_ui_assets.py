@@ -7,8 +7,8 @@ import sys
 
 import pytest
 
-UI = Path(__file__).resolve().parents[1] / "wynxo" / "ui"
-MODULE = UI / "Wynxo"
+UI = Path(__file__).resolve().parents[1] / "wynxq" / "ui"
+MODULE = UI / "Wynxq"
 
 
 def declared_types():
@@ -87,10 +87,10 @@ def test_main_window_stays_usable_at_its_minimum_size():
     assert minimum_width <= 600 and minimum_height <= 560
 
 
-@pytest.mark.skipif(not os.environ.get("WYNXO_QML_SMOKE"), reason="needs a Qt platform plugin")
+@pytest.mark.skipif(not os.environ.get("WYNXQ_QML_SMOKE"), reason="needs a Qt platform plugin")
 def test_the_interface_loads_headless():
     environment = {**os.environ, "QT_QPA_PLATFORM": "offscreen", "QT_QUICK_BACKEND": "software"}
-    result = subprocess.run([sys.executable, "-m", "wynxo", "--smoke-test"],
+    result = subprocess.run([sys.executable, "-m", "wynxq", "--smoke-test"],
                             capture_output=True, text=True, timeout=120, env=environment)
     assert result.returncode == 0, result.stderr
     assert "failed to load" not in result.stderr
@@ -110,7 +110,7 @@ def test_renderers_are_told_when_the_palette_changes():
     for name in ("Markdown.qml", "CodeBlock.qml"):
         text = (MODULE / name).read_text(encoding="utf-8")
         assert "onPaletteChanged" in text, f"{name} ignores palette changes"
-    controller = (Path(__file__).resolve().parents[1] / "wynxo" / "controller.py").read_text()
+    controller = (Path(__file__).resolve().parents[1] / "wynxq" / "controller.py").read_text()
     assert controller.count("self.paletteChanged.emit()") == 2
 
 
@@ -209,7 +209,7 @@ def test_the_dock_never_moves_the_panel_the_user_chose():
         assert "autoTab" not in text and "chosenTab" not in text, path.name
     # `suggest` is the only path that may change the tab on the app's behalf,
     # it is not reachable from QML, and it refuses once the user has chosen.
-    dock = (Path(__file__).resolve().parents[1] / "wynxo" / "dock.py").read_text(encoding="utf-8")
+    dock = (Path(__file__).resolve().parents[1] / "wynxq" / "dock.py").read_text(encoding="utf-8")
     assert "def suggest(self" in dock
     assert "if name not in TABS or self._tab_pinned:" in dock
     assert "@Slot" not in dock.split("def suggest(self")[0].rsplit("\n", 3)[-2]
@@ -219,7 +219,7 @@ def test_the_dock_never_moves_the_panel_the_user_chose():
 
 def test_the_dock_remembers_what_the_user_left_open():
     """Width, tab and visibility are the user's, so they survive a restart."""
-    dock = (Path(__file__).resolve().parents[1] / "wynxo" / "dock.py").read_text(encoding="utf-8")
+    dock = (Path(__file__).resolve().parents[1] / "wynxq" / "dock.py").read_text(encoding="utf-8")
     for key in ("dock_visible", "dock_width", "dock_tab", "dock_tab_pinned"):
         assert f'"{key}"' in dock
 
@@ -248,8 +248,8 @@ def test_explicitly_sized_popovers_place_using_their_rendered_height():
 
 def test_the_composer_keeps_drag_and_drop_and_keyboard_send():
     text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
-    for feature in ("DropArea", "attachPath", "Keys.onReturnPressed",
-                    "Keys.onEnterPressed", "ShiftModifier", "pasteImage"):
+    for feature in ("DropArea", "attachPath", "Keys.priority: Keys.BeforeItem",
+                    "Qt.Key_Return", "Qt.Key_Enter", "ShiftModifier", "pasteImage"):
         assert feature in text
 
 
@@ -302,3 +302,27 @@ def test_activity_details_are_keyboard_expandable():
     assert "Keys.onReturnPressed" in text
     assert "Keys.onSpacePressed" in text
     assert "visible: event.activeFocus" in text
+
+
+def test_composer_send_is_plain_circular_not_glass():
+    text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
+    send = text.split("id: sendButton", 1)[1].split("DropArea", 1)[0]
+    assert "background: Rectangle" in send
+    assert "radius: width / 2" in send
+    assert "GlassSurface" not in send
+
+
+def test_fresh_task_shows_thirty_day_usage_grid():
+    task = (MODULE / "TaskStart.qml").read_text(encoding="utf-8")
+    heatmap = (MODULE / "UsageHeatmap.qml").read_text(encoding="utf-8")
+    assert "UsageHeatmap {" in task
+    assert "30-day usage" in heatmap
+    assert "Theme.success" in heatmap
+    assert "bridge.tokenUsageDays" in heatmap
+
+
+def test_dock_rail_is_flat_and_hides_unused_plan():
+    text = (MODULE / "DockTabBar.qml").read_text(encoding="utf-8")
+    assert "background: GlassSurface" not in text
+    assert "bridge.planSteps.length > 0" in text
+    assert "Theme.surfaceSelected" in text

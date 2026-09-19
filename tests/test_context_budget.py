@@ -1,7 +1,7 @@
 """Long-chat fitting must protect history while keeping coherent recent turns."""
 import copy
 
-from wynxo import context_budget
+from wynxq import context_budget
 
 
 def test_small_history_is_unchanged():
@@ -75,7 +75,7 @@ def test_attachment_context_stays_with_latest_user_and_only_copy_is_clipped():
 
     assert fit.messages[-1]["content"] == "summarize the attachment"
     clipped = next(m for m in fit.messages if str(m.get("content", "")).startswith("Attached local context follows."))
-    assert "Wynxo clipped older attached context" in clipped["content"]
+    assert "Wynxq clipped older attached context" in clipped["content"]
     assert history == original
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install an isolated, removable Wynxo copy without administrator privileges."""
+"""Install an isolated, removable Wynxq copy without administrator privileges."""
 from __future__ import annotations
 
 import argparse
@@ -17,8 +17,8 @@ import tempfile
 import uuid
 import venv
 
-APP_ID = "io.github.wynxo.Wynxo"
-MARKER = ".wynxo-install.json"
+APP_ID = "io.github.wynxq.Wynxq"
+MARKER = ".wynxq-install.json"
 MANIFEST = "manifest.json"
 
 _MISSING_SO = re.compile(
@@ -39,7 +39,7 @@ def xdg_path(variable: str, fallback: str) -> Path:
 
 
 def default_root() -> Path:
-    return xdg_path("XDG_DATA_HOME", ".local/share") / "wynxo-app"
+    return xdg_path("XDG_DATA_HOME", ".local/share") / "wynxq-app"
 
 
 def exists(path: Path) -> bool:
@@ -53,7 +53,7 @@ def owned_root(root: Path) -> dict:
     try:
         content = json.loads(marker.read_text())
     except (OSError, ValueError) as exc:
-        raise ValueError(f"Invalid Wynxo ownership marker: {marker}") from exc
+        raise ValueError(f"Invalid Wynxq ownership marker: {marker}") from exc
     if content.get("app") != APP_ID or content.get("uid") != os.getuid():
         raise ValueError(f"Installation is not owned by this user: {root}")
     return content
@@ -76,7 +76,7 @@ def install_lock(root: Path):
 
 def atomic_write(path: Path, data: bytes, mode: int = 0o644) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary = tempfile.mkstemp(prefix=".wynxo-", dir=path.parent)
+    fd, temporary = tempfile.mkstemp(prefix=".wynxq-", dir=path.parent)
     try:
         with os.fdopen(fd, "wb") as stream:
             stream.write(data)
@@ -88,7 +88,7 @@ def atomic_write(path: Path, data: bytes, mode: int = 0o644) -> None:
 
 def atomic_link(path: Path, target: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.parent / f".wynxo-{uuid.uuid4().hex}"
+    temporary = path.parent / f".wynxq-{uuid.uuid4().hex}"
     try:
         temporary.symlink_to(target)
         os.replace(temporary, path)
@@ -135,8 +135,8 @@ def check_managed(path: Path, old: dict, root: Path | None = None) -> None:
     if points_into(path, root) if root is not None else False:
         return
     raise ValueError(
-        f"Refusing to overwrite a file Wynxo does not recognise: {path}\n"
-        f"If it is left over from an older Wynxo, remove it and install again."
+        f"Refusing to overwrite a file Wynxq does not recognise: {path}\n"
+        f"If it is left over from an older Wynxq, remove it and install again."
     )
 
 
@@ -174,7 +174,7 @@ def _copy_source(source: Path, destination: Path) -> None:
         "install.py", "uninstall.py",
     ):
         shutil.copy2(source / name, destination / name)
-    for name in ("wynxo", "assets", "native"):
+    for name in ("wynxq", "assets", "native"):
         shutil.copytree(source / name, destination / name,
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
@@ -315,14 +315,14 @@ def _resolve_command_libraries(
             continue
         if unresolved:
             raise RuntimeError(
-                "NixOS is missing native libraries required by Wynxo: "
+                "NixOS is missing native libraries required by Wynxq: "
                 + ", ".join(unresolved)
                 + ". Add the packages providing them to your NixOS configuration and run the installer again."
             )
         tail = "\n".join(output.strip().splitlines()[-18:])
-        raise RuntimeError(f"Wynxo's native dependency check failed:\n{tail}")
+        raise RuntimeError(f"Wynxq's native dependency check failed:\n{tail}")
     output = "" if last is None else ((last.stdout or "") + "\n" + (last.stderr or ""))
-    raise RuntimeError("Could not resolve Wynxo's native dependencies after repeated attempts.\n" + output[-4000:])
+    raise RuntimeError("Could not resolve Wynxq's native dependencies after repeated attempts.\n" + output[-4000:])
 
 
 def _scan_elf_dependencies(environment: Path, lib_dirs: list[Path], closure: list[Path]) -> None:
@@ -393,7 +393,7 @@ def _build_environment(release: Path) -> list[Path]:
     except Exception as exc:
         raise RuntimeError("Python venv support is required. On Debian/Ubuntu: sudo apt install python3-venv") from exc
     python = environment / "bin/python"
-    print("Installing Wynxo and its GUI dependencies (first install may take a few minutes)…", flush=True)
+    print("Installing Wynxq and its GUI dependencies (first install may take a few minutes)…", flush=True)
     subprocess.run(
         [str(python), "-m", "pip", "install", "--disable-pip-version-check", str(release / "source")],
         check=True,
@@ -401,7 +401,7 @@ def _build_environment(release: Path) -> list[Path]:
 
     if not _is_nixos():
         subprocess.run(
-            [str(python), "-c", "import wynxo, PySide6, httpx, dbus_next, PIL, Xlib"],
+            [str(python), "-c", "import wynxq, PySide6, httpx, dbus_next, PIL, Xlib"],
             check=True,
         )
         return []
@@ -412,14 +412,14 @@ def _build_environment(release: Path) -> list[Path]:
     _scan_elf_dependencies(environment, lib_dirs, closure)
 
     probe = (
-        "import wynxo, httpx, dbus_next, PIL, Xlib; "
+        "import wynxq, httpx, dbus_next, PIL, Xlib; "
         "from PySide6 import QtCore, QtGui, QtQml, QtQuick, QtQuickControls2, QtWidgets"
     )
     _resolve_command_libraries(
         [str(python), "-c", probe], cwd=release, lib_dirs=lib_dirs, closure=closure
     )
 
-    console = environment / "bin/wynxo"
+    console = environment / "bin/wynxq"
     if console.exists():
         _resolve_command_libraries(
             [str(console), "--smoke-test"], cwd=release, lib_dirs=lib_dirs, closure=closure,
@@ -450,9 +450,9 @@ def install(source: Path, root: Path | None = None, bin_dir: Path | None = None)
     data = xdg_path("XDG_DATA_HOME", ".local/share")
     desktop = data / "applications" / f"{APP_ID}.desktop"
     icon = data / "icons/hicolor/scalable/apps" / f"{APP_ID}.svg"
-    launcher_link = bin_dir / "wynxo"
-    if not (source / "wynxo/__main__.py").is_file():
-        raise ValueError("Run this installer from a complete Wynxo checkout.")
+    launcher_link = bin_dir / "wynxq"
+    if not (source / "wynxq/__main__.py").is_file():
+        raise ValueError("Run this installer from a complete Wynxq checkout.")
     if root == source or root in source.parents or source in root.parents:
         raise ValueError("Install directory must be outside the source checkout.")
     if bin_dir == root or root in bin_dir.parents:
@@ -466,7 +466,7 @@ def install(source: Path, root: Path | None = None, bin_dir: Path | None = None)
     try:
         with install_lock(root):
             old = read_manifest(root)
-            internal = [root / "wynxo", root / "uninstall.py", root / "current"]
+            internal = [root / "wynxq", root / "uninstall.py", root / "current"]
             external = [launcher_link, desktop, icon]
             for path in internal + external:
                 check_managed(path, old, root)
@@ -480,39 +480,39 @@ def install(source: Path, root: Path | None = None, bin_dir: Path | None = None)
             release_id = uuid.uuid4().hex
             release = releases / release_id
             release.mkdir()
-            atomic_write(release / ".wynxo-release", APP_ID.encode())
+            atomic_write(release / ".wynxq-release", APP_ID.encode())
             _copy_source(source, release / "source")
             runtime_dirs = _build_environment(release) or []
             snapshots = _snapshot(internal + external + [root / MANIFEST])
             try:
                 launcher = (
                     "#!/bin/sh\nset -eu\n"
-                    f"export WYNXO_INSTALL_ROOT={shlex.quote(str(root))}\n"
+                    f"export WYNXQ_INSTALL_ROOT={shlex.quote(str(root))}\n"
                     + _launcher_runtime_prefix(runtime_dirs)
                     + 'if [ "${1-}" = "--uninstall" ]; then\n'
                     '  shift\n'
-                    '  exec "$WYNXO_INSTALL_ROOT/current/venv/bin/python" "$WYNXO_INSTALL_ROOT/uninstall.py" --install-root "$WYNXO_INSTALL_ROOT" "$@"\n'
+                    '  exec "$WYNXQ_INSTALL_ROOT/current/venv/bin/python" "$WYNXQ_INSTALL_ROOT/uninstall.py" --install-root "$WYNXQ_INSTALL_ROOT" "$@"\n'
                     'fi\n'
-                    'cd "$WYNXO_INSTALL_ROOT/current"\n'
-                    'exec "$WYNXO_INSTALL_ROOT/current/venv/bin/wynxo" "$@"\n'
+                    'cd "$WYNXQ_INSTALL_ROOT/current"\n'
+                    'exec "$WYNXQ_INSTALL_ROOT/current/venv/bin/wynxq" "$@"\n'
                 )
-                atomic_write(root / "wynxo", launcher.encode(), 0o755)
+                atomic_write(root / "wynxq", launcher.encode(), 0o755)
                 atomic_link(root / "uninstall.py", "current/source/uninstall.py")
                 atomic_link(root / "current", f"releases/{release_id}")
-                atomic_link(launcher_link, str(root / "wynxo"))
-                atomic_write(icon, (source / "assets/wynxo.svg").read_bytes())
+                atomic_link(launcher_link, str(root / "wynxq"))
+                atomic_write(icon, (source / "assets/wynxq.svg").read_bytes())
                 entry = (
-                    "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Wynxo\n"
+                    "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Wynxq\n"
                     "Comment=Your local AI workbench\n"
-                    f"Exec={desktop_argument(root / 'wynxo')}\n"
+                    f"Exec={desktop_argument(root / 'wynxq')}\n"
                     f"Icon={str(icon).replace(chr(92), chr(92) * 2)}\n"
                     "Terminal=false\nCategories=Utility;Development;\nKeywords=AI;Ollama;Assistant;Copilot;\n"
-                    "StartupWMClass=wynxo\n"
+                    "StartupWMClass=wynxq\n"
                     "Actions=QuickBar;NewChat;\n"
                     "\n[Desktop Action QuickBar]\nName=Quick bar\n"
-                    f"Exec={desktop_argument(root / 'wynxo')} --quick\n"
+                    f"Exec={desktop_argument(root / 'wynxq')} --quick\n"
                     "\n[Desktop Action NewChat]\nName=New chat\n"
-                    f"Exec={desktop_argument(root / 'wynxo')}\n"
+                    f"Exec={desktop_argument(root / 'wynxq')}\n"
                 )
                 atomic_write(desktop, entry.encode())
                 manifest = {
@@ -521,9 +521,9 @@ def install(source: Path, root: Path | None = None, bin_dir: Path | None = None)
                     "releases": old.get("releases", []) + [release_id],
                     "runtime_lib_dirs": [str(path) for path in runtime_dirs],
                     "data_dirs": old.get("data_dirs", [
-                        str(data / "wynxo"),
-                        str(xdg_path("XDG_CONFIG_HOME", ".config") / "wynxo"),
-                        str(xdg_path("XDG_CACHE_HOME", ".cache") / "wynxo"),
+                        str(data / "wynxq"),
+                        str(xdg_path("XDG_CONFIG_HOME", ".config") / "wynxq"),
+                        str(xdg_path("XDG_CACHE_HOME", ".cache") / "wynxq"),
                     ]),
                 }
                 atomic_write(root / MANIFEST, json.dumps(manifest, indent=2).encode())
@@ -544,7 +544,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--install-root", type=Path, default=default_root(),
-        help="App directory (default: XDG_DATA_HOME/wynxo-app)",
+        help="App directory (default: XDG_DATA_HOME/wynxq-app)",
     )
     parser.add_argument(
         "--bin-dir", type=Path, default=Path.home() / ".local/bin",
@@ -552,7 +552,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     if sys.platform != "linux":
-        parser.error("Wynxo currently supports Linux.")
+        parser.error("Wynxq currently supports Linux.")
     if sys.version_info < (3, 10):
         parser.error("Python 3.10 or newer is required.")
     if os.geteuid() == 0:
@@ -562,7 +562,7 @@ def main(argv: list[str] | None = None) -> int:
     except (Exception, KeyboardInterrupt) as exc:
         print(f"\nInstall failed; previous installation preserved.\n{exc}", file=sys.stderr)
         return 1
-    print(f"\nWynxo installed. Open Wynxo from your application menu or run:\n  {shlex.quote(str(launcher))}")
+    print(f"\nWynxq installed. Open Wynxq from your application menu or run:\n  {shlex.quote(str(launcher))}")
     if str(launcher.parent) not in os.environ.get("PATH", "").split(os.pathsep):
         print(f"Your shell PATH does not include {launcher.parent}; the application menu still works.")
     print(f"Remove it any time: {shlex.quote(str(launcher))} --uninstall")

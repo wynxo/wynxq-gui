@@ -1,6 +1,6 @@
-# Wynxo native core
+# Wynxq native core
 
-Wynxo is moving toward a C++-first desktop core without throwing away the parts
+Wynxq is moving toward a C++-first desktop core without throwing away the parts
 of the current Python/QML application that already work well.
 
 ## Language boundaries
@@ -49,7 +49,7 @@ well-tested containment and product rules remain in one Python layer.
 
 ## Why a C ABI
 
-`include/wynxo/native_core.h` is intentionally a tiny C ABI over the C++ core.
+`include/wynxq/native_core.h` is intentionally a tiny C ABI over the C++ core.
 That keeps the boundary stable and lets the current Python application use it
 through `ctypes` without pybind11. It also leaves the door open to a future Qt
 C++ application shell, Rust components, or standalone tests without binding the
@@ -71,9 +71,9 @@ ctest --test-dir build/native --output-on-failure
 To test the Python bridge from a source checkout:
 
 ```bash
-WYNXO_NATIVE_CORE="$PWD/build/native/libwynxo_native_core.so" python3 - <<'PY'
+WYNXQ_NATIVE_CORE="$PWD/build/native/libwynxq_native_core.so" python3 - <<'PY'
 from pathlib import Path
-from wynxo.native_core import native_core
+from wynxq.native_core import native_core
 
 assert native_core.available, native_core.error
 print(native_core.version)
@@ -84,7 +84,7 @@ PY
 
 The same configure/build/test/FFI sequence runs in GitHub Actions. The installer
 release-snapshot job also builds a wheel and verifies the shared library is
-actually packaged inside `wynxo/native/`.
+actually packaged inside `wynxq/native/`.
 
 ## Migration rule
 

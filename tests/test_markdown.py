@@ -1,7 +1,7 @@
 """Message segmentation, highlighting, and Markdown rendering."""
 import pytest
 
-from wynxo import markdown as md
+from wynxq import markdown as md
 
 
 def test_segment_splits_prose_and_fenced_code():

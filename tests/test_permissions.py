@@ -4,8 +4,8 @@ import threading
 
 import pytest
 
-from wynxo import engine as eng
-from wynxo.engine import (
+from wynxq import engine as eng
+from wynxq.engine import (
     ASK, AUTO, FULL, MANUAL, SAFE, AgentEngine, action_risk, action_summary,
     command_risk, needs_confirmation, normalise_mode,
 )
@@ -234,7 +234,7 @@ def test_commands_follow_the_selected_approval_mode():
 # approve only what cannot be undone, approve nothing.
 
 def test_the_ladder_has_four_named_rungs_in_order():
-    from wynxo.engine import PERMISSION_DETAILS, PERMISSION_LABELS, PERMISSION_MODES
+    from wynxq.engine import PERMISSION_DETAILS, PERMISSION_LABELS, PERMISSION_MODES
     assert PERMISSION_MODES == (MANUAL, SAFE, AUTO, FULL)
     assert [PERMISSION_LABELS[mode] for mode in PERMISSION_MODES] == [
         "Manual", "Auto-approve", "Auto", "Full access"]

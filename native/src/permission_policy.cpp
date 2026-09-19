@@ -6,7 +6,7 @@
 #include <regex>
 #include <string>
 
-namespace wynxo::native {
+namespace wynxq::native {
 namespace {
 
 std::string ascii_lower(std::string_view value) {
@@ -142,4 +142,4 @@ bool needs_confirmation(std::string_view action, PermissionMode mode,
     return risk == ActionRisk::Sensitive || risk == ActionRisk::Destructive;
 }
 
-}  // namespace wynxo::native
+}  // namespace wynxq::native

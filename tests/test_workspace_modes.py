@@ -3,9 +3,9 @@ import threading
 
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.memory import Memory
-from wynxo.storage import Store
-from wynxo.workspace import WorkspaceController
+from wynxq.memory import Memory
+from wynxq.storage import Store
+from wynxq.workspace import WorkspaceController
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 
@@ -99,7 +99,7 @@ def test_work_mode_is_task_scoped(tmp_path):
     assert bridge.taskMode == "work"
     assert bridge.taskModeLocked is True
 
-    # A fresh Wynxo task never inherits Work merely because screen control
+    # A fresh Wynxq task never inherits Work merely because screen control
     # happens to remain connected; Work and screen access are separate state.
     bridge.newTask()
     assert bridge.taskMode == "chat"
@@ -162,7 +162,7 @@ class Recorder:
 
 def engine_run(bridge, mode, script=(), memory=None):
     """Run one turn the way the controller does, capturing the request."""
-    from wynxo.workspace import PlanningAgentEngine
+    from wynxq.workspace import PlanningAgentEngine
     client = Recorder(script)
     desktop = ToolDesktop()
     events = []
@@ -261,8 +261,8 @@ def test_the_controller_puts_a_chat_task_into_chat_only_mode(tmp_path, monkeypat
         fn(threading.Event(), lambda payload: None)
         return None
 
-    monkeypatch.setattr("wynxo.workspace.PlanningAgentEngine", Spy)
-    monkeypatch.setattr("wynxo.workspace.OllamaClient", lambda endpoint: None)
+    monkeypatch.setattr("wynxq.workspace.PlanningAgentEngine", Spy)
+    monkeypatch.setattr("wynxq.workspace.OllamaClient", lambda endpoint: None)
     monkeypatch.setattr(bridge, "_job", job)
 
     bridge.send("just talk to me")

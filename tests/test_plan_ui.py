@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-QML = ROOT / "wynxo" / "ui" / "Wynxo"
+QML = ROOT / "wynxq" / "ui" / "Wynxq"
 
 
 def source(name: str) -> str:
@@ -17,7 +17,7 @@ def test_plan_components_are_registered():
 
 def test_plan_is_agent_authored_and_persisted_workspace_state():
     plan = source("PlanPanel.qml")
-    workspace = (ROOT / "wynxo" / "workspace.py").read_text(encoding="utf-8")
+    workspace = (ROOT / "wynxq" / "workspace.py").read_text(encoding="utf-8")
     assert "bridge.planSteps" in plan
     assert '"update_plan"' in workspace
     assert "task_plan:" in workspace
@@ -28,7 +28,7 @@ def test_plan_is_agent_authored_and_persisted_workspace_state():
 
 
 def test_plan_tool_is_low_risk_and_not_desktop_activity():
-    workspace = (ROOT / "wynxo" / "workspace.py").read_text(encoding="utf-8")
+    workspace = (ROOT / "wynxq" / "workspace.py").read_text(encoding="utf-8")
     assert 'engine_module._NONVISUAL.add("update_plan")' in workspace
     assert 'engine_module.LOW_RISK.add("update_plan")' in workspace
     assert 'event.get("name") == "update_plan"' in workspace
@@ -71,7 +71,7 @@ def test_plan_rail_indicator_uses_plan_state_not_activity_count():
 
 
 def test_shortcuts_and_header_respect_manual_workspace_choice():
-    main = (ROOT / "wynxo" / "ui" / "Main.qml").read_text(encoding="utf-8")
+    main = (ROOT / "wynxq" / "ui" / "Main.qml").read_text(encoding="utf-8")
     assert "dock.userSelectedWorkspaceTab = true" in main
     assert "drawerDock.userSelectedWorkspaceTab = true" in main
     assert "dock.pickWorkspaceTab(tab)" in main

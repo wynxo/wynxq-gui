@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove Wynxo; keep conversations/settings unless --purge is given."""
+"""Remove Wynxq; keep conversations/settings unless --purge is given."""
 from __future__ import annotations
 
 import argparse
@@ -16,17 +16,17 @@ def strays(root: Path, bin_dir: Path | None = None) -> list[Path]:
     """Files left behind by an installation whose root has gone.
 
     Only links that point into ``root`` count: nothing else installs there, so
-    they are provably Wynxo's. Anything else is left alone and reported.
+    they are provably Wynxq's. Anything else is left alone and reported.
     """
     data = xdg_path("XDG_DATA_HOME", ".local/share")
-    candidates = [absolute(bin_dir or Path.home() / ".local/bin") / "wynxo",
+    candidates = [absolute(bin_dir or Path.home() / ".local/bin") / "wynxq",
                   data / "applications" / f"{APP_ID}.desktop",
                   data / "icons/hicolor/scalable/apps" / f"{APP_ID}.svg"]
     return [path for path in candidates if points_into(path, root)]
 
 
 def uninstall(root: Path | None = None, purge: bool = False, bin_dir: Path | None = None) -> list[str]:
-    root = absolute(root or os.environ.get("WYNXO_INSTALL_ROOT") or default_root())
+    root = absolute(root or os.environ.get("WYNXQ_INSTALL_ROOT") or default_root())
     if not exists(root):
         # The root can go without taking its launcher with it. Saying "nothing
         # found" while a stale link sits in the way leaves the user unable to
@@ -54,7 +54,7 @@ def uninstall(root: Path | None = None, purge: bool = False, bin_dir: Path | Non
             release = releases / release_id
             if not exists(release):
                 continue
-            marker = release / ".wynxo-release"
+            marker = release / ".wynxq-release"
             if release.is_symlink() or not release.is_dir() or marker.is_symlink() or not marker.is_file() or marker.read_text() != APP_ID:
                 raise ValueError(f"Refusing to delete an unowned release: {release}")
             remove_releases.append(release)
@@ -62,10 +62,10 @@ def uninstall(root: Path | None = None, purge: bool = False, bin_dir: Path | Non
         if purge:
             for value in manifest.get("data_dirs", []):
                 path = absolute(value)
-                if path.name != "wynxo" or path == root or path in root.parents or root in path.parents:
+                if path.name != "wynxq" or path == root or path in root.parents or root in path.parents:
                     raise ValueError(f"Unsafe user data path in manifest: {path}")
                 data_dirs.append(path)
-        internal = {root / "wynxo", root / "uninstall.py", root / "current"}
+        internal = {root / "wynxq", root / "uninstall.py", root / "current"}
         external = {absolute(value) for value in manifest.get("external", [])}
         if internal.intersection(external):
             raise ValueError("Invalid external paths in manifest.")
@@ -97,15 +97,15 @@ def uninstall(root: Path | None = None, purge: bool = False, bin_dir: Path | Non
             (root / MARKER).unlink()
     if root.is_dir() and not any(root.iterdir()):
         root.rmdir()
-    messages.append("Wynxo removed. Ollama and downloaded models were left untouched.")
+    messages.append("Wynxq removed. Ollama and downloaded models were left untouched.")
     messages.append("Conversations, settings and cache removed." if purge else "Conversations and settings kept. Use --purge when uninstalling to remove them too.")
     return messages
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--install-root", type=Path, default=Path(os.environ.get("WYNXO_INSTALL_ROOT", str(default_root()))))
-    parser.add_argument("--purge", action="store_true", help="Also remove Wynxo conversations, settings and cache; never Ollama models")
+    parser.add_argument("--install-root", type=Path, default=Path(os.environ.get("WYNXQ_INSTALL_ROOT", str(default_root()))))
+    parser.add_argument("--purge", action="store_true", help="Also remove Wynxq conversations, settings and cache; never Ollama models")
     parser.add_argument("--bin-dir", type=Path, default=None,
                         help="Where the launcher was installed, if not ~/.local/bin")
     args = parser.parse_args(argv)

@@ -5,13 +5,13 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
-from wynxo.demo import DemoController
+from wynxq.demo import DemoController
 
 QQuickStyle.setStyle('Basic')
 app = QApplication([])
 bridge = DemoController('welcome')
 engine = QQmlApplicationEngine()
-ui = Path(__file__).resolve().parents[1] / 'wynxo/ui'
+ui = Path(__file__).resolve().parents[1] / 'wynxq/ui'
 engine.addImportPath(str(ui))
 engine.rootContext().setContextProperty('bridge', bridge)
 engine.load(QUrl.fromLocalFile(str(ui / 'Main.qml')))

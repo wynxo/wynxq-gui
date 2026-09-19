@@ -1,10 +1,10 @@
 """Automatic memory should learn durable facts without trusting every sentence."""
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.memory import Memory
-from wynxo.memory_learning import GLOBAL, PROJECT, learnable_memories
-from wynxo.storage import Store
-from wynxo.workspace import WorkspaceController
+from wynxq.memory import Memory
+from wynxq.memory_learning import GLOBAL, PROJECT, learnable_memories
+from wynxq.storage import Store
+from wynxq.workspace import WorkspaceController
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 
@@ -16,8 +16,8 @@ def one(text, project=""):
 
 
 def test_learns_a_preferred_name_and_preference():
-    assert one("Call me wynxo") == {
-        "note": "User prefers to be called wynxo.", "scope": GLOBAL,
+    assert one("Call me wynxq") == {
+        "note": "User prefers to be called wynxq.", "scope": GLOBAL,
     }
     assert one("I prefer concise answers") == {
         "note": "User prefers concise answers.", "scope": GLOBAL,
@@ -25,13 +25,13 @@ def test_learns_a_preferred_name_and_preference():
 
 
 def test_learns_common_russian_and_german_phrasings():
-    assert one("называй меня wynxo")["note"] == "User prefers to be called wynxo."
+    assert one("называй меня wynxq")["note"] == "User prefers to be called wynxq."
     assert one("я предпочитаю короткие ответы")["note"] == "User prefers короткие ответы."
-    assert one("nenn mich wynxo")["note"] == "User prefers to be called wynxo."
+    assert one("nenn mich wynxq")["note"] == "User prefers to be called wynxq."
 
 
 def test_repo_convention_is_project_scoped():
-    item = one("This repo uses pytest", "/srv/wynxo")
+    item = one("This repo uses pytest", "/srv/wynxq")
     assert item["scope"] == PROJECT
     assert "pytest" in item["note"]
 
@@ -96,10 +96,10 @@ def test_workspace_learns_before_a_model_ever_calls_remember(tmp_path, monkeypat
     bridge = controller(tmp_path)
     ready(bridge, monkeypatch)
 
-    bridge.send("Call me wynxo")
+    bridge.send("Call me wynxq")
 
-    assert "User prefers to be called wynxo." in bridge.memory.notes()
-    assert "User prefers to be called wynxo." in bridge.memory.prompt()
+    assert "User prefers to be called wynxq." in bridge.memory.notes()
+    assert "User prefers to be called wynxq." in bridge.memory.prompt()
     bridge.shutdown()
 
 
@@ -107,7 +107,7 @@ def test_preferred_name_updates_instead_of_becoming_two_conflicting_memories(tmp
     bridge = controller(tmp_path)
     ready(bridge, monkeypatch)
 
-    bridge.send("Call me wynxo")
+    bridge.send("Call me wynxq")
     bridge._busy = False
     bridge.send("My preferred name is nova")
 

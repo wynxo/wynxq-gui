@@ -1,7 +1,7 @@
 """Generated project context should be useful, bounded and safe to persist nowhere."""
 from pathlib import Path
 
-from wynxo import project_context
+from wynxq import project_context
 
 
 def test_snapshot_detects_stack_without_reading_script_bodies(tmp_path):

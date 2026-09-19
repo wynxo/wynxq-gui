@@ -1,8 +1,8 @@
-# Wynxo
+# Wynxq
 
 **A local AI workbench for Linux, powered entirely by Ollama.**
 
-Wynxo is a native Python + Qt Quick application. Choose the folder you are
+Wynxq is a native Python + Qt Quick application. Choose the folder you are
 working in, describe a task, and watch it run: a model on your own machine
 answers, reads the files, folders and screenshots you attach, remembers what
 you tell it from one task to the next, and — when you turn it on — sees your
@@ -15,11 +15,11 @@ diffs, what the model can currently see, what it remembers between tasks, the
 full run timeline, an embedded browser, and a preview.
 
 No browser, no Node.js, no account, no API key, no cloud AI. Ollama does the
-inference; Wynxo is the interface.
+inference; Wynxq is the interface.
 
-![Wynxo, new task](docs/screenshots/01-new-task.png)
+![Wynxq, new task](docs/screenshots/01-new-task.png)
 
-The graphite interface pairs a polished-metal edition of the Wynxo mark with
+The graphite interface pairs a polished-metal edition of the Wynxq mark with
 satin glass controls. The welcome sculpture reacts only to pointer movement;
 there is no continuous animation competing with inference. Short windows hide
 the sculpture to preserve room for the prompt. Reduced Motion disables its
@@ -69,7 +69,7 @@ tab, and after that it stays where you put it.
 | **Terminal** | A real PTY-backed shell in the project folder. `cd` persists, prompts appear, Ctrl+C reaches the foreground process, and ANSI colour survives. Command history on the arrow keys. |
 | **Changes** | Uncommitted work read from Git, per file, with `+`/`−` counts and a unified diff. Discarding a file's changes asks first. |
 | **Context** | Everything the model can currently see — the workspace, attachments, the open file, the browser page — with the context window meter. Removing something here removes the real thing. |
-| **Memory** | What Wynxo remembers between tasks: `memory.md` itself, edited in place. Add a note, correct one, or forget the lot. |
+| **Memory** | What Wynxq remembers between tasks: `memory.md` itself, edited in place. Add a note, correct one, or forget the lot. |
 | **Activity** | The whole session's run timeline: every step, its state, its timing, and its output when you open it. |
 | **Browser** | An embedded Qt WebEngine view with address, back, forward, reload and open-externally. Only `http` and `https`; pop-ups and permission requests are refused. The page reaches the model only when you attach it. |
 | **Preview** | Images and captures at full size. |
@@ -138,7 +138,7 @@ request needs the machine. Work handles project files, commands, and desktop
 control. The mode is chosen once per task and stays chosen.
 
 **Memory**
-One Markdown file, read at the start of every task. Tell Wynxo something once —
+One Markdown file, read at the start of every task. Tell Wynxq something once —
 how you deploy, what the test command is, that you would rather have the command
 first and the explanation after — and it is there in the next task, and the one
 after that, in Chat and Work alike. The model saves and drops notes itself
@@ -155,7 +155,7 @@ is remembered while the switch in **Settings → Agent → Memory** is off, and
 **Models**
 Browse what Ollama has installed with parameter size, quantisation, disk usage,
 native context window and capabilities. Favourite the ones you use, download
-new tags, delete old ones. Wynxo reads capabilities from Ollama rather than
+new tags, delete old ones. Wynxq reads capabilities from Ollama rather than
 guessing from names, and warns you *before* you send if the model cannot do
 what you are asking — no vision for the image you attached, no tool calling for
 the desktop task, or a conversation that has nearly filled the context window.
@@ -184,7 +184,7 @@ accent themes, a compact density, and a reduced-motion setting.
 ## Screenshots
 
 Every image below is a real capture of the running Qt application, produced by
-`python -m wynxo --snapshot` (see [Testing and screenshots](#testing-and-screenshots)).
+`python -m wynxq --snapshot` (see [Testing and screenshots](#testing-and-screenshots)).
 
 | | |
 | --- | --- |
@@ -224,8 +224,8 @@ cd wynxq-gui
 python3 install.py
 ```
 
-`./install` does the same thing. Then open **Wynxo** from your application menu,
-or run `~/.local/bin/wynxo`.
+`./install` does the same thing. Then open **Wynxq** from your application menu,
+or run `~/.local/bin/wynxq`.
 
 The installer builds its own Python environment, installs dependencies, and
 registers a launcher, an icon and a desktop entry. It copies the app, so the
@@ -246,13 +246,13 @@ python3 install.py
 
 1. Install [Ollama for Linux](https://docs.ollama.com/linux) if you have not already.
 2. Make sure it is running. If it is not managed by a service, run `ollama serve`.
-3. Open Wynxo. The default address is `http://127.0.0.1:11434`; change it under
+3. Open Wynxq. The default address is `http://127.0.0.1:11434`; change it under
    **Settings → General** if yours differs.
 4. Pick a model in the model manager (`Ctrl+M`), or download one by tag.
 
 What a model can do depends on the capabilities Ollama reports for it:
 
-| Capability | What Wynxo can do |
+| Capability | What Wynxq can do |
 | --- | --- |
 | Chat | Stream answers and save conversations |
 | Tools | Run local commands, work with files, discover and launch apps |
@@ -260,13 +260,13 @@ What a model can do depends on the capabilities Ollama reports for it:
 | Vision + tools | Full screen control: click, type, scroll, drag |
 | Thinking | Show the model's reasoning before its answer |
 
-A large text-only model cannot see a button or a canvas; Wynxo disables the
+A large text-only model cannot see a button or a canvas; Wynxq disables the
 visual tools rather than letting the model guess where to click. Model size
 alone does not determine these abilities. See Ollama's
 [API introduction](https://docs.ollama.com/api/introduction) and
 [tool calling documentation](https://docs.ollama.com/capabilities/tool-calling).
 
-Only loopback addresses are accepted, `localhost` is resolved by Wynxo itself
+Only loopback addresses are accepted, `localhost` is resolved by Wynxq itself
 rather than trusted to DNS, proxy environment variables are ignored, redirects
 are refused, and models that forward to a remote host are rejected.
 
@@ -280,9 +280,9 @@ Start with something small:
 
 Turn it on first, under **Settings → Agent** — the one place it is switched.
 The header says so while it is on. On Wayland, allow the screen-sharing and input
-permissions your desktop asks for; Wynxo asks the portal to remember them, so a
+permissions your desktop asks for; Wynxq asks the portal to remember them, so a
 desktop that supports session persistence will not ask again. Install the
-application you want it to use first — Wynxo discovers apps through their
+application you want it to use first — Wynxq discovers apps through their
 desktop entries. App launching works independently of screen control.
 
 While it works, the actions appear inline with the task, each with its state
@@ -290,23 +290,23 @@ and duration. The pointer travels to where it is going rather than teleporting,
 so you can follow it and interrupt it. Screenshots feed a vision model; pointer
 motion and keyboard input affect your real desktop.
 
-**Stopping.** Escape stops generation and desktop actions whenever Wynxo has
-focus. While a model drives another window, Wynxo does not have focus — so it
+**Stopping.** Escape stops generation and desktop actions whenever Wynxq has
+focus. While a model drives another window, Wynxq does not have focus — so it
 also asks your desktop to bind a stop shortcut that works from anywhere, through
 the GlobalShortcuts portal. Your compositor owns that binding and may choose a
 different key from the one requested; whichever it assigns is shown under
 **Settings → Agent**. On a desktop without that portal, screen control still
-works and Escape in the Wynxo window still stops it.
+works and Escape in the Wynxq window still stops it.
 
 Execution behavior:
 
-- Screen control starts **off** every time Wynxo opens, remembered permission
+- Screen control starts **off** every time Wynxq opens, remembered permission
   or not: persistence removes the prompt, never the switch.
-- **Escape** stops generation and desktop actions from the Wynxo window, and a
+- **Escape** stops generation and desktop actions from the Wynxq window, and a
   desktop-bound shortcut stops them from anywhere.
 - Turning screen control off revokes input access at the backend, not just in
   the UI, even while an action is in flight.
-- Every run has an action budget (20 by default); Wynxo stops and asks rather
+- Every run has an action budget (20 by default); Wynxq stops and asks rather
   than running indefinitely.
 - Commands use a dedicated Bash runner with captured output and process-group
   cancellation. They follow the selected approval mode. GUI applications use
@@ -330,7 +330,7 @@ An action that already happened is not undone by stopping.
 | X11 | XTEST input, Pillow capture | Needs XTEST; typed characters must exist in the active keymap |
 | No graphical session | Chat only | Input and capture are unavailable |
 
-On Wayland, select every monitor in the permission dialog so Wynxo can map
+On Wayland, select every monitor in the permission dialog so Wynxq can map
 screenshot pixels to the right input stream. It prefers the position metadata
 the portal exposes, then monitor sizes, then the compositor's stable stream
 order. Capturing the screen *for context* uses the Screenshot portal alone and
@@ -340,12 +340,12 @@ compositors do not expose it.
 Two portal features are used where the desktop offers them, and skipped in
 silence where it does not:
 
-| Portal | What Wynxo asks for | Without it |
+| Portal | What Wynxq asks for | Without it |
 | --- | --- | --- |
 | RemoteDesktop v2 `persist_mode` | Remember this permission, so screen control stops prompting on every launch | The compositor's dialog appears each time, as before |
-| GlobalShortcuts | One shortcut that stops a run while another window has focus | Escape still stops it from the Wynxo window |
+| GlobalShortcuts | One shortcut that stops a run while another window has focus | Escape still stops it from the Wynxq window |
 
-The restore token the portal issues is single use: Wynxo stores the new one
+The restore token the portal issues is single use: Wynxq stores the new one
 after every session and discards it if the portal ever refuses to restore it,
 so a stale token cannot leave screen control permanently broken.
 
@@ -366,7 +366,7 @@ specific compositor and version.
 | Shortcut | Action |
 | --- | --- |
 | Enter / Shift+Enter | Send / new line |
-| Escape | Stop generation and desktop actions (from the Wynxo window) |
+| Escape | Stop generation and desktop actions (from the Wynxq window) |
 | Ctrl+N | New task |
 | Ctrl+K | Search tasks |
 | Ctrl+Shift+P | Command palette |
@@ -395,15 +395,15 @@ The workspace dock:
 | Ctrl+L | Focus the address bar, while Browser is open |
 
 The same list is in the app under **Keyboard**, from the command palette or the
-overflow menu. These are window shortcuts, active while Wynxo has keyboard focus. Linux gives
+overflow menu. These are window shortcuts, active while Wynxq has keyboard focus. Linux gives
 applications no portable way to claim a system-wide hotkey, so for a real
 global quick bar, bind your desktop's custom shortcut to:
 
 ```
-wynxo --quick
+wynxq --quick
 ```
 
-A running Wynxo picks that up over a local socket and raises the bar; if none is
+A running Wynxq picks that up over a local socket and raises the bar; if none is
 running, it starts one.
 
 ---
@@ -424,10 +424,10 @@ off every transition and looping animation rather than just shortening them.
 
 - Inference runs through your local Ollama server. Nothing is sent anywhere else.
 - Conversations live in a private SQLite file at
-  `~/.local/share/wynxo/history.sqlite3` (or `$XDG_DATA_HOME/wynxo`), created
+  `~/.local/share/wynxq/history.sqlite3` (or `$XDG_DATA_HOME/wynxq`), created
   with `0600` permissions.
-- Long-term memory is one Markdown file beside it, `~/.local/share/wynxo/memory.md`,
-  also `0600`. It is read into every task and never leaves your machine. Wynxo is
+- Long-term memory is one Markdown file beside it, `~/.local/share/wynxq/memory.md`,
+  also `0600`. It is read into every task and never leaves your machine. Wynxq is
   told not to save secrets or credentials there; read it, edit it and empty it
   yourself in the Memory panel, and turn it off entirely in Settings → Agent.
 - Screenshots go to your local model and are **not** written into task history.
@@ -441,7 +441,7 @@ off every transition and looping animation rather than just shortening them.
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e . pytest
-.venv/bin/python -m wynxo
+.venv/bin/python -m wynxq
 .venv/bin/python -m pytest -q
 ```
 
@@ -449,24 +449,24 @@ Layout:
 
 | Path | Responsibility |
 | --- | --- |
-| `wynxo/ui/Main.qml` | The application shell: three columns, shortcuts, overlays |
-| `wynxo/ui/Wynxo/` | The QML module — `Theme.qml` plus ~55 components |
-| `wynxo/controller.py` | Qt bridge; owns conversation, Ollama, task and desktop state |
-| `wynxo/dock.py` | The workspace dock: tab state, file tree, terminal view, changes, context, activity, browser |
-| `wynxo/project_files.py` | The file tree, the viewer's reader and writer, and path containment |
-| `wynxo/terminal.py` | PTY shell sessions and the ANSI screen |
-| `wynxo/diffs.py` | Git status, line counts, unified diffs, reverting |
-| `wynxo/activity.py` | The run timeline and its state vocabulary |
-| `wynxo/browser.py` | Embedded-browser policy: availability, URL rules, page context |
-| `wynxo/system.py` | Measured runtime state for the System panel |
-| `wynxo/commands.py` | Local Bash execution, bounded output, timeout and cancellation |
-| `wynxo/engine.py` | Ollama transport and the bounded desktop tool loop |
-| `wynxo/desktop.py` | Wayland portal and X11 backends |
-| `wynxo/markdown.py` | Message segmentation, highlighting, Markdown rendering |
-| `wynxo/context.py` | Composer attachments |
-| `wynxo/storage.py` | SQLite history and settings |
-| `wynxo/notify.py` | Desktop notifications and system integration |
-| `wynxo/demo.py` | Fixed state for previews and screenshots |
+| `wynxq/ui/Main.qml` | The application shell: three columns, shortcuts, overlays |
+| `wynxq/ui/Wynxq/` | The QML module — `Theme.qml` plus ~55 components |
+| `wynxq/controller.py` | Qt bridge; owns conversation, Ollama, task and desktop state |
+| `wynxq/dock.py` | The workspace dock: tab state, file tree, terminal view, changes, context, activity, browser |
+| `wynxq/project_files.py` | The file tree, the viewer's reader and writer, and path containment |
+| `wynxq/terminal.py` | PTY shell sessions and the ANSI screen |
+| `wynxq/diffs.py` | Git status, line counts, unified diffs, reverting |
+| `wynxq/activity.py` | The run timeline and its state vocabulary |
+| `wynxq/browser.py` | Embedded-browser policy: availability, URL rules, page context |
+| `wynxq/system.py` | Measured runtime state for the System panel |
+| `wynxq/commands.py` | Local Bash execution, bounded output, timeout and cancellation |
+| `wynxq/engine.py` | Ollama transport and the bounded desktop tool loop |
+| `wynxq/desktop.py` | Wayland portal and X11 backends |
+| `wynxq/markdown.py` | Message segmentation, highlighting, Markdown rendering |
+| `wynxq/context.py` | Composer attachments |
+| `wynxq/storage.py` | SQLite history and settings |
+| `wynxq/notify.py` | Desktop notifications and system integration |
+| `wynxq/demo.py` | Fixed state for previews and screenshots |
 
 The dock is deliberately not part of `controller.py`: the controller owns the
 conversation, the dock owns the tools, and they meet at a handful of calls —
@@ -482,39 +482,39 @@ installer uses only the standard library, so it runs before dependencies exist.
 
 ```bash
 .venv/bin/python -m pytest -q
-QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software .venv/bin/python -m wynxo --smoke-test
+QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software .venv/bin/python -m wynxq --smoke-test
 ```
 
 The conversation interaction checks drive the real scrollbar, keyboard copy,
 message recycling, and a 560 × 520 window with a long draft and 12 attachments:
 
 ```bash
-WYNXO_QML_SMOKE=1 .venv/bin/python -m pytest -q tests/test_conversation_stability.py
+WYNXQ_QML_SMOKE=1 .venv/bin/python -m pytest -q tests/test_conversation_stability.py
 ```
 
 The [constrained composer](docs/screenshots/constrained-composer.png) and
 [long-command review](docs/screenshots/permission-review.png) captures show these
 states. To refresh them, run `tests/conversation_stability_probe.py` with
 `QT_QPA_PLATFORM=offscreen`, `QT_QUICK_BACKEND=software`, and
-`WYNXO_STABILITY_SCREENSHOTS=docs/screenshots`.
+`WYNXQ_STABILITY_SCREENSHOTS=docs/screenshots`.
 
 To see the interface without any real history, Ollama, or desktop access:
 
 ```bash
-.venv/bin/python -m wynxo --ui-preview              # a task with an answer
-.venv/bin/python -m wynxo --ui-preview empty        # a new task
-.venv/bin/python -m wynxo --ui-preview context      # attachments
-.venv/bin/python -m wynxo --ui-preview run          # a finished agent run
-.venv/bin/python -m wynxo --ui-preview desktop      # mid-run, waiting for approval
-.venv/bin/python -m wynxo --ui-preview welcome      # first run
-.venv/bin/python -m wynxo --ui-preview dock-files      # the file tree and viewer
-.venv/bin/python -m wynxo --ui-preview dock-terminal   # a live shell
-.venv/bin/python -m wynxo --ui-preview dock-changes    # Git changes and a diff
-.venv/bin/python -m wynxo --ui-preview dock-browser    # the embedded browser
-.venv/bin/python -m wynxo --ui-preview dock-context    # what the model can see
-.venv/bin/python -m wynxo --ui-preview dock-memory     # what carries between tasks
-.venv/bin/python -m wynxo --ui-preview dock-activity   # the run timeline
-.venv/bin/python -m wynxo --ui-preview work-run        # a coding turn, start to finish
+.venv/bin/python -m wynxq --ui-preview              # a task with an answer
+.venv/bin/python -m wynxq --ui-preview empty        # a new task
+.venv/bin/python -m wynxq --ui-preview context      # attachments
+.venv/bin/python -m wynxq --ui-preview run          # a finished agent run
+.venv/bin/python -m wynxq --ui-preview desktop      # mid-run, waiting for approval
+.venv/bin/python -m wynxq --ui-preview welcome      # first run
+.venv/bin/python -m wynxq --ui-preview dock-files      # the file tree and viewer
+.venv/bin/python -m wynxq --ui-preview dock-terminal   # a live shell
+.venv/bin/python -m wynxq --ui-preview dock-changes    # Git changes and a diff
+.venv/bin/python -m wynxq --ui-preview dock-browser    # the embedded browser
+.venv/bin/python -m wynxq --ui-preview dock-context    # what the model can see
+.venv/bin/python -m wynxq --ui-preview dock-memory     # what carries between tasks
+.venv/bin/python -m wynxq --ui-preview dock-activity   # the run timeline
+.venv/bin/python -m wynxq --ui-preview work-run        # a coding turn, start to finish
 ```
 
 The dock scenes point at this checkout, so Files, Changes and Terminal show a
@@ -525,7 +525,7 @@ real renderer, never mock-ups:
 
 ```bash
 xvfb-run -a -s "-screen 0 1600x1000x24" \
-  .venv/bin/python -m wynxo --snapshot docs/screenshots
+  .venv/bin/python -m wynxq --snapshot docs/screenshots
 ```
 
 Add `--size 980x760` to check a narrower layout. CI runs the same command and
@@ -553,12 +553,12 @@ python3 install.py
 ```
 
 An upgrade builds a new environment before switching the active release, so a
-failed install leaves the previous version working. Restart Wynxo to use an
+failed install leaves the previous version working. Restart Wynxq to use an
 update.
 
 ```bash
-~/.local/bin/wynxo --uninstall            # keeps conversations and settings
-~/.local/bin/wynxo --uninstall --purge    # removes them too
+~/.local/bin/wynxq --uninstall            # keeps conversations and settings
+~/.local/bin/wynxq --uninstall --purge    # removes them too
 ```
 
 Uninstall never removes Ollama or your downloaded models. Modified launchers,
@@ -567,11 +567,11 @@ and reported.
 
 | Item | Location |
 | --- | --- |
-| App and isolated environments | `$XDG_DATA_HOME/wynxo-app` (default `~/.local/share/wynxo-app`) |
-| Launcher | `~/.local/bin/wynxo` |
-| Desktop entry | `$XDG_DATA_HOME/applications/io.github.wynxo.Wynxo.desktop` |
-| Icon | `$XDG_DATA_HOME/icons/hicolor/scalable/apps/io.github.wynxo.Wynxo.svg` |
-| Conversations and settings | `$XDG_DATA_HOME/wynxo/history.sqlite3` |
+| App and isolated environments | `$XDG_DATA_HOME/wynxq-app` (default `~/.local/share/wynxq-app`) |
+| Launcher | `~/.local/bin/wynxq` |
+| Desktop entry | `$XDG_DATA_HOME/applications/io.github.wynxq.Wynxq.desktop` |
+| Icon | `$XDG_DATA_HOME/icons/hicolor/scalable/apps/io.github.wynxq.Wynxq.svg` |
+| Conversations and settings | `$XDG_DATA_HOME/wynxq/history.sqlite3` |
 
 Advanced: `python3 install.py --install-root /path --bin-dir /path`. Pass the
 same install root to `uninstall.py`, or use that installation's launcher.
@@ -598,10 +598,10 @@ Run the launcher from a terminal to see the missing-library diagnostics.
 Package names vary by distribution; see
 [Qt's Linux requirements](https://doc.qt.io/qt-6/linux-requirements.html).
 
-**Rendering looks wrong.** Try `QT_QUICK_BACKEND=software ~/.local/bin/wynxo`.
+**Rendering looks wrong.** Try `QT_QUICK_BACKEND=software ~/.local/bin/wynxq`.
 Reduced motion is also available under Settings → Appearance.
 
-**The `wynxo` command is missing.** Use `~/.local/bin/wynxo` or the application
+**The `wynxq` command is missing.** Use `~/.local/bin/wynxq` or the application
 menu, and add `~/.local/bin` to your `PATH` if you want the short form. The
 installer does not edit your shell configuration.
 
@@ -612,6 +612,6 @@ screen offers it.
 
 ---
 
-Wynxo is an independent project, not affiliated with Ollama or any AI vendor.
+Wynxq is an independent project, not affiliated with Ollama or any AI vendor.
 MIT licensed. Inter and JetBrains Mono are bundled under the SIL Open Font
 License; other dependencies keep their own licences.

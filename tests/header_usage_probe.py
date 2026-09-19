@@ -6,7 +6,7 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
-from wynxo.demo import DemoController
+from wynxq.demo import DemoController
 
 QQuickStyle.setStyle('Basic')
 app = QApplication([])
@@ -16,7 +16,7 @@ controller.refreshTokenUsage()
 controller._conversation_tokens = controller._read_conversation_tokens()
 controller._usage.exact_metrics({'tokens': 427, 'tokens_per_second': 18.6})
 engine = QQmlApplicationEngine()
-ui = Path(__file__).resolve().parents[1] / 'wynxo' / 'ui'
+ui = Path(__file__).resolve().parents[1] / 'wynxq' / 'ui'
 engine.addImportPath(str(ui))
 engine.rootContext().setContextProperty('bridge', controller)
 engine.load(QUrl.fromLocalFile(str(ui / 'Main.qml')))

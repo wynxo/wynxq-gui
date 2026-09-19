@@ -2,9 +2,9 @@ import threading
 
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.controller import Controller
-from wynxo.engine import AgentEngine
-from wynxo.storage import Store
+from wynxq.controller import Controller
+from wynxq.engine import AgentEngine
+from wynxq.storage import Store
 
 
 APP = QCoreApplication.instance() or QCoreApplication([])

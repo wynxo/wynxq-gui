@@ -10,13 +10,13 @@ from PySide6.QtTest import QTest
 QQuickStyle.setStyle('Basic')
 app = QGuiApplication(sys.argv[:1])
 engine = QQmlEngine()
-ui = Path(__file__).resolve().parents[1] / 'wynxo/ui'
+ui = Path(__file__).resolve().parents[1] / 'wynxq/ui'
 engine.addImportPath(str(ui))
 component = QQmlComponent(engine)
 component.setData(b'''
 import QtQuick
 import QtQuick.Controls
-import Wynxo
+import Wynxq
 ApplicationWindow {
     width: 400; height: 300; visible: true
     property color behind: "#ffffff"

@@ -5,7 +5,7 @@ never moves the panel they chose, and it remembers where they left it.
 """
 import pytest
 
-from wynxo import activity, browser
+from wynxq import activity, browser
 
 
 # ------------------------------------------------------------ browser policy
@@ -25,7 +25,7 @@ def test_an_address_is_taken_as_an_address(typed, expected):
 @pytest.mark.parametrize("typed", [
     "fix the login bug",
     "what is a monad",
-    "wynxo redesign",
+    "wynxq redesign",
 ])
 def test_a_phrase_becomes_a_search(typed):
     result = browser.normalize(typed)

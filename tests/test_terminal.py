@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from wynxo.terminal import AnsiScreen, ShellSession
+from wynxq.terminal import AnsiScreen, ShellSession
 
 
 # ------------------------------------------------------------- the ANSI screen
@@ -102,8 +102,8 @@ def drain(session, needle, timeout=8.0):
 def test_a_session_starts_and_runs_a_command(shell):
     # Split in the source so the terminal's echo of the command line cannot be
     # mistaken for the command having actually run.
-    shell.send_line('echo "WYNXO""_MARKER"')
-    assert drain(shell, "WYNXO_MARKER")
+    shell.send_line('echo "WYNXQ""_MARKER"')
+    assert drain(shell, "WYNXQ_MARKER")
     assert shell.running
 
 

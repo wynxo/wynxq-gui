@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from wynxo.background import serialized_io
+from wynxq.background import serialized_io
 
 
 def test_serialized_io_moves_the_body_to_a_python_managed_thread():
@@ -18,7 +18,7 @@ def test_serialized_io_moves_the_body_to_a_python_managed_thread():
 
     worker = where()
     assert worker is not caller
-    assert worker.name.startswith("wynxo-io:")
+    assert worker.name.startswith("wynxq-io:")
     assert type(worker).__name__ != "_DummyThread"
 
 

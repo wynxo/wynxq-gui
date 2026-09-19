@@ -4,7 +4,7 @@ import subprocess
 
 import pytest
 
-from wynxo.workspace import (
+from wynxq.workspace import (
     _checkpoint_delta,
     _restore_workspace_checkpoint,
     _snapshot_git_workspace,

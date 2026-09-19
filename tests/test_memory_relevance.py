@@ -1,9 +1,9 @@
 """Long memory should spend context on the facts most useful to this turn."""
 import threading
 
-import wynxo.memory as memory_module
-from wynxo.engine import AgentEngine
-from wynxo.memory import PROJECT, Memory
+import wynxq.memory as memory_module
+from wynxq.engine import AgentEngine
+from wynxq.memory import PROJECT, Memory
 
 
 def test_small_memory_keeps_everything_even_without_a_query(tmp_path):
@@ -19,14 +19,14 @@ def test_small_memory_keeps_everything_even_without_a_query(tmp_path):
 
 def test_identity_survives_a_tight_prompt_budget(tmp_path, monkeypatch):
     memory = Memory(tmp_path / "memory.md")
-    memory.remember("User prefers to be called wynxo.")
+    memory.remember("User prefers to be called wynxq.")
     for index in range(20):
         memory.remember(f"Unrelated historical note number {index} with extra filler words.")
     monkeypatch.setattr(memory_module, "PROMPT_BUDGET", 150)
 
     prompt = memory.prompt(query="explain networking")
 
-    assert "User prefers to be called wynxo." in prompt
+    assert "User prefers to be called wynxq." in prompt
 
 
 def test_relevant_global_note_beats_unrelated_notes_when_budget_is_tight(tmp_path, monkeypatch):

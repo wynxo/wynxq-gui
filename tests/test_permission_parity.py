@@ -1,8 +1,8 @@
 """The optional Python permission fallback must classify like the C++ core."""
 import pytest
 
-from wynxo import engine
-from wynxo.native_core import native_core
+from wynxq import engine
+from wynxq.native_core import native_core
 
 
 COMMANDS = [

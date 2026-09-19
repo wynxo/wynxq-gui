@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-from wynxo import diffs
+from wynxq import diffs
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
 

@@ -1,0 +1,83 @@
+module Wynxq
+singleton Theme 1.0 Theme.qml
+singleton ContextKinds 1.0 ContextKinds.qml
+singleton WorkspaceMode 1.0 WorkspaceMode.qml
+
+# Foundation
+Icon 1.0 Icon.qml
+EmptyState 1.0 EmptyState.qml
+PanelHeader 1.0 PanelHeader.qml
+Mark 1.0 Mark.qml
+ChromeMark 1.0 ChromeMark.qml
+Divider 1.0 Divider.qml
+SectionLabel 1.0 SectionLabel.qml
+KeyHint 1.0 KeyHint.qml
+StatusDot 1.0 StatusDot.qml
+Meter 1.0 Meter.qml
+
+# Controls
+WButton 1.0 WButton.qml
+IconButton 1.0 IconButton.qml
+Chip 1.0 Chip.qml
+Field 1.0 Field.qml
+Toggle 1.0 Toggle.qml
+Segmented 1.0 Segmented.qml
+
+# Surfaces
+GlassSurface 1.0 GlassSurface.qml
+WMenu 1.0 WMenu.qml
+Popover 1.0 Popover.qml
+Sheet 1.0 Sheet.qml
+ConfirmSheet 1.0 ConfirmSheet.qml
+Toast 1.0 Toast.qml
+
+# The task
+CodeBlock 1.0 CodeBlock.qml
+Markdown 1.0 Markdown.qml
+UserMessage 1.0 UserMessage.qml
+AssistantMessage 1.0 AssistantMessage.qml
+RunActivity 1.0 RunActivity.qml
+MessageList 1.0 MessageList.qml
+TaskStart 1.0 TaskStart.qml
+TaskStarters 1.0 TaskStarters.qml
+TaskView 1.0 TaskView.qml
+Composer 1.0 Composer.qml
+TokenUsage 1.0 TokenUsage.qml
+UsageHeatmap 1.0 UsageHeatmap.qml
+
+# The shell
+WorkspaceSidebar 1.0 WorkspaceSidebar.qml
+TaskRow 1.0 TaskRow.qml
+TaskHeader 1.0 TaskHeader.qml
+ErrorBanner 1.0 ErrorBanner.qml
+QuickBarContent 1.0 QuickBarContent.qml
+RegionSelector 1.0 RegionSelector.qml
+
+# The workspace dock
+WorkspaceDock 1.0 WorkspaceDock.qml
+DockTabBar 1.0 DockTabBar.qml
+PlanPanel 1.0 PlanPanel.qml
+PlanTaskRow 1.0 PlanTaskRow.qml
+FileExplorer 1.0 FileExplorer.qml
+FileViewer 1.0 FileViewer.qml
+FocusEditor 1.0 FocusEditor.qml
+TerminalPanel 1.0 TerminalPanel.qml
+ChangesPanel 1.0 ChangesPanel.qml
+DiffViewer 1.0 DiffViewer.qml
+ContextPanel 1.0 ContextPanel.qml
+MemoryPanel 1.0 MemoryPanel.qml
+ActivityPanel 1.0 ActivityPanel.qml
+BrowserPanel 1.0 BrowserPanel.qml
+PreviewPanel 1.0 PreviewPanel.qml
+SystemPopover 1.0 SystemPopover.qml
+
+# Configuration and prompts
+ModelPicker 1.0 ModelPicker.qml
+ModelManager 1.0 ModelManager.qml
+CommandPalette 1.0 CommandPalette.qml
+SettingsSheet 1.0 SettingsSheet.qml
+ShortcutsSheet 1.0 ShortcutsSheet.qml
+PermissionPrompt 1.0 PermissionPrompt.qml
+Onboarding 1.0 Onboarding.qml
+
+WScrollBar 1.0 WScrollBar.qml

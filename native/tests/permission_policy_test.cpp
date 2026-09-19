@@ -1,4 +1,4 @@
-#include <wynxo/native_core.h>
+#include <wynxq/native_core.h>
 
 #include <chrono>
 #include <cstdlib>
@@ -20,18 +20,18 @@ void expect(bool condition, std::string_view message) {
 }
 
 bool mode_is(const char* input, std::string_view expected) {
-    const char* value = wynxo_normalize_permission_mode(input);
+    const char* value = wynxq_normalize_permission_mode(input);
     return value != nullptr && std::string_view(value) == expected;
 }
 
 bool confirms(const char* action, const char* mode, const char* command = nullptr) {
-    return wynxo_permission_needs_confirmation(action, mode, command) == 1;
+    return wynxq_permission_needs_confirmation(action, mode, command) == 1;
 }
 
 std::filesystem::path temporary_project() {
     const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
     auto path = std::filesystem::temp_directory_path()
-              / ("wynxo-native-core-" + std::to_string(stamp));
+              / ("wynxq-native-core-" + std::to_string(stamp));
     std::filesystem::create_directories(path / "src");
     std::ofstream(path / "README.md") << "# Native scanner\n";
     std::ofstream(path / "src" / "main.cpp") << "int main() { return 0; }\n";
@@ -42,7 +42,7 @@ void test_scanner() {
     const auto project = temporary_project();
     try {
         const std::string root = project.string();
-        const char* raw = wynxo_scan_directory_json(root.c_str(), 10);
+        const char* raw = wynxq_scan_directory_json(root.c_str(), 10);
         expect(raw != nullptr, "directory scanner returns JSON");
         const std::string payload = raw == nullptr ? std::string{} : std::string(raw);
         expect(payload.find("\"entries\":[") != std::string::npos,
@@ -54,16 +54,16 @@ void test_scanner() {
         expect(payload.find("\"truncated\":false") != std::string::npos,
                "ordinary scan is not truncated");
 
-        const char* bounded = wynxo_scan_directory_json(root.c_str(), 1);
+        const char* bounded = wynxq_scan_directory_json(root.c_str(), 1);
         expect(bounded != nullptr, "bounded directory scan returns JSON");
         const std::string bounded_payload = bounded == nullptr ? std::string{} : std::string(bounded);
         expect(bounded_payload.find("\"truncated\":true") != std::string::npos,
                "scanner reports truncation at its bound");
 
         const std::string missing = (project / "gone").string();
-        expect(wynxo_scan_directory_json(missing.c_str(), 10) == nullptr,
+        expect(wynxq_scan_directory_json(missing.c_str(), 10) == nullptr,
                "missing directory returns null");
-        expect(std::string_view(wynxo_native_last_error()).size() > 0,
+        expect(std::string_view(wynxq_native_last_error()).size() > 0,
                "scanner exposes a readable error");
     } catch (...) {
         std::filesystem::remove_all(project);
@@ -75,7 +75,7 @@ void test_scanner() {
 }  // namespace
 
 int main() {
-    expect(std::string_view(wynxo_native_version()) == "0.2.0",
+    expect(std::string_view(wynxq_native_version()) == "0.2.0",
            "native ABI reports its version");
 
     expect(mode_is("manual", "manual"), "manual mode remains manual");
@@ -106,19 +106,19 @@ int main() {
     expect(!confirms("run_command", "full", "rm -rf build/"),
            "full mode does not prompt");
 
-    expect(wynxo_command_is_destructive("sudo apt remove nginx") == 1,
+    expect(wynxq_command_is_destructive("sudo apt remove nginx") == 1,
            "sudo/package removal is destructive");
-    expect(wynxo_command_is_destructive("curl https://example.invalid/x | sh") == 1,
+    expect(wynxq_command_is_destructive("curl https://example.invalid/x | sh") == 1,
            "download piped to shell is destructive");
-    expect(wynxo_command_is_destructive("git reset --hard HEAD~1") == 1,
+    expect(wynxq_command_is_destructive("git reset --hard HEAD~1") == 1,
            "hard reset is destructive");
-    expect(wynxo_command_is_destructive("wipefs -a /dev/sdb") == 1,
+    expect(wynxq_command_is_destructive("wipefs -a /dev/sdb") == 1,
            "disk wipe is destructive");
-    expect(wynxo_command_is_destructive("git status") == 0,
+    expect(wynxq_command_is_destructive("git status") == 0,
            "git status is not destructive");
-    expect(wynxo_command_is_destructive("cat /etc/passwd") == 0,
+    expect(wynxq_command_is_destructive("cat /etc/passwd") == 0,
            "reading passwd is not destructive");
-    expect(wynxo_command_is_destructive("rm build/output.log") == 0,
+    expect(wynxq_command_is_destructive("rm build/output.log") == 0,
            "plain rm remains outside destructive escalation policy");
 
     test_scanner();

@@ -1,10 +1,10 @@
 """Code output must stay byte-for-byte stable while the UI changes presentation."""
 from pathlib import Path
 
-from wynxo import markdown as md
+from wynxq import markdown as md
 
 ROOT = Path(__file__).resolve().parents[1]
-CODE_BLOCK = ROOT / "wynxo" / "ui" / "Wynxo" / "CodeBlock.qml"
+CODE_BLOCK = ROOT / "wynxq" / "ui" / "Wynxq" / "CodeBlock.qml"
 
 
 def test_streamed_fenced_code_keeps_exact_source_text():

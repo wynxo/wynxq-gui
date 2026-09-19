@@ -15,7 +15,7 @@ import pytest
 
 PROBE = Path(__file__).resolve().parent / "qml_probe.py"
 
-pytestmark = pytest.mark.skipif(not os.environ.get("WYNXO_QML_SMOKE"),
+pytestmark = pytest.mark.skipif(not os.environ.get("WYNXQ_QML_SMOKE"),
                                 reason="needs a Qt platform plugin")
 
 

@@ -1,8 +1,8 @@
 """Token counters must feel live without corrupting exact historical totals."""
 from datetime import datetime
 
-from wynxo.storage import Store
-from wynxo.usage import TokenUsageTracker
+from wynxq.storage import Store
+from wynxq.usage import TokenUsageTracker
 
 
 def metrics(tokens, prompt, rate=2.5, cached=0, total_ms=1000):
@@ -223,7 +223,7 @@ def test_tracker_refreshes_daily_and_model_views(tmp_path):
     tracker = TokenUsageTracker(store)
     tracker.exact_metrics(metrics(10, 20, rate=4.0))
     assert tracker.finalize("chat", "qwen") is True
-    assert len(tracker.daily) == 7
+    assert len(tracker.daily) == 30
     assert tracker.daily[-1]["tokens"] >= 30
     assert tracker.models[0]["name"] == "qwen"
     assert tracker.models[0]["tokens"] >= 30

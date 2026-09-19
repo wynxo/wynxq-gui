@@ -1,7 +1,7 @@
 """Notification policy. No test here posts a real desktop notification."""
 from unittest.mock import patch
 
-from wynxo import notify
+from wynxq import notify
 
 
 def test_only_long_unattended_runs_are_worth_a_notification():
@@ -23,7 +23,7 @@ def test_send_passes_the_app_identity_and_clamps_long_text():
         run.return_value.returncode = 0
         assert notify.send("Title", "B" * 900, urgency="bogus") is True
     command = run.call_args[0][0]
-    assert "--app-name=Wynxo" in command
+    assert "--app-name=Wynxq" in command
     assert "--urgency=normal" in command
     assert len(command[-1]) <= 400
 

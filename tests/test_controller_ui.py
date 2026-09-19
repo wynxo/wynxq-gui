@@ -6,10 +6,10 @@ from datetime import datetime
 import pytest
 from PySide6.QtCore import QCoreApplication
 
-from wynxo import context as ctx
-from wynxo.controller import Controller, Messages, derive_title, group_for
-from wynxo.engine import AUTO, FULL, MANUAL, SAFE
-from wynxo.storage import Store
+from wynxq import context as ctx
+from wynxq.controller import Controller, Messages, derive_title, group_for
+from wynxq.engine import AUTO, FULL, MANUAL, SAFE
+from wynxq.storage import Store
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 
@@ -719,7 +719,7 @@ def _png(width, height, colour=(20, 20, 24)):
     return base64.b64encode(buffer.getvalue()).decode("ascii")
 
 
-def test_region_capture_crops_an_image_wynxo_already_holds(tmp_path):
+def test_region_capture_crops_an_image_wynxq_already_holds(tmp_path):
     desktop = IdleDesktop()
     bridge = controller(tmp_path, desktop=desktop)
     try:
@@ -812,16 +812,16 @@ def test_search_looks_inside_messages_once_the_query_is_long_enough(tmp_path):
 def test_the_project_exposes_a_name_a_path_and_its_parent(tmp_path):
     bridge = controller(tmp_path)
     try:
-        project = tmp_path / "code" / "wynxo-gui-ai-agent"
+        project = tmp_path / "code" / "wynxq-gui-ai-agent"
         project.mkdir(parents=True)
         bridge._set_project(str(project))
 
-        assert bridge.projectName == "wynxo-gui-ai-agent"
+        assert bridge.projectName == "wynxq-gui-ai-agent"
         assert bridge.projectPath == str(project)
-        assert bridge.projectLabel.endswith("code/wynxo-gui-ai-agent")
+        assert bridge.projectLabel.endswith("code/wynxq-gui-ai-agent")
         # The parent line must not repeat the name shown above it.
         assert bridge.projectParentLabel.endswith("/code")
-        assert "wynxo-gui-ai-agent" not in bridge.projectParentLabel
+        assert "wynxq-gui-ai-agent" not in bridge.projectParentLabel
 
         bridge.clearProject()
         assert bridge.projectName == "" and bridge.projectLabel == ""
@@ -936,7 +936,7 @@ def test_embedding_only_models_are_flagged_out_of_the_quick_picker(tmp_path):
 # only safe if it can be stopped from whatever window has focus.
 
 def test_the_portal_restore_token_is_kept_with_the_other_settings(tmp_path):
-    from wynxo.controller import _StoredTokens
+    from wynxq.controller import _StoredTokens
     store = Store(tmp_path / "history.sqlite3")
     tokens = _StoredTokens(store)
 
@@ -982,7 +982,7 @@ def test_the_interface_reports_what_the_desktop_decided(tmp_path):
     bridge = controller(tmp_path, desktop=WaylandDesktop(connected=True))
     try:
         assert bridge.desktopRemembered is True
-        # Whatever key the compositor chose, not the one Wynxo asked for.
+        # Whatever key the compositor chose, not the one Wynxq asked for.
         assert bridge.desktopStopShortcut == "Meta+Shift+X"
     finally:
         bridge.shutdown()
@@ -1016,7 +1016,7 @@ def test_regenerate_cannot_repeat_a_local_command(tmp_path):
 
 
 def test_reopening_chat_keeps_command_output():
-    from wynxo.controller import Messages
+    from wynxq.controller import Messages
     import json
     model = Messages()
     model.replace([{"role": "tool", "tool_name": "run_command", "content": json.dumps({

@@ -2,7 +2,7 @@
 import base64
 import pytest
 
-from wynxo import context as ctx
+from wynxq import context as ctx
 
 
 def test_text_file_is_attached_with_a_readable_summary(tmp_path):

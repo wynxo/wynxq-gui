@@ -1,8 +1,8 @@
-"""Setuptools hook that embeds Wynxo's C++ core in Linux wheels.
+"""Setuptools hook that embeds Wynxq's C++ core in Linux wheels.
 
 The native layer is intentionally optional for source installs so a missing
 compiler never makes the Python/QML fallback unusable. Release/CI builds set
-WYNXO_REQUIRE_NATIVE=1 and therefore fail if the native library cannot be
+WYNXQ_REQUIRE_NATIVE=1 and therefore fail if the native library cannot be
 produced.
 """
 from __future__ import annotations
@@ -18,17 +18,17 @@ from setuptools.command.build_py import build_py
 
 
 ROOT = Path(__file__).resolve().parent
-REQUIRE_NATIVE = os.environ.get("WYNXO_REQUIRE_NATIVE", "").strip().lower() in {
+REQUIRE_NATIVE = os.environ.get("WYNXQ_REQUIRE_NATIVE", "").strip().lower() in {
     "1", "true", "yes", "on"
 }
 
 
 def _native_filename() -> str:
     if os.name == "nt":
-        return "wynxo_native_core.dll"
+        return "wynxq_native_core.dll"
     if sys.platform == "darwin":
-        return "libwynxo_native_core.dylib"
-    return "libwynxo_native_core.so"
+        return "libwynxq_native_core.dylib"
+    return "libwynxq_native_core.so"
 
 
 def _build_native(destination: Path) -> bool:
@@ -37,15 +37,15 @@ def _build_native(destination: Path) -> bool:
     if not source.is_dir() or not cmake:
         if REQUIRE_NATIVE:
             missing = "native/" if not source.is_dir() else "cmake"
-            raise RuntimeError(f"Wynxo native core is required but {missing} is unavailable")
-        print("warning: CMake unavailable; installing Wynxo with the Python policy fallback")
+            raise RuntimeError(f"Wynxq native core is required but {missing} is unavailable")
+        print("warning: CMake unavailable; installing Wynxq with the Python policy fallback")
         return False
 
     build = ROOT / "build" / "setuptools-native"
     configure = [
         cmake, "-S", str(source), "-B", str(build),
         "-DCMAKE_BUILD_TYPE=Release",
-        "-DWYNXO_NATIVE_BUILD_TESTS=OFF",
+        "-DWYNXQ_NATIVE_BUILD_TESTS=OFF",
     ]
     try:
         subprocess.run(configure, check=True)
@@ -53,7 +53,7 @@ def _build_native(destination: Path) -> bool:
                        check=True)
     except (OSError, subprocess.CalledProcessError) as exc:
         if REQUIRE_NATIVE:
-            raise RuntimeError("Wynxo's required C++ native core failed to build") from exc
+            raise RuntimeError("Wynxq's required C++ native core failed to build") from exc
         print(f"warning: native core build failed; using Python fallback ({exc})")
         return False
 
@@ -67,14 +67,14 @@ def _build_native(destination: Path) -> bool:
 
     destination.mkdir(parents=True, exist_ok=True)
     shutil.copy2(candidates[0], destination / filename)
-    print(f"embedded Wynxo native core: {filename}")
+    print(f"embedded Wynxq native core: {filename}")
     return True
 
 
 class NativeBuildPy(build_py):
     def run(self):
         super().run()
-        _build_native(Path(self.build_lib) / "wynxo" / "native")
+        _build_native(Path(self.build_lib) / "wynxq" / "native")
 
 
 class BinaryDistribution(Distribution):

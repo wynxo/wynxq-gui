@@ -2,7 +2,7 @@ import threading
 
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.controller import Controller
+from wynxq.controller import Controller
 
 
 APP = QCoreApplication.instance() or QCoreApplication([])
@@ -106,7 +106,7 @@ def test_capability_probe_reads_selected_model_without_blocking_controller(monke
                 result(value)
         return object()
 
-    monkeypatch.setattr("wynxo.controller.OllamaClient", FakeClient)
+    monkeypatch.setattr("wynxq.controller.OllamaClient", FakeClient)
     monkeypatch.setattr(bridge, "_job", immediate_job)
     bridge._refresh_model_capabilities()
 

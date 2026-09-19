@@ -2,7 +2,7 @@
 from pathlib import Path
 
 
-MODULE = Path(__file__).resolve().parents[1] / "wynxo" / "ui" / "Wynxo"
+MODULE = Path(__file__).resolve().parents[1] / "wynxq" / "ui" / "Wynxq"
 
 
 def test_changed_files_offer_the_same_workspace_handoffs_as_the_file_tree():

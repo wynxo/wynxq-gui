@@ -4,10 +4,10 @@ import threading
 import pytest
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.controller import Controller
-from wynxo.engine import AgentEngine
-from wynxo.memory import GLOBAL_SECTION, MAX_NOTES_PER_SECTION, Memory, default_path
-from wynxo.storage import Store
+from wynxq.controller import Controller
+from wynxq.engine import AgentEngine
+from wynxq.memory import GLOBAL_SECTION, MAX_NOTES_PER_SECTION, Memory, default_path
+from wynxq.storage import Store
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 
@@ -28,7 +28,7 @@ def test_memory_starts_empty_without_a_file_on_disk(memory):
 def test_a_note_lands_in_markdown_a_person_can_read(memory):
     memory.remember("Deploys with Nix, never Docker")
     text = memory.read()
-    assert "# Wynxo memory" in text
+    assert "# Wynxq memory" in text
     assert f"## {GLOBAL_SECTION}" in text
     assert "- Deploys with Nix, never Docker" in text
 
@@ -120,7 +120,7 @@ def test_clearing_leaves_a_readable_empty_file_not_a_missing_one(memory):
     memory.remember("gone soon")
     memory.clear()
     assert memory.notes() == []
-    assert "# Wynxo memory" in memory.read()
+    assert "# Wynxq memory" in memory.read()
 
 
 def test_concurrent_writers_do_not_lose_each_other_s_notes(memory):
@@ -138,7 +138,7 @@ def test_concurrent_writers_do_not_lose_each_other_s_notes(memory):
 
 def test_the_file_lives_beside_the_history_database():
     assert default_path().name == "memory.md"
-    assert default_path().parent.name == "wynxo"
+    assert default_path().parent.name == "wynxq"
 
 
 # ---------------------------------------------------------------- in a run
@@ -284,7 +284,7 @@ def test_turning_memory_off_keeps_the_file_but_stops_reading_it(tmp_path):
 def test_memory_is_the_same_file_in_chat_and_work(tmp_path):
     # Imported here so simply loading this module does not install the
     # workspace layer's engine extensions into every other test.
-    from wynxo.workspace import WorkspaceController
+    from wynxq.workspace import WorkspaceController
 
     bridge = controller(tmp_path, cls=WorkspaceController)
     bridge.newTaskMode("work")

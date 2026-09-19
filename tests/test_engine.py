@@ -6,8 +6,10 @@ import time
 
 import pytest
 
-from wynxo.engine import (AgentEngine, Cancelled, OllamaClient, OllamaError,
-                          MEMORY_TOOLS, _NONVISUAL, validate_endpoint, validate_tool_call)
+from wynxq.engine import (AgentEngine, Cancelled, OllamaClient, OllamaError,
+                          MEMORY_TOOLS, _NONVISUAL, _ThinkingTextRouter,
+                          _normalise_assistant_channels, validate_endpoint,
+                          validate_tool_call)
 
 
 @pytest.fixture
@@ -350,9 +352,9 @@ def test_describe_still_refuses_a_remote_model(monkeypatch):
 
 def test_the_project_folder_reaches_the_model_as_context():
     client = FakeClient([response("Reading it now.")])
-    run(client, project="/home/me/code/wynxo")
+    run(client, project="/home/me/code/wynxq")
     system = next(m for m in client.requests[0]["messages"] if m["role"] == "system")["content"]
-    assert "/home/me/code/wynxo" in system
+    assert "/home/me/code/wynxq" in system
     assert "run_command defaults to this working directory" in system
 
 
@@ -409,3 +411,29 @@ def test_declined_command_never_creates_file(tmp_path):
     assert not target.exists()
     result = json.loads(next(m for m in history if m["role"] == "tool")["content"])
     assert result["declined"] is True
+
+
+def test_tagged_thinking_router_handles_markers_split_across_chunks():
+    router = _ThinkingTextRouter()
+    routed = []
+    for chunk in ("<thi", "nk>reasoning", " here</th", "ink>Final answer"):
+        routed.extend(router.feed(chunk))
+    routed.extend(router.flush())
+    assert "".join(text for kind, text in routed if kind == "thinking") == "reasoning here"
+    assert "".join(text for kind, text in routed if kind == "token") == "Final answer"
+
+
+def test_orphaned_thinking_becomes_the_final_answer():
+    message = _normalise_assistant_channels(
+        {"role": "assistant", "content": "", "thinking": "Actual answer"}
+    )
+    assert message["content"] == "Actual answer"
+    assert "thinking" not in message
+
+
+def test_normal_answer_keeps_separate_thinking():
+    message = _normalise_assistant_channels(
+        {"role": "assistant", "content": "Final", "thinking": "Reason"}
+    )
+    assert message["content"] == "Final"
+    assert message["thinking"] == "Reason"

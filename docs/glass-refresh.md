@@ -25,7 +25,7 @@ also repaint correctly after a resize. Text buttons no longer grow on hover.
 
 - Qt software-rendered captures of Home, Conversation and Welcome are in
   `docs/screenshots/01-new-task.png`, `02-task.png` and `11-welcome.png`.
-- 668 tests passed with `WYNXO_QML_SMOKE=1`, excluding
+- 668 tests passed with `WYNXQ_QML_SMOKE=1`, excluding
   `tests/test_dock_controller.py`; one optional test was skipped. This includes
   contrast checks and real keyboard, mouse, popup, conversation and composer
   interaction probes.

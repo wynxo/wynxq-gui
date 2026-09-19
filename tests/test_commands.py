@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from wynxo.commands import OUTPUT_LIMIT, run_command
+from wynxq.commands import OUTPUT_LIMIT, run_command
 
 
 def python_command(source):

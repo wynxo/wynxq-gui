@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from wynxo.storage import Store
+from wynxq.storage import Store
 
 
 def test_persistence_isolation_and_conversation_crud(tmp_path):
@@ -78,7 +78,7 @@ def test_store_supports_worker_threads(tmp_path):
 def test_default_store_respects_xdg_data_directory(monkeypatch, tmp_path):
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
     store = Store()
-    assert store.path == tmp_path / "wynxo" / "history.sqlite3"
+    assert store.path == tmp_path / "wynxq" / "history.sqlite3"
     assert os.stat(store.path.parent).st_mode & 0o777 == 0o700
     store.close()
 

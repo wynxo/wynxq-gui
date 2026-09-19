@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #endif
 
-namespace wynxo::native {
+namespace wynxq::native {
 namespace {
 
 struct Entry {
@@ -167,4 +167,4 @@ std::string scan_directory_json(const std::string& directory,
     return serialize(entries, truncated);
 }
 
-}  // namespace wynxo::native
+}  // namespace wynxq::native

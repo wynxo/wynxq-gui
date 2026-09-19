@@ -2,7 +2,7 @@
 from pathlib import Path
 
 
-MAIN = Path(__file__).resolve().parents[1] / "wynxo" / "ui" / "Main.qml"
+MAIN = Path(__file__).resolve().parents[1] / "wynxq" / "ui" / "Main.qml"
 
 
 def test_home_primary_surfaces_use_explicit_centering_lanes():

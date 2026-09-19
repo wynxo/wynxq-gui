@@ -2,7 +2,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-UI = ROOT / "wynxo" / "ui" / "Wynxo"
+UI = ROOT / "wynxq" / "ui" / "Wynxq"
 HEADER = UI / "TaskHeader.qml"
 ASSISTANT = UI / "AssistantMessage.qml"
 WORKSPACE_MODE = UI / "WorkspaceMode.qml"

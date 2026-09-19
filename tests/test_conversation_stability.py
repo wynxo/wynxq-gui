@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-pytestmark = pytest.mark.skipif(not os.environ.get("WYNXO_QML_SMOKE"),
+pytestmark = pytest.mark.skipif(not os.environ.get("WYNXQ_QML_SMOKE"),
                                 reason="needs a Qt platform plugin")
 
 

@@ -20,12 +20,12 @@ jobs:
         run: ctest --test-dir build/native --output-on-failure
       - name: Test Python to C++ bridge
         env:
-          WYNXO_NATIVE_CORE: ${{ github.workspace }}/build/native/libwynxo_native_core.so
+          WYNXQ_NATIVE_CORE: ${{ github.workspace }}/build/native/libwynxq_native_core.so
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import tempfile
-          from wynxo.native_core import native_core
+          from wynxq.native_core import native_core
           assert native_core.available, native_core.error
           assert native_core.version == "0.2.0"
           assert native_core.normalize_permission_mode("garbage") == "safe"
@@ -44,24 +44,24 @@ jobs:
           PY
       - name: Build native wheel from installer release snapshot
         env:
-          WYNXO_REQUIRE_NATIVE: "1"
+          WYNXQ_REQUIRE_NATIVE: "1"
         run: |
-          rm -rf /tmp/wynxo-release-source /tmp/wynxo-wheel
+          rm -rf /tmp/wynxq-release-source /tmp/wynxq-wheel
           python3 - <<'PY'
           from pathlib import Path
           import install
-          install._copy_source(Path.cwd(), Path("/tmp/wynxo-release-source"))
+          install._copy_source(Path.cwd(), Path("/tmp/wynxq-release-source"))
           for required in ("setup.py", "MANIFEST.in", "native/CMakeLists.txt"):
-              assert (Path("/tmp/wynxo-release-source") / required).is_file(), required
+              assert (Path("/tmp/wynxq-release-source") / required).is_file(), required
           PY
-          python3 -m pip wheel --no-deps --wheel-dir /tmp/wynxo-wheel /tmp/wynxo-release-source
+          python3 -m pip wheel --no-deps --wheel-dir /tmp/wynxq-wheel /tmp/wynxq-release-source
           python3 - <<'PY'
           from pathlib import Path
           import zipfile
-          wheel = next(Path("/tmp/wynxo-wheel").glob("wynxo-*.whl"))
+          wheel = next(Path("/tmp/wynxq-wheel").glob("wynxq-*.whl"))
           with zipfile.ZipFile(wheel) as archive:
               names = archive.namelist()
-          expected = "wynxo/native/libwynxo_native_core.so"
+          expected = "wynxq/native/libwynxq_native_core.so"
           assert expected in names, f"{expected} missing from {wheel.name}"
           print("installer release snapshot native wheel:", wheel.name)
           PY
@@ -74,9 +74,9 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
       QT_QUICK_BACKEND: software
-      WYNXO_REQUIRE_NATIVE: "1"
+      WYNXQ_REQUIRE_NATIVE: "1"
       # Runs the QML load and interaction checks, which need a platform plugin.
-      WYNXO_QML_SMOKE: "1"
+      WYNXQ_QML_SMOKE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -96,7 +96,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import tempfile
-          from wynxo.native_core import native_core
+          from wynxq.native_core import native_core
           assert native_core.available, native_core.error
           assert native_core.version == "0.2.0"
           assert native_core.needs_confirmation("click", "safe")
@@ -145,9 +145,9 @@ jobs:
       - name: Test live Qt streaming
         run: python -m pytest -q tests/test_live_stream.py
       - name: Validate Python sources
-        run: python -m compileall -q wynxo install.py uninstall.py setup.py
+        run: python -m compileall -q wynxq install.py uninstall.py setup.py
       - name: Load native GUI
-        run: python -m wynxo --smoke-test
+        run: python -m wynxq --smoke-test
 
   screenshots:
     # Renders the real QML with fixed demo state so a UI regression is visible
@@ -157,8 +157,8 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
       QT_QUICK_BACKEND: software
-      WYNXO_REQUIRE_NATIVE: "1"
-      WYNXO_SCREENSHOT_DIR: /tmp/wynxo-ui-artifacts
+      WYNXQ_REQUIRE_NATIVE: "1"
+      WYNXQ_SCREENSHOT_DIR: /tmp/wynxq-ui-artifacts
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -175,22 +175,22 @@ jobs:
       - name: Install package
         run: python -m pip install .
       - name: Render the interface
-        run: python -m wynxo --snapshot "$WYNXO_SCREENSHOT_DIR/screenshots"
+        run: python -m wynxq --snapshot "$WYNXQ_SCREENSHOT_DIR/screenshots"
       - name: Render token usage states
         run: |
-          python tests/token_usage_snapshot.py "$WYNXO_SCREENSHOT_DIR/token-usage-live.png" live
-          python tests/token_usage_snapshot.py "$WYNXO_SCREENSHOT_DIR/token-usage-idle.png" idle
+          python tests/token_usage_snapshot.py "$WYNXQ_SCREENSHOT_DIR/token-usage-live.png" live
+          python tests/token_usage_snapshot.py "$WYNXQ_SCREENSHOT_DIR/token-usage-idle.png" idle
       - name: Render compact conversation
-        run: python -m wynxo --ui-preview conversation --size 760x640 --screenshot "$WYNXO_SCREENSHOT_DIR/compact-chat.png"
+        run: python -m wynxq --ui-preview conversation --size 760x640 --screenshot "$WYNXQ_SCREENSHOT_DIR/compact-chat.png"
       - name: Check every scene rendered
         run: |
-          count=$(ls "$WYNXO_SCREENSHOT_DIR"/screenshots/*.png | wc -l)
-          expected=$(python -c "from wynxo.demo import SCENES; print(len(SCENES))")
+          count=$(ls "$WYNXQ_SCREENSHOT_DIR"/screenshots/*.png | wc -l)
+          expected=$(python -c "from wynxq.demo import SCENES; print(len(SCENES))")
           test "$count" -eq "$expected" || { echo "expected $expected screenshots, got $count"; exit 1; }
-          test -s "$WYNXO_SCREENSHOT_DIR/token-usage-live.png" || { echo "live token usage snapshot missing"; exit 1; }
-          test -s "$WYNXO_SCREENSHOT_DIR/token-usage-idle.png" || { echo "idle token usage snapshot missing"; exit 1; }
-          test -s "$WYNXO_SCREENSHOT_DIR/compact-chat.png" || { echo "compact chat snapshot missing"; exit 1; }
+          test -s "$WYNXQ_SCREENSHOT_DIR/token-usage-live.png" || { echo "live token usage snapshot missing"; exit 1; }
+          test -s "$WYNXQ_SCREENSHOT_DIR/token-usage-idle.png" || { echo "idle token usage snapshot missing"; exit 1; }
+          test -s "$WYNXQ_SCREENSHOT_DIR/compact-chat.png" || { echo "compact chat snapshot missing"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
-          name: wynxo-screenshots
-          path: /tmp/wynxo-ui-artifacts
+          name: wynxq-screenshots
+          path: /tmp/wynxq-ui-artifacts

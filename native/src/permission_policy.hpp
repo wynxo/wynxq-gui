@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-namespace wynxo::native {
+namespace wynxq::native {
 
 enum class PermissionMode {
     Manual,
@@ -25,4 +25,4 @@ ActionRisk action_risk(std::string_view action, std::string_view command = {});
 bool needs_confirmation(std::string_view action, PermissionMode mode,
                         std::string_view command = {});
 
-}  // namespace wynxo::native
+}  // namespace wynxq::native

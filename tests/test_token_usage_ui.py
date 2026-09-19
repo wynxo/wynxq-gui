@@ -2,7 +2,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE = ROOT / "wynxo" / "ui" / "Wynxo"
+MODULE = ROOT / "wynxq" / "ui" / "Wynxq"
 
 
 def test_composer_keeps_usage_summary_next_to_run_controls():

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from wynxo import project_files as files
+from wynxq import project_files as files
 
 
 @pytest.fixture
@@ -156,7 +156,7 @@ def test_reading_refuses_a_path_outside_the_project(project):
 def test_saving_replaces_the_file_and_leaves_no_temporary(project):
     files.write_file(project, "src/main.py", "print('changed')\n")
     assert (project / "src" / "main.py").read_text() == "print('changed')\n"
-    assert not list(project.glob("**/*.wynxo-tmp"))
+    assert not list(project.glob("**/*.wynxq-tmp"))
 
 
 def test_saving_preserves_executable_permissions(project):
@@ -179,10 +179,10 @@ def test_saving_refuses_to_overwrite_an_external_change_after_read(project):
     # enough to protect the user's external edit.
     target.write_text("# Other\n")
     with pytest.raises(ValueError, match="changed on disk"):
-        files.write_file(project, target, "# Wynxo\n")
+        files.write_file(project, target, "# Wynxq\n")
 
     assert target.read_text() == "# Other\n"
-    assert not list(project.glob("**/*.wynxo-tmp"))
+    assert not list(project.glob("**/*.wynxq-tmp"))
 
 
 def test_a_successful_save_becomes_the_next_expected_version(project):
@@ -207,7 +207,7 @@ def test_saving_a_truncated_large_file_is_refused_without_data_loss(project, mon
         files.write_file(project, target, preview["text"] + "edited\n")
 
     assert target.read_text() == original
-    assert not list(project.glob("**/*.wynxo-tmp"))
+    assert not list(project.glob("**/*.wynxq-tmp"))
 
 
 def test_saving_refuses_a_path_outside_the_project(project, tmp_path):

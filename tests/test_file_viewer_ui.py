@@ -2,7 +2,7 @@
 from pathlib import Path
 
 
-QML = Path(__file__).resolve().parents[1] / "wynxo" / "ui" / "Wynxo" / "FileViewer.qml"
+QML = Path(__file__).resolve().parents[1] / "wynxq" / "ui" / "Wynxq" / "FileViewer.qml"
 
 
 def source() -> str:
@@ -60,7 +60,7 @@ def test_secondary_file_actions_live_in_one_overflow():
         'label: "Copy whole file"',
         'label: "Attach to conversation"',
         'label: "Terminal in containing folder"',
-        'label: "Reveal outside Wynxo"',
+        'label: "Reveal outside Wynxq"',
     ):
         assert action in qml
     assert "bridge.attachPath(root.record.path)" in qml

@@ -10,11 +10,11 @@ from PySide6.QtTest import QTest
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtWidgets import QApplication
 
-from wynxo.demo import DemoController
-from wynxo import context as ctx
-from wynxo.__main__ import _load_fonts
+from wynxq.demo import DemoController
+from wynxq import context as ctx
+from wynxq.__main__ import _load_fonts
 
-UI = Path(__file__).resolve().parents[1] / "wynxo" / "ui"
+UI = Path(__file__).resolve().parents[1] / "wynxq" / "ui"
 
 
 def visual_descendants(item):
@@ -28,7 +28,7 @@ def visual_descendants(item):
 HARNESS = """
 import QtQuick
 import QtQuick.Controls
-import Wynxo
+import Wynxq
 
 ApplicationWindow {
     id: window
@@ -110,10 +110,10 @@ def main():
         QTest.qWait(200)
         # Drive the actual scrollbar thumb, rather than assigning contentY.
         bars = [obj for obj in listing.findChildren(QObject)
-                if obj.objectName() == "wynxoScrollBar"]
+                if obj.objectName() == "wynxqScrollBar"]
         if not bars:
             bars = [obj for obj in visual_descendants(listing)
-                    if obj.objectName() == "wynxoScrollBar"]
+                    if obj.objectName() == "wynxqScrollBar"]
         assert bars, "conversation scrollbar was not instantiated"
         scrollbar = bars[0]
         position = float(scrollbar.property("position"))
@@ -175,8 +175,8 @@ def main():
                 and action_pos.y() + actions.height() <= window.height())
             result["permission_no_overlap"] = review_pos.y() + review.height() <= action_pos.y()
             result["permission_scrollable"] = review.property("contentHeight") > review.height()
-        if os.environ.get("WYNXO_STABILITY_SCREENSHOTS"):
-            target = Path(os.environ["WYNXO_STABILITY_SCREENSHOTS"])
+        if os.environ.get("WYNXQ_STABILITY_SCREENSHOTS"):
+            target = Path(os.environ["WYNXQ_STABILITY_SCREENSHOTS"])
             target.mkdir(parents=True, exist_ok=True)
         controller._pending_permission = None
         controller.permissionChanged.emit()
@@ -219,8 +219,8 @@ def main():
         attachment_scroll = shell.findChild(QObject, "composerAttachments")
         result["attachments_scrollable"] = (attachment_scroll.property("contentHeight")
                                              > attachment_scroll.height())
-        if os.environ.get("WYNXO_STABILITY_SCREENSHOTS"):
-            target = Path(os.environ["WYNXO_STABILITY_SCREENSHOTS"])
+        if os.environ.get("WYNXQ_STABILITY_SCREENSHOTS"):
+            target = Path(os.environ["WYNXQ_STABILITY_SCREENSHOTS"])
             assert shell.grabWindow().save(str(target / "constrained-composer.png"))
             controller._pending_permission = {
                 "tool": "run_command", "risk": "sensitive",

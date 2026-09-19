@@ -1,4 +1,4 @@
-"""Rebuild the vector chrome edition of Wynxo's two arcs and core.
+"""Rebuild the vector chrome edition of Wynxq's two arcs and core.
 
 No dependencies, textures, shaders or runtime render loop. The resulting SVG
 is rasterized once by Qt at the requested display size.
@@ -7,7 +7,7 @@ from pathlib import Path
 import math
 import gzip
 
-OUTPUT = Path(__file__).resolve().parents[1] / 'wynxo/assets/wynxo-chrome.svgz'
+OUTPUT = Path(__file__).resolve().parents[1] / 'wynxq/assets/wynxq-chrome.svgz'
 
 def unit(v):
     length = math.sqrt(sum(x*x for x in v))
@@ -68,7 +68,7 @@ for i in range(40):
         add([sphere(u,v),sphere(un,v),sphere(un,vn),sphere(u,vn)],(m[0],m[1],m[2]-16))
 
 lines=['<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-128 -128 256 256">',
-       '<title>Wynxo — polished metal arcs and core</title>']
+       '<title>Wynxq — polished metal arcs and core</title>']
 for _,points,color in sorted(faces,key=lambda f:f[0]):
     coords=' '.join(f'{x:.2f},{y:.2f}' for x,y,z in points)
     lines.append(f'<polygon points="{coords}" fill="{color}" stroke="{color}" stroke-width="0.25" stroke-linejoin="round"/>')

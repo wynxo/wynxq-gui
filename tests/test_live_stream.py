@@ -11,8 +11,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.controller import Controller
-from wynxo.storage import Store
+from wynxq.controller import Controller
+from wynxq.storage import Store
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 

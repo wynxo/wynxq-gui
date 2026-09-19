@@ -21,14 +21,14 @@ from PySide6.QtQml import QQmlComponent, QQmlEngine  # noqa: E402
 from PySide6.QtQuick import QQuickWindow  # noqa: E402
 from PySide6.QtQuickControls2 import QQuickStyle  # noqa: E402
 
-UI = Path(__file__).resolve().parents[1] / "wynxo" / "ui"
+UI = Path(__file__).resolve().parents[1] / "wynxq" / "ui"
 
 # A window gives popups an Overlay to place themselves inside, which is exactly
 # what the placement logic under test depends on.
 HARNESS = """
 import QtQuick
 import QtQuick.Controls
-import Wynxo
+import Wynxq
 
 ApplicationWindow {
     id: window

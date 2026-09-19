@@ -16,15 +16,15 @@ import uninstall as remover
 
 class InstallerTests(unittest.TestCase):
     def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory(prefix="wynxo installer ")
+        self.temporary = tempfile.TemporaryDirectory(prefix="wynxq installer ")
         self.addCleanup(self.temporary.cleanup)
         self.base = Path(self.temporary.name)
         self.source = self.base / "checkout with spaces"
         self.source.mkdir()
-        (self.source / "wynxo").mkdir()
-        (self.source / "wynxo/__main__.py").write_text("VERSION = 'original'\n")
+        (self.source / "wynxq").mkdir()
+        (self.source / "wynxq/__main__.py").write_text("VERSION = 'original'\n")
         (self.source / "assets").mkdir()
-        (self.source / "assets/wynxo.svg").write_text("<svg/>")
+        (self.source / "assets/wynxq.svg").write_text("<svg/>")
         (self.source / "native").mkdir()
         (self.source / "native/CMakeLists.txt").write_text("cmake_minimum_required(VERSION 3.20)\n")
         for name in (
@@ -35,7 +35,7 @@ class InstallerTests(unittest.TestCase):
         shutil.copy2(installer.__file__, self.source / "install.py")
         shutil.copy2(remover.__file__, self.source / "uninstall.py")
         self.data = self.base / "user data"
-        self.root = self.data / "wynxo-app"
+        self.root = self.data / "wynxq-app"
         self.bin = self.base / "bin with spaces"
         self.desktop = self.data / "applications" / f"{installer.APP_ID}.desktop"
         self.icon = self.data / "icons/hicolor/scalable/apps" / f"{installer.APP_ID}.svg"
@@ -61,12 +61,12 @@ class InstallerTests(unittest.TestCase):
     def test_install_is_copy_and_handles_spaces(self):
         launcher = self.install()
         self.assertTrue(launcher.is_symlink())
-        self.assertEqual(launcher.resolve(), self.root / "wynxo")
+        self.assertEqual(launcher.resolve(), self.root / "wynxq")
         self.assertTrue(os.access(launcher, os.X_OK))
         self.assertIn('Exec="', self.desktop.read_text())
         self.assertIn("--uninstall", launcher.read_text())
         shutil.rmtree(self.source)
-        self.assertEqual((self.root / "current/source/wynxo/__main__.py").read_text(), "VERSION = 'original'\n")
+        self.assertEqual((self.root / "current/source/wynxq/__main__.py").read_text(), "VERSION = 'original'\n")
 
     def test_release_copy_keeps_native_build_inputs(self):
         self.install()
@@ -80,7 +80,7 @@ class InstallerTests(unittest.TestCase):
         shutil.rmtree(self.source)
         result = subprocess.run([str(launcher), "--uninstall"], capture_output=True, text=True, cwd=self.base)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Wynxo removed", result.stdout)
+        self.assertIn("Wynxq removed", result.stdout)
         self.assertFalse(self.root.exists())
         self.assertFalse(installer.exists(launcher))
 
@@ -94,7 +94,7 @@ class InstallerTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "pip failed"):
             self.install()
         self.assertFalse(self.root.exists())
-        self.assertFalse(installer.exists(self.bin / "wynxo"))
+        self.assertFalse(installer.exists(self.bin / "wynxq"))
         self.assertFalse(self.desktop.exists())
 
     def test_failed_upgrade_preserves_existing_install(self):
@@ -124,7 +124,7 @@ class InstallerTests(unittest.TestCase):
                 raise OSError("disk full")
             return real_write(path, data, mode)
 
-        (self.source / "assets/wynxo.svg").write_text("<svg>changed</svg>")
+        (self.source / "assets/wynxq.svg").write_text("<svg>changed</svg>")
         with patch.object(installer, "atomic_write", side_effect=fail_once):
             with self.assertRaisesRegex(OSError, "disk full"):
                 self.install()
@@ -162,7 +162,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_refuses_existing_launcher_without_overwriting(self):
         self.bin.mkdir()
-        launcher = self.bin / "wynxo"
+        launcher = self.bin / "wynxq"
         launcher.write_text("some other program")
         with self.assertRaisesRegex(ValueError, "does not recognise"):
             self.install()
@@ -180,29 +180,29 @@ class InstallerTests(unittest.TestCase):
 
     def test_uninstall_keeps_data_and_modified_external_file(self):
         self.install()
-        (self.data / "wynxo").mkdir()
-        history = self.data / "wynxo/history.db"
+        (self.data / "wynxq").mkdir()
+        history = self.data / "wynxq/history.db"
         history.write_text("my conversations")
         self.desktop.write_text("my modified entry")
         messages = remover.uninstall(self.root)
         self.assertFalse(self.root.exists())
-        self.assertFalse(installer.exists(self.bin / "wynxo"))
+        self.assertFalse(installer.exists(self.bin / "wynxq"))
         self.assertEqual(history.read_text(), "my conversations")
         self.assertEqual(self.desktop.read_text(), "my modified entry")
         self.assertTrue(any("Kept modified" in item for item in messages))
 
     def test_purge_removes_only_app_data_and_never_follows_data_symlink(self):
         self.install()
-        (self.data / "wynxo").mkdir()
-        (self.data / "wynxo/history.db").write_text("history")
+        (self.data / "wynxq").mkdir()
+        (self.data / "wynxq/history.db").write_text("history")
         models = self.data / "ollama"
         models.mkdir()
         (models / "model.gguf").write_text("model")
         config = self.base / "config"
         config.mkdir()
-        (config / "wynxo").symlink_to(models, target_is_directory=True)
+        (config / "wynxq").symlink_to(models, target_is_directory=True)
         messages = remover.uninstall(self.root, purge=True)
-        self.assertFalse((self.data / "wynxo").exists())
+        self.assertFalse((self.data / "wynxq").exists())
         self.assertEqual((models / "model.gguf").read_text(), "model")
         self.assertTrue(any("symlink" in message for message in messages))
 
@@ -227,11 +227,11 @@ class InstallerTests(unittest.TestCase):
 
     def test_relative_xdg_variable_uses_home_fallback(self):
         with patch.dict(os.environ, {"XDG_DATA_HOME": "relative"}):
-            self.assertEqual(installer.default_root(), Path.home() / ".local/share/wynxo-app")
+            self.assertEqual(installer.default_root(), Path.home() / ".local/share/wynxq-app")
 
     def test_control_characters_in_paths_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "control characters"):
-            installer.absolute("/tmp/wynxo\nmalformed")
+            installer.absolute("/tmp/wynxq\nmalformed")
 
 
 if __name__ == "__main__":
@@ -249,9 +249,9 @@ def test_a_launcher_left_behind_by_a_missing_root_can_be_reinstalled_over(tmp_pa
     (home / ".local/bin").mkdir(parents=True)
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
 
-    root = home / ".local/share/wynxo-app"
-    launcher = home / ".local/bin/wynxo"
-    launcher.symlink_to(root / "wynxo")          # The root itself never existed.
+    root = home / ".local/share/wynxq-app"
+    launcher = home / ".local/bin/wynxq"
+    launcher.symlink_to(root / "wynxq")          # The root itself never existed.
     assert not inst.exists(root)
 
     # The guard used to refuse this outright, with no way forward.
@@ -260,8 +260,8 @@ def test_a_launcher_left_behind_by_a_missing_root_can_be_reinstalled_over(tmp_pa
 
 def test_a_file_belonging_to_something_else_is_still_refused(tmp_path):
     import install as inst
-    root = tmp_path / "wynxo-app"
-    intruder = tmp_path / "bin" / "wynxo"
+    root = tmp_path / "wynxq-app"
+    intruder = tmp_path / "bin" / "wynxq"
     intruder.parent.mkdir(parents=True)
     intruder.write_text("#!/bin/sh\necho not ours\n")
 
@@ -270,7 +270,7 @@ def test_a_file_belonging_to_something_else_is_still_refused(tmp_path):
 
     # Nor a link that points somewhere outside the installation.
     elsewhere = tmp_path / "bin" / "other"
-    elsewhere.symlink_to(tmp_path / "somewhere-else" / "wynxo")
+    elsewhere.symlink_to(tmp_path / "somewhere-else" / "wynxq")
     with pytest.raises(ValueError, match="does not recognise"):
         inst.check_managed(elsewhere, {"files": {}}, root)
 
@@ -281,9 +281,9 @@ def test_uninstall_clears_a_stranded_launcher_instead_of_shrugging(tmp_path, mon
     (home / ".local/bin").mkdir(parents=True)
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
 
-    root = home / ".local/share/wynxo-app"
-    launcher = home / ".local/bin/wynxo"
-    launcher.symlink_to(root / "wynxo")
+    root = home / ".local/share/wynxq-app"
+    launcher = home / ".local/bin/wynxq"
+    launcher.symlink_to(root / "wynxq")
 
     messages = uninst.uninstall(root, bin_dir=home / ".local/bin")
     assert not launcher.is_symlink()
@@ -296,10 +296,10 @@ def test_uninstall_leaves_a_launcher_pointing_somewhere_else_alone(tmp_path, mon
     (home / ".local/bin").mkdir(parents=True)
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
 
-    root = home / ".local/share/wynxo-app"
-    foreign = home / ".local/bin/wynxo"
-    foreign.symlink_to(tmp_path / "some-other-tool" / "wynxo")
+    root = home / ".local/share/wynxq-app"
+    foreign = home / ".local/bin/wynxq"
+    foreign.symlink_to(tmp_path / "some-other-tool" / "wynxq")
 
     messages = uninst.uninstall(root, bin_dir=home / ".local/bin")
-    assert foreign.is_symlink(), "a link Wynxo did not create was removed"
+    assert foreign.is_symlink(), "a link Wynxq did not create was removed"
     assert messages == [f"No installation found at {root}."]

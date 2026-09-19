@@ -1,8 +1,8 @@
 """The actual QML bridge must expose the live counter and exact reconciliation."""
 from PySide6.QtCore import QCoreApplication
 
-from wynxo.storage import Store
-from wynxo.workspace import WorkspaceController
+from wynxq.storage import Store
+from wynxq.workspace import WorkspaceController
 
 APP = QCoreApplication.instance() or QCoreApplication([])
 

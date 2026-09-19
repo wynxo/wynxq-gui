@@ -1,19 +1,19 @@
 """Repository instructions should guide coding without becoming hidden authority."""
-from wynxo import project_instructions
+from wynxq import project_instructions
 
 
 def test_recognized_instruction_files_are_loaded_in_stable_order(tmp_path):
     root = tmp_path / "app"
     root.mkdir()
-    (root / ".wynxo").mkdir()
-    (root / "WYNXO.md").write_text("Prefer QML for presentation.")
+    (root / ".wynxq").mkdir()
+    (root / "WYNXQ.md").write_text("Prefer QML for presentation.")
     (root / "AGENTS.md").write_text("Run pytest after Python changes.")
-    (root / ".wynxo" / "instructions.md").write_text("Keep permanent surfaces solid.")
+    (root / ".wynxq" / "instructions.md").write_text("Keep permanent surfaces solid.")
 
     files = project_instructions.load(root)
 
     assert [item["path"] for item in files] == [
-        "WYNXO.md", "AGENTS.md", ".wynxo/instructions.md",
+        "WYNXQ.md", "AGENTS.md", ".wynxq/instructions.md",
     ]
     text = project_instructions.prompt(root)
     assert "Prefer QML" in text
@@ -38,7 +38,7 @@ def test_oversized_instruction_is_not_read(tmp_path, monkeypatch):
     root = tmp_path / "app"
     root.mkdir()
     monkeypatch.setattr(project_instructions, "MAX_FILE_BYTES", 20)
-    (root / "WYNXO.md").write_text("x" * 100)
+    (root / "WYNXQ.md").write_text("x" * 100)
 
     assert project_instructions.load(root) == []
 

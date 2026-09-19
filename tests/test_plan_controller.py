@@ -1,7 +1,7 @@
 from PySide6.QtCore import QCoreApplication
 
-from wynxo import engine
-from wynxo.workspace import PLAN_STATES, WorkspaceController
+from wynxq import engine
+from wynxq.workspace import PLAN_STATES, WorkspaceController
 
 
 APP = QCoreApplication.instance() or QCoreApplication([])

@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <string>
 
-namespace wynxo::native {
+namespace wynxq::native {
 
 // Scan one already-authorized directory without following symlinks. Product
 // filtering/sorting stays in Python so the native layer only owns filesystem
@@ -11,4 +11,4 @@ namespace wynxo::native {
 std::string scan_directory_json(const std::string& directory,
                                 std::size_t max_entries);
 
-}  // namespace wynxo::native
+}  // namespace wynxq::native

@@ -7,7 +7,7 @@ import sys
 import pytest
 
 
-@pytest.mark.skipif(not os.environ.get('WYNXO_QML_SMOKE'), reason='needs a Qt platform plugin')
+@pytest.mark.skipif(not os.environ.get('WYNXQ_QML_SMOKE'), reason='needs a Qt platform plugin')
 def test_live_buffer_and_cursor_visibility():
     result = subprocess.run(
         [sys.executable, str(Path(__file__).with_name('file_editor_probe.py'))],

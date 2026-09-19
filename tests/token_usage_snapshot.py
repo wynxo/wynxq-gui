@@ -10,8 +10,8 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtWidgets import QApplication
 
-from wynxo.__main__ import UI, _load_fonts
-from wynxo.demo import DemoController
+from wynxq.__main__ import UI, _load_fonts
+from wynxq.demo import DemoController
 
 
 def metric(tokens: int, prompt: int, rate: float) -> dict:
@@ -31,7 +31,7 @@ def main(target: str, state: str = "live") -> int:
 
     QQuickStyle.setStyle("Basic")
     app = QApplication(sys.argv[:1])
-    app.setApplicationName(f"Wynxo token usage {state} snapshot")
+    app.setApplicationName(f"Wynxq token usage {state} snapshot")
     _load_fonts(app)
     app.setFont(QFont("Inter", 10))
 
