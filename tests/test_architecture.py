@@ -92,7 +92,8 @@ def test_engine_reexports_ollama_transport():
 def test_workspace_injects_endpoint_policy_without_engine_monkey_patch():
     from wynxq import endpoint_policy, workspace
 
-    assert workspace.WorkspaceController.OLLAMA_CLIENT is endpoint_policy.WorkspaceOllamaClient
+    assert workspace.OllamaClient is endpoint_policy.WorkspaceOllamaClient
+    assert workspace.WorkspaceController.OLLAMA_CLIENT is None
     assert endpoint_policy.WorkspaceOllamaClient.endpoint_validator is endpoint_policy.validate_workspace_endpoint
 
 
