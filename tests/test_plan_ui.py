@@ -29,8 +29,9 @@ def test_plan_is_agent_authored_and_persisted_workspace_state():
 
 def test_plan_tool_is_low_risk_and_not_desktop_activity():
     workspace = (ROOT / "wynxq" / "workspace.py").read_text(encoding="utf-8")
-    assert 'engine_module._NONVISUAL.add("update_plan")' in workspace
-    assert 'engine_module.LOW_RISK.add("update_plan")' in workspace
+    planning = (ROOT / "wynxq" / "planning.py").read_text(encoding="utf-8")
+    assert 'engine_module._NONVISUAL.add("update_plan")' in planning
+    assert 'engine_module.LOW_RISK.add("update_plan")' in planning
     assert 'event.get("name") == "update_plan"' in workspace
     assert "_strip_plan_history" in workspace
 
