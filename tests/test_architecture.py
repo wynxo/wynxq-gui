@@ -5,7 +5,7 @@ compatibility. These checks make the split explicit: implementations live in
 focused modules while existing imports remain stable.
 """
 
-from wynxq import agent_tools, conversation, controller, controller_support, dock, dock_models, engine
+from wynxq import (agent_tools, conversation, controller, controller_support, desktop,\n                   desktop_backends, desktop_common, dock, dock_models, engine)
 
 
 def test_controller_reexports_conversation_model_and_helpers():
@@ -38,3 +38,13 @@ def test_engine_reexports_agent_tool_contract():
     assert engine.action_risk is agent_tools.action_risk
     assert engine.needs_confirmation is agent_tools.needs_confirmation
     assert engine.validate_tool_call is agent_tools.validate_tool_call
+
+
+def test_desktop_facade_reexports_shared_types_and_backends():
+    assert desktop.SessionTokens is desktop_common.SessionTokens
+    assert desktop.DesktopError is desktop_common.DesktopError
+    assert desktop.DesktopCancelled is desktop_common.DesktopCancelled
+    assert desktop._X11Backend is desktop_backends._X11Backend
+    assert desktop._PortalBackend is desktop_backends._PortalBackend
+    assert desktop.X11GlobalStop is desktop_backends.X11GlobalStop
+    assert desktop.GlobalStop is desktop_backends.GlobalStop
