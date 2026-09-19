@@ -1828,6 +1828,7 @@ class Controller(QObject):
             "overlay_reply": "",
             "steering_messages": [],
             "queued_messages": [],
+            "stop_requested": False,
             "permission_mode_snapshot": self._permission_mode,
             "project": str(self._working_directory if project is None else project or ""),
         }
@@ -2266,8 +2267,9 @@ class Controller(QObject):
         task_id = str(task_id or self._task_id or "")
         state = self._run_sessions.get(task_id)
         if state is not None:
-            steering = list(state.get("steering_messages") or [])
-            queued = list(state.get("queued_messages") or [])
+            stopped_by_user = bool(state.get("stop_requested"))
+            steering = [] if stopped_by_user else list(state.get("steering_messages") or [])
+            queued = [] if stopped_by_user else list(state.get("queued_messages") or [])
             if steering and task_id == self._task_id:
                 continued = list(history)
                 for message in steering:
@@ -2409,6 +2411,9 @@ class Controller(QObject):
             state["permission_event"].set()
         job = state.get("job")
         if job:
+            state["stop_requested"] = True
+            state["steering_messages"] = []
+            state["queued_messages"] = []
             job.cancel.set()
             state["computer_control_active"] = False
             self._release_desktop_control(str(state.get("task_id") or self._task_id))

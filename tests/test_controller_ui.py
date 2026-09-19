@@ -95,6 +95,28 @@ def test_busy_message_steers_current_run_by_default(tmp_path, monkeypatch):
     bridge.shutdown()
 
 
+def test_stop_discards_queued_followups(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    bridge._online = True
+    task = bridge.store.create_conversation("Stop queue", bridge.model, bridge.endpoint)
+    bridge._task_id, bridge._task_title = task["id"], task["title"]
+
+    class FakeJob:
+        def __init__(self):
+            self.cancel = threading.Event()
+
+    monkeypatch.setattr(bridge, "_job", lambda *args, **kwargs: FakeJob())
+    state = bridge._launch_run([{"role": "user", "content": "start"}])
+    bridge.send("/queue do this later")
+    bridge.stop()
+
+    assert state["stop_requested"] is True
+    assert state["queued_messages"] == []
+    assert state["steering_messages"] == []
+    assert state["job"].cancel.is_set()
+    bridge.shutdown()
+
+
 def test_queue_during_busy_run_does_not_interrupt_it(tmp_path, monkeypatch):
     bridge = controller(tmp_path)
     bridge._online = True
