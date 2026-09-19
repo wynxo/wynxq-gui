@@ -29,8 +29,9 @@ def record(label):
     # transition frame on a busy CI runner.
     QTest.qWait(500)
     controls = [item for item in window.findChildren(QObject)
-                if item.objectName() in {'headerSidebarToggle', 'sidebarCollapseButton'}
-                and item.property('visible')]
+                if item.objectName() in {
+                    'headerSidebarToggle', 'sidebarCollapseButton', 'sidebarRestoreButton'
+                } and item.property('visible')]
     composer = window.findChild(QObject, 'mainComposer')
     viewport = window.findChild(QObject, 'conversationViewport')
     position = composer.mapToScene(QPointF(0, 0))

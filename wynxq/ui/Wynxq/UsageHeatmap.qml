@@ -16,6 +16,11 @@ Item {
             maximum = Math.max(maximum, Number(days[i].tokens || 0))
         return maximum
     }
+    readonly property int leadingBlanks: {
+        if (!days.length) return 0
+        var day = new Date(String(days[0].date) + "T00:00:00").getDay()
+        return (day + 6) % 7 // Monday-first, matching the labels below.
+    }
     readonly property int totalTokens: {
         var total = 0
         for (var i = 0; i < days.length; i++)
@@ -84,29 +89,32 @@ Item {
                 columnSpacing: 3
 
                 Repeater {
-                    model: root.days
+                    model: root.leadingBlanks + root.days.length
                     delegate: Rectangle {
                         id: cell
-                        required property var modelData
                         required property int index
-                        readonly property real strength: root.maxTokens > 0
-                            ? Math.sqrt(Number(modelData.tokens || 0) / root.maxTokens) : 0
+                        readonly property int dataIndex: index - root.leadingBlanks
+                        readonly property bool hasDay: dataIndex >= 0 && dataIndex < root.days.length
+                        readonly property var day: hasDay ? root.days[dataIndex] : ({})
+                        readonly property real strength: root.maxTokens > 0 && hasDay
+                            ? Math.sqrt(Number(day.tokens || 0) / root.maxTokens) : 0
 
                         width: 9
                         height: 9
                         radius: 2
-                        color: Number(modelData.tokens || 0) > 0
+                        visible: hasDay
+                        color: Number(day.tokens || 0) > 0
                             ? Theme.alpha(Theme.success, 0.20 + strength * 0.76)
                             : Theme.surfaceHover
                         border.width: 1
-                        border.color: Number(modelData.tokens || 0) > 0
+                        border.color: Number(day.tokens || 0) > 0
                             ? Theme.alpha(Theme.success, 0.24 + strength * 0.18)
                             : Theme.borderSubtle
                         opacity: 1
 
                         SequentialAnimation {
-                            running: !Theme.reducedMotion
-                            PauseAnimation { duration: cell.index * 14 }
+                            running: cell.hasDay && !Theme.reducedMotion
+                            PauseAnimation { duration: cell.dataIndex * 14 }
                             NumberAnimation {
                                 target: cell; property: "opacity"
                                 from: 0; to: 1; duration: 130; easing.type: Theme.easing
@@ -114,12 +122,12 @@ Item {
                         }
 
                         HoverHandler { id: hover }
-                        ToolTip.visible: hover.hovered
+                        ToolTip.visible: cell.hasDay && hover.hovered
                         ToolTip.delay: 250
-                        ToolTip.text: modelData.date + " · "
-                            + root.formatTokens(modelData.tokens) + " tokens"
-                            + (modelData.runs ? " · " + modelData.runs + " run"
-                                + (modelData.runs === 1 ? "" : "s") : "")
+                        ToolTip.text: !cell.hasDay ? "" : day.date + " · "
+                            + root.formatTokens(day.tokens) + " tokens"
+                            + (day.runs ? " · " + day.runs + " run"
+                                + (day.runs === 1 ? "" : "s") : "")
                     }
                 }
             }

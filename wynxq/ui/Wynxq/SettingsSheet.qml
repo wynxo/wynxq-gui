@@ -82,7 +82,8 @@ Sheet {
         settingsQuery = "";
         settingsSearch.text = "";
         if (bridge) bridge.refreshTokenUsage();
-        endpointField.text = bridge ? bridge.endpoint : "";
+        endpointNameField.text = "";
+        endpointField.text = "";
         accentField.text = bridge ? bridge.accentColor : "";
         ctxField.text = bridge ? bridge.numCtx : "";
         tempField.text = bridge ? bridge.temperature : "";
@@ -202,68 +203,150 @@ Sheet {
                     Column {
                         spacing: Theme.s6
                         Group {
-                            title: "Ollama server"
-                            description: "Connect to Ollama on this computer, another machine on your LAN, or a server you trust. Wynxq never follows server redirects."
-                            Row {
+                            title: "Ollama servers"
+                            description: "Keep several Ollama machines. The default starts new chats; each existing chat remembers its own server and model."
+
+                            Repeater {
+                                model: bridge ? bridge.endpointProfiles : []
+                                delegate: Rectangle {
+                                    id: endpointRow
+                                    required property var modelData
+                                    width: parent.width
+                                    implicitHeight: 48
+                                    radius: Theme.r2
+                                    color: modelData.selected ? Theme.surfaceSelected : "transparent"
+                                    border.width: 1
+                                    border.color: modelData.selected ? Theme.borderStrong : Theme.borderSubtle
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: Theme.s3
+                                        anchors.rightMargin: Theme.s2
+                                        spacing: Theme.s2
+                                        StatusDot {
+                                            tone: modelData.selected && bridge && bridge.online
+                                                ? Theme.success : Theme.textDisabled
+                                            Layout.preferredWidth: 7; Layout.preferredHeight: 7
+                                        }
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: Theme.s2
+                                                Text {
+                                                    text: modelData.name
+                                                    color: Theme.textPrimary
+                                                    font.family: Theme.sansFamily
+                                                    font.pixelSize: Theme.label
+                                                    font.weight: Font.Medium
+                                                }
+                                                Text {
+                                                    visible: modelData.default
+                                                    text: "DEFAULT"
+                                                    color: Theme.textMuted
+                                                    font.family: Theme.monoFamily
+                                                    font.pixelSize: Theme.micro
+                                                }
+                                                Text {
+                                                    visible: modelData.selected
+                                                    text: "THIS CHAT"
+                                                    color: Theme.success
+                                                    font.family: Theme.monoFamily
+                                                    font.pixelSize: Theme.micro
+                                                }
+                                                Item { Layout.fillWidth: true }
+                                            }
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: modelData.url
+                                                color: Theme.textMuted
+                                                font.family: Theme.monoFamily
+                                                font.pixelSize: Theme.micro
+                                                elide: Text.ElideMiddle
+                                            }
+                                        }
+                                        WButton {
+                                            visible: !modelData.selected
+                                            text: "Use"
+                                            variant: "ghost"
+                                            compactPadding: true
+                                            enabled: bridge && !bridge.busy
+                                            onClicked: if (bridge) bridge.selectEndpoint(modelData.url)
+                                        }
+                                        WButton {
+                                            visible: !modelData.default
+                                            text: "Default"
+                                            variant: "ghost"
+                                            compactPadding: true
+                                            onClicked: if (bridge) bridge.setDefaultEndpoint(modelData.url)
+                                        }
+                                        IconButton {
+                                            visible: !modelData.default && !modelData.selected
+                                            width: 28; height: 28; iconSize: 12
+                                            iconName: "close"
+                                            tooltip: "Remove server"
+                                            onClicked: if (bridge) bridge.removeEndpointProfile(modelData.url)
+                                        }
+                                    }
+                                }
+                            }
+
+                            RowLayout {
                                 width: parent.width
                                 spacing: Theme.s2
                                 Field {
+                                    id: endpointNameField
+                                    Layout.preferredWidth: 120
+                                    placeholderText: "Server name"
+                                    Accessible.name: "Ollama server name"
+                                }
+                                Field {
                                     id: endpointField
-                                    width: parent.width - saveEndpoint.width - Theme.s2
+                                    Layout.fillWidth: true
                                     mono: true
-                                    placeholderText: "http://192.168.1.50:11434"
+                                    placeholderText: "http://192.168.178.29:11434"
                                     Accessible.name: "Ollama server URL"
-                                    onAccepted: if (bridge) bridge.setEndpoint(text)
+                                    onAccepted: addEndpoint.clicked()
                                 }
                                 WButton {
-                                    id: saveEndpoint
-                                    text: "Save and reconnect"
+                                    id: addEndpoint
+                                    text: "Add"
                                     variant: "primary"
-                                    enabled: bridge && !bridge.busy
-                                    onClicked: if (bridge) bridge.setEndpoint(endpointField.text)
+                                    onClicked: if (bridge && bridge.addEndpointProfile(
+                                        endpointNameField.text, endpointField.text)) {
+                                        endpointNameField.text = "";
+                                        endpointField.text = "";
+                                    }
                                 }
                             }
-                            Row {
+
+                            RowLayout {
                                 width: parent.width
                                 spacing: Theme.s2
                                 StatusDot {
-                                    anchors.verticalCenter: parent.verticalCenter
                                     tone: bridge && bridge.online ? Theme.success : Theme.danger
+                                    Layout.preferredWidth: 7; Layout.preferredHeight: 7
                                 }
                                 Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: bridge && bridge.online
-                                          ? bridge.models.length + " model" + (bridge.models.length === 1 ? "" : "s") + " available"
-                                          : "Not connected"
+                                    Layout.fillWidth: true
+                                    text: !bridge ? ""
+                                        : bridge.online
+                                            ? bridge.endpointProfileName + " · " + bridge.models.length
+                                              + " model" + (bridge.models.length === 1 ? "" : "s")
+                                            : bridge.endpointProfileName + " · not connected"
                                     color: bridge && bridge.online ? Theme.textSecondary : Theme.textMuted
                                     font.family: Theme.sansFamily; font.pixelSize: Theme.caption
                                 }
-                                Rectangle {
-                                    visible: !!bridge
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    implicitWidth: scopeLabel.implicitWidth + Theme.s2 * 2
-                                    implicitHeight: 22
-                                    radius: Theme.r1
-                                    color: Theme.surfaceRaised
-                                    border.width: 1
-                                    border.color: Theme.borderSubtle
-                                    Text {
-                                        id: scopeLabel
-                                        anchors.centerIn: parent
-                                        text: bridge ? bridge.endpointScopeLabel : "Server"
-                                        color: Theme.textSecondary
-                                        font.family: Theme.sansFamily; font.pixelSize: Theme.micro
-                                    }
-                                }
-                                Item { width: Theme.s1; height: 1 }
                                 WButton {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "Reconnect"; iconName: "retry"; variant: "ghost"
+                                    text: "Reconnect"
+                                    iconName: "retry"
+                                    variant: "ghost"
                                     compactPadding: true
-                                    implicitHeight: Theme.controlSmall
                                     onClicked: if (bridge) bridge.refreshModels()
                                 }
                             }
+
                             Text {
                                 width: parent.width
                                 text: bridge ? bridge.endpointPrivacyHint : ""
@@ -284,7 +367,7 @@ Sheet {
                                     id: insecureText
                                     anchors.fill: parent
                                     anchors.margins: Theme.s3
-                                    text: "This remote server uses plain HTTP. Prefer HTTPS, Tailscale/WireGuard, or another trusted private tunnel before sending screenshots or sensitive files."
+                                    text: "This remote server uses plain HTTP. Prefer HTTPS or a trusted private tunnel before sending screenshots or sensitive files."
                                     color: Theme.textSecondary
                                     font.family: Theme.sansFamily; font.pixelSize: Theme.caption
                                     wrapMode: Text.WordWrap; lineHeight: 1.45
@@ -314,8 +397,8 @@ Sheet {
                     Column {
                         spacing: Theme.s6
                         Group {
-                            title: "Default model"
-                            description: "The model a new task starts with. Switching for one task is quicker from the composer."
+                            title: "Current chat model"
+                            description: "This chat's model. Server + model switching lives together in the composer picker; the server default for new chats is managed under General."
                             Row {
                                 spacing: Theme.s3
                                 Text {
@@ -627,7 +710,7 @@ Sheet {
 
                         Group {
                             title: "The dock"
-                            description: "Files, Terminal, Changes, Context, Memory, Activity, Browser and Preview live on the right. The rail is always there; the panel opens beside it with Ctrl+Shift+B."
+                            description: "Files, Terminal, Changes, Context, Memory, Activity, Browser and Preview live on the right. Closing the workspace removes the panel and rail together; restore it from the lower-right button or Ctrl+Shift+B."
 
                             Row {
                                 width: parent.width

@@ -72,7 +72,7 @@ AbstractButton {
             anchors.left: parent.left
             anchors.leftMargin: modeIcon.visible || pinIcon.visible ? Theme.s3 + 17 : Theme.s3
             anchors.right: parent.right
-            anchors.rightMargin: 30
+            anchors.rightMargin: row.entry.running ? 48 : 30
             anchors.verticalCenter: parent.verticalCenter
             text: row.entry.title || ""
             elide: Text.ElideRight
@@ -81,6 +81,20 @@ AbstractButton {
             font.pixelSize: Theme.caption
             font.weight: row.current ? Font.Medium : Font.Normal
         }
+    }
+
+    ActivityGlyph {
+        id: runningGlyph
+        visible: !!row.entry.running && !row.hovered && !moreMenu.opened
+        running: visible
+        tone: Theme.success
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.s3
+        anchors.verticalCenter: parent.verticalCenter
+        ToolTip.visible: runningHover.hovered
+        ToolTip.text: (row.entry.runStatus || "Generating")
+            + (row.entry.model ? " · " + row.entry.model : "")
+        HoverHandler { id: runningHover }
     }
 
     IconButton {

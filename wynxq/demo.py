@@ -230,6 +230,11 @@ class DemoController(WorkspaceController):
         store = Store(Path(directory) / "preview.sqlite3")
         store.set_setting("onboarded", scene != "welcome")
         store.set_setting("model", "qwen2.5vl:7b")
+        store.set_setting("endpoint", "http://192.168.1.20:11434")
+        store.set_setting("ollama_endpoints", [
+            {"name": "Main", "url": "http://192.168.1.20:11434"},
+            {"name": "Small box", "url": "http://192.168.1.21:11434"},
+        ])
         store.set_setting("permission_mode", "safe")
         store.set_setting("favorite_models", [entry["name"] for entry in CATALOG if entry["favorite"]])
         theme = {"empty-violet": "Violet", "empty-ember": "Ember", "conversation-ion": "Ion"}.get(scene)
@@ -449,6 +454,11 @@ class DemoController(WorkspaceController):
             streaming=True)
         self._busy = True
         self._status = "Thinking"
+        self._run_sessions[self._task_id] = {
+            "busy": True, "status": "Thinking", "model": self._model,
+            "endpoint": self._endpoint,
+        }
+        self._refresh_tasks()
         self.changed.emit()
 
     def _seed_code_run(self):

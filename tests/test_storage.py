@@ -9,13 +9,18 @@ from wynxq.storage import Store
 def test_persistence_isolation_and_conversation_crud(tmp_path):
     path = tmp_path / "one" / "history.sqlite3"
     store = Store(path)
-    first = store.create_conversation("First", "model:1")
+    first = store.create_conversation("First", "model:1", "http://192.168.1.20:11434")
     second = store.create_conversation("Second")
     messages = [{"role": "user", "content": "Hey"}, {"role": "assistant", "content": "Hi"}]
-    store.set_messages(first["id"], messages, model="model:2")
+    store.set_messages(first["id"], messages, model="model:2", endpoint="http://192.168.1.21:11434")
     store.set_messages(second["id"], [{"role": "user", "content": "Other"}])
     assert store.get_messages(first["id"]) == messages
     assert store.get_conversation(first["id"])["model"] == "model:2"
+    assert store.get_conversation(first["id"])["endpoint"] == "http://192.168.1.21:11434"
+    store.set_conversation_runtime(first["id"], model="model:3",
+                                   endpoint="http://192.168.1.22:11434")
+    assert store.get_conversation(first["id"])["model"] == "model:3"
+    assert store.get_conversation(first["id"])["endpoint"] == "http://192.168.1.22:11434"
     assert store.list_conversations()[0]["id"] == second["id"]
     store.rename_conversation(first["id"], "Renamed")
     assert store.list_conversations()[0]["title"] == "Renamed"

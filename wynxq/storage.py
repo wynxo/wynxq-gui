@@ -39,6 +39,7 @@ class Store:
                 id TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
                 model TEXT NOT NULL DEFAULT '',
+                endpoint TEXT NOT NULL DEFAULT '',
                 created_at REAL NOT NULL,
                 updated_at REAL NOT NULL
             );
@@ -70,17 +71,26 @@ class Store:
         """)
         self._db.commit()
         columns = {row["name"] for row in self._db.execute("PRAGMA table_info(conversations)")}
+        migrated = False
         if "pinned" not in columns:
             self._db.execute("ALTER TABLE conversations ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
+            migrated = True
+        if "endpoint" not in columns:
+            self._db.execute("ALTER TABLE conversations ADD COLUMN endpoint TEXT NOT NULL DEFAULT ''")
+            migrated = True
+        if migrated:
             self._db.commit()
 
-    def create_conversation(self, title: str = "New conversation", model: str = "") -> dict:
+    def create_conversation(self, title: str = "New conversation", model: str = "",
+                            endpoint: str = "") -> dict:
         now = time.time()
         item = {"id": uuid.uuid4().hex, "title": title.strip()[:200] or "New conversation",
-                "model": model, "created_at": now, "updated_at": now, "pinned": 0}
+                "model": str(model or ""), "endpoint": str(endpoint or ""),
+                "created_at": now, "updated_at": now, "pinned": 0}
         with self._lock, self._db:
-            self._db.execute("INSERT INTO conversations (id,title,model,created_at,updated_at,pinned) "
-                             "VALUES (:id,:title,:model,:created_at,:updated_at,:pinned)", item)
+            self._db.execute(
+                "INSERT INTO conversations (id,title,model,endpoint,created_at,updated_at,pinned) "
+                "VALUES (:id,:title,:model,:endpoint,:created_at,:updated_at,:pinned)", item)
         return item
 
     LIST_SQL = """
@@ -174,7 +184,8 @@ class Store:
             rows = self._db.execute("SELECT payload FROM messages WHERE conversation_id=? ORDER BY position", (conversation_id,))
             return [json.loads(row[0]) for row in rows]
 
-    def set_messages(self, conversation_id: str, messages: list[dict], model: str | None = None) -> None:
+    def set_messages(self, conversation_id: str, messages: list[dict], model: str | None = None,
+                     endpoint: str | None = None) -> None:
         # Never mutate the live conversation; it may still contain images for
         # inference. Automatic agent screenshots are always transient. Explicit
         # user attachments carry _wynxq_attachments metadata and are kept
@@ -191,10 +202,33 @@ class Store:
             self._db.execute("DELETE FROM messages WHERE conversation_id=?", (conversation_id,))
             self._db.executemany("INSERT INTO messages VALUES (?,?,?)",
                                  [(conversation_id, i, payload) for i, payload in enumerate(encoded)])
-            if model is None:
-                self._db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (time.time(), conversation_id))
-            else:
-                self._db.execute("UPDATE conversations SET updated_at=?,model=? WHERE id=?", (time.time(), model, conversation_id))
+            updates = ["updated_at=?"]
+            values: list[Any] = [time.time()]
+            if model is not None:
+                updates.append("model=?")
+                values.append(str(model))
+            if endpoint is not None:
+                updates.append("endpoint=?")
+                values.append(str(endpoint))
+            values.append(conversation_id)
+            self._db.execute(
+                "UPDATE conversations SET " + ",".join(updates) + " WHERE id=?", values)
+
+    def set_conversation_runtime(self, conversation_id: str, model: str | None = None,
+                                 endpoint: str | None = None) -> None:
+        """Persist the inference pair for one chat without rewriting its messages."""
+        updates, values = [], []
+        if model is not None:
+            updates.append("model=?")
+            values.append(str(model))
+        if endpoint is not None:
+            updates.append("endpoint=?")
+            values.append(str(endpoint))
+        if not updates:
+            return
+        values.append(str(conversation_id))
+        with self._lock, self._db:
+            self._db.execute("UPDATE conversations SET " + ",".join(updates) + " WHERE id=?", values)
 
     def record_token_usage(self, conversation_id: str, model: str, metrics: dict,
                            created_at: float | None = None) -> bool:

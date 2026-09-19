@@ -101,16 +101,73 @@ AbstractButton {
             anchors.top: parent.top
             spacing: Theme.s3
 
-            SectionLabel { text: "Model" }
-            Item { Layout.fillWidth: true }
-            // Where inference runs is the one fact a local-first app should
-            // never make you go looking for.
-            Text {
-                text: bridge ? "Ollama · " + bridge.endpointScopeLabel.toLowerCase() : ""
-                color: Theme.textDisabled
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.micro
+            SectionLabel { text: "Server" }
+            Repeater {
+                model: bridge ? bridge.endpointProfiles : []
+                delegate: AbstractButton {
+                    id: server
+                    required property var modelData
+                    Layout.fillWidth: true
+                    implicitHeight: 34
+                    hoverEnabled: true
+                    enabled: !(bridge && bridge.busy) || modelData.selected
+                    Accessible.name: "Ollama server " + modelData.name
+                    Accessible.checked: modelData.selected
+                    onClicked: if (bridge && bridge.selectEndpoint(modelData.url)) {
+                        // Keep the picker open: the model list refreshes for
+                        // this server, so the pair is chosen in one place.
+                    }
+                    background: Rectangle {
+                        radius: Theme.r2
+                        color: modelData.selected ? Theme.surfaceSelected
+                             : server.hovered ? Theme.surfaceHover : "transparent"
+                        border.width: server.visualFocus ? 1 : 0
+                        border.color: Theme.accentEdge
+                        Behavior on color {
+                            enabled: !Theme.reducedMotion
+                            ColorAnimation { duration: Theme.fast }
+                        }
+                    }
+                    contentItem: RowLayout {
+                        spacing: Theme.s2
+                        StatusDot {
+                            Layout.leftMargin: Theme.s2
+                            tone: modelData.selected && bridge && bridge.online
+                                ? Theme.success : Theme.textDisabled
+                            Layout.preferredWidth: 6; Layout.preferredHeight: 6
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.name
+                                color: modelData.selected ? Theme.textPrimary : Theme.textSecondary
+                                font.family: Theme.sansFamily; font.pixelSize: Theme.caption
+                                font.weight: modelData.selected ? Font.DemiBold : Font.Normal
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.url
+                                color: Theme.textDisabled
+                                font.family: Theme.monoFamily; font.pixelSize: Theme.micro
+                                elide: Text.ElideMiddle
+                            }
+                        }
+                        Text {
+                            Layout.rightMargin: Theme.s2
+                            visible: modelData.default
+                            text: "default"
+                            color: Theme.textMuted
+                            font.family: Theme.sansFamily; font.pixelSize: Theme.micro
+                        }
+                    }
+                }
             }
+
+            Divider { Layout.fillWidth: true }
+            SectionLabel { text: "Model · " + (bridge ? bridge.endpointProfileName : "") }
 
             Text {
                 Layout.fillWidth: true

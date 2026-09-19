@@ -14,6 +14,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from PySide6.QtCore import (
     QAbstractListModel, QModelIndex, QObject, Property, Qt, QThread, Signal, Slot,
@@ -364,6 +365,28 @@ class Job(QThread):
             self.failed.emit(str(exc) or type(exc).__name__)
 
 
+class _RunDesktop:
+    """Foreground-gated view of the shared desktop for one conversation run."""
+    _NONVISUAL_DESKTOP = {"open_app", "list_apps", "wait"}
+
+    def __init__(self, owner, task_id: str):
+        self.owner = owner
+        self.task_id = str(task_id)
+
+    def status(self):
+        status = dict(self.owner.desktop.status() if self.owner.desktop else {})
+        if self.task_id != self.owner._task_id:
+            status["connected"] = False
+            status["detail"] = "Screen control pauses while this task is in the background"
+        return status
+
+    def execute(self, name, arguments, cancel=None):
+        if name not in self._NONVISUAL_DESKTOP and self.task_id != self.owner._task_id:
+            return {"ok": False, "error":
+                    "Screen interaction is foreground-only. Open this task to continue visual control."}
+        return self.owner.desktop.execute(name, arguments, cancel)
+
+
 class _StoredTokens(SessionTokens):
     """Keeps the portal's restore token in the same private database as the
     rest of the settings, so screen control stops asking on every launch."""
@@ -431,8 +454,24 @@ class Controller(QObject):
         self.dock.toast.connect(self.toast)
         self.dock.contextChanged.connect(self.changed)
         setting = self.store.get_setting
-        self._endpoint = setting("endpoint", "http://127.0.0.1:11434")
-        self._model = setting("model", "qwen3.8:27b")
+        self._default_endpoint = str(setting("endpoint", "http://127.0.0.1:11434") or
+                                     "http://127.0.0.1:11434").strip().rstrip("/")
+        self._default_model = str(setting("model", "qwen3.8:27b") or "qwen3.8:27b").strip()
+        self._endpoint = self._default_endpoint
+        self._model = self._default_model
+        raw_profiles = setting("ollama_endpoints", []) or []
+        self._endpoint_profiles = []
+        for raw in raw_profiles if isinstance(raw_profiles, list) else []:
+            if not isinstance(raw, dict):
+                continue
+            url = str(raw.get("url", "") or "").strip().rstrip("/")
+            if not url or any(item["url"] == url for item in self._endpoint_profiles):
+                continue
+            label = " ".join(str(raw.get("name", "") or "").split())[:32] or self._endpoint_label(url)
+            self._endpoint_profiles.append({"name": label, "url": url})
+        if not any(item["url"] == self._default_endpoint for item in self._endpoint_profiles):
+            self._endpoint_profiles.insert(0, {"name": "Main", "url": self._default_endpoint})
+        self.store.set_setting("ollama_endpoints", self._endpoint_profiles)
         self._think = setting("think", False)
         self._reduced_motion = setting("reduced_motion", False)
         self._system_font = bool(setting("system_font", False))
@@ -512,8 +551,11 @@ class Controller(QObject):
         if hasattr(self.desktop, "set_stop_handler"):
             self.desktop.set_stop_handler(self.stopRequested.emit)
         self._jobs: set[Job] = set()
+        self._run_sessions = {}
         self._run_job: Job | None = None
         self._pull_job: Job | None = None
+        self._catalog_probe_generation = 0
+        self._endpoint_catalog_cache = {}
         self._probe_active = False
         self._turn_had_message = False
         self._run_started = 0.0
@@ -551,8 +593,114 @@ class Controller(QObject):
         self._jobs.discard(job)
         job.deleteLater()
 
+    @staticmethod
+    def _endpoint_label(endpoint: str) -> str:
+        try:
+            parsed = urlsplit(str(endpoint or ""))
+            host = parsed.hostname or str(endpoint or "")
+            port = parsed.port
+            return host + ((":" + str(port)) if port else "")
+        except (ValueError, TypeError):
+            return str(endpoint or "Ollama")
+
+    def _remember_endpoint_profile(self, name: str, endpoint: str) -> None:
+        endpoint = str(endpoint or "").strip().rstrip("/")
+        name = " ".join(str(name or "").split())[:32] or self._endpoint_label(endpoint)
+        fresh = [dict(item) for item in self._endpoint_profiles if item["url"] != endpoint]
+        fresh.append({"name": name, "url": endpoint})
+        self._endpoint_profiles = fresh[:8]
+        self.store.set_setting("ollama_endpoints", self._endpoint_profiles)
+
+    @Slot(str, str, result=bool)
+    def addEndpointProfile(self, name, endpoint):
+        try:
+            value = str(endpoint or "").strip().rstrip("/")
+            OllamaClient(value)
+        except Exception as exc:
+            self._set_error("That Ollama address is not usable", str(exc))
+            return False
+        self._remember_endpoint_profile(str(name or ""), value)
+        self.changed.emit()
+        return True
+
+    @Slot(str, result=bool)
+    def removeEndpointProfile(self, endpoint):
+        value = str(endpoint or "").strip().rstrip("/")
+        if not value or value == self._default_endpoint:
+            self.toast.emit("Choose another default server before removing this one.")
+            return False
+        if value == self._endpoint and self._busy:
+            self.toast.emit("This chat is using that server right now.")
+            return False
+        before = len(self._endpoint_profiles)
+        self._endpoint_profiles = [item for item in self._endpoint_profiles if item["url"] != value]
+        if len(self._endpoint_profiles) == before:
+            return False
+        self.store.set_setting("ollama_endpoints", self._endpoint_profiles)
+        if value == self._endpoint:
+            self.selectEndpoint(self._default_endpoint)
+        self.changed.emit()
+        return True
+
+    @Slot(str, result=bool)
+    def setDefaultEndpoint(self, endpoint):
+        try:
+            value = str(endpoint or "").strip().rstrip("/")
+            OllamaClient(value)
+        except Exception as exc:
+            self._set_error("That Ollama address is not usable", str(exc))
+            return False
+        if not any(item["url"] == value for item in self._endpoint_profiles):
+            self._remember_endpoint_profile("Main", value)
+        self._default_endpoint = value
+        self.store.set_setting("endpoint", value)
+        self.changed.emit()
+        return True
+
+    @Slot(str, result=bool)
+    def selectEndpoint(self, endpoint):
+        if self._busy or self._pulling:
+            self.toast.emit("This chat is still using its current model.")
+            return False
+        try:
+            value = str(endpoint or "").strip().rstrip("/")
+            OllamaClient(value)
+        except Exception as exc:
+            self._set_error("That Ollama address is not usable", str(exc))
+            return False
+        if not any(item["url"] == value for item in self._endpoint_profiles):
+            self._remember_endpoint_profile("", value)
+        if value == self._endpoint:
+            return True
+        self._endpoint = value
+        if self._task_id:
+            self.store.set_conversation_runtime(self._task_id, endpoint=value)
+        cached = self._endpoint_catalog_cache.get(value)
+        if cached:
+            models, resident = cached
+            self._models = [m["name"] for m in models]
+            self._catalog = [self._catalog_entry(m) for m in models]
+            self._resident_models = system_info.resident_models(resident)
+            self._loaded_models = [entry["name"] for entry in self._resident_models]
+            self._online = True
+            if self._model not in self._models and self._models:
+                self._model = self._models[0]
+                if self._task_id:
+                    self.store.set_conversation_runtime(self._task_id, model=self._model)
+            self._decorate_catalog()
+        else:
+            self._online = False
+            self._models = []
+            self._catalog = []
+            self._resident_models = []
+            self._loaded_models = []
+            self.catalogChanged.emit()
+        self.changed.emit()
+        self.refreshModels()
+        return True
+
     # ------------------------------------------------------------ read-only
-    @Property(QObject, constant=True)
+    @Property(QObject, notify=changed)
     def messageModel(self):
         return self.messages
 
@@ -596,6 +744,17 @@ class Controller(QObject):
 
     @Property(str, notify=changed)
     def endpoint(self): return self._endpoint
+    @Property(str, notify=changed)
+    def defaultEndpoint(self): return self._default_endpoint
+    @Property("QVariantList", notify=changed)
+    def endpointProfiles(self):
+        return [{**item, "selected": item["url"] == self._endpoint,
+                 "default": item["url"] == self._default_endpoint}
+                for item in self._endpoint_profiles]
+    @Property(str, notify=changed)
+    def endpointProfileName(self):
+        return next((item["name"] for item in self._endpoint_profiles
+                     if item["url"] == self._endpoint), self._endpoint_label(self._endpoint))
     @Property(str, notify=changed)
     def model(self): return self._model
     @Property(str, notify=changed)
@@ -953,7 +1112,14 @@ class Controller(QObject):
 
     def _grouped_tasks(self) -> list[dict]:
         buckets: dict[str, list] = {}
-        for task in self._matching_tasks():
+        for raw in self._matching_tasks():
+            task = dict(raw)
+            session = self._run_sessions.get(str(task.get("id", "")))
+            task["running"] = bool(session and session.get("busy"))
+            task["runStatus"] = str(session.get("status", "")) if session else ""
+            if session:
+                task["model"] = session.get("model", task.get("model", ""))
+                task["endpoint"] = session.get("endpoint", task.get("endpoint", ""))
             name = "Pinned" if task.get("pinned") else group_for(task.get("updated_at", 0))
             buckets.setdefault(name, []).append(task)
         return [{"title": name, "items": buckets[name]} for name in GROUP_ORDER if buckets.get(name)]
@@ -968,9 +1134,7 @@ class Controller(QObject):
 
     @Slot(int)
     def openAdjacentTask(self, delta):
-        """Move to the next or previous chat in the order the sidebar shows."""
-        if self._busy:
-            return
+        """Move to the next or previous chat even while another one generates."""
         order = [item["id"] for group in self._grouped_tasks() for item in group["items"]]
         if not order:
             return
@@ -1063,8 +1227,10 @@ class Controller(QObject):
 
     @Slot()
     def refreshModels(self):
-        if self._probe_active:
-            return
+        # Endpoint switches may race an older catalogue request. Generation
+        # tokens make stale replies harmless instead of blocking the new server.
+        self._catalog_probe_generation += 1
+        generation = self._catalog_probe_generation
         self._probe_active = True
         self._capability_probe_generation += 1
         self._capability_probe_active = False
@@ -1083,7 +1249,10 @@ class Controller(QObject):
             return models, resident
 
         def done(payload):
+            if generation != self._catalog_probe_generation or endpoint != self._endpoint:
+                return
             models, resident = payload
+            self._endpoint_catalog_cache[endpoint] = (list(models), list(resident))
             self._probe_active = False
             self._models = [m["name"] for m in models]
             self._catalog = [self._catalog_entry(m) for m in models]
@@ -1093,7 +1262,11 @@ class Controller(QObject):
             if self._model not in self._models and self._models:
                 preferred = next((m for m in self._favorites if m in self._models), None)
                 self._model = preferred or ("qwen3.8:27b" if "qwen3.8:27b" in self._models else self._models[0])
-                self.store.set_setting("model", self._model)
+                if self._task_id:
+                    self.store.set_conversation_runtime(self._task_id, model=self._model)
+                else:
+                    self._default_model = self._model
+                    self.store.set_setting("model", self._model)
             if self._models:
                 self._clear_error()
             else:
@@ -1105,6 +1278,8 @@ class Controller(QObject):
             self._refresh_model_capabilities()
 
         def failed(message):
+            if generation != self._catalog_probe_generation or endpoint != self._endpoint:
+                return
             self._probe_active = False
             self._online = False
             self._models = []
@@ -1129,11 +1304,15 @@ class Controller(QObject):
         if model == self._model and self._model_capabilities:
             return
         self._model = model
-        self.store.set_setting("model", self._model)
+        if self._task_id:
+            self.store.set_conversation_runtime(self._task_id, model=model, endpoint=self._endpoint)
+        # A blank composer is pending task state. Do not rewrite the global
+        # model default merely because this one new chat picked another server.
         self._recent_models = [model] + [m for m in self._recent_models if m != model][:5]
         self.store.set_setting("recent_models", self._recent_models)
         self._decorate_catalog()
         self._refresh_model_capabilities()
+        self._refresh_tasks()
 
     @Slot(str)
     def toggleFavoriteModel(self, model):
@@ -1271,19 +1450,22 @@ class Controller(QObject):
 
     @Slot(str, result=bool)
     def setEndpoint(self, endpoint):
-        if self._busy or self._pulling:
-            self.toast.emit("Wait for the current task to finish.")
-            return False
+        """Compatibility action used by Settings: save as default and use here."""
         try:
-            OllamaClient(str(endpoint).strip())
+            value = str(endpoint or "").strip().rstrip("/")
+            OllamaClient(value)
         except Exception as exc:
             self._set_error("That Ollama address is not usable", str(exc))
             return False
-        self._endpoint = str(endpoint).strip().rstrip("/")
-        self.store.set_setting("endpoint", self._endpoint)
-        self.changed.emit()
-        self.refreshModels()
-        return True
+        if self._busy or self._pulling:
+            self.toast.emit("This chat is still using its current model.")
+            return False
+        self._remember_endpoint_profile(
+            next((item["name"] for item in self._endpoint_profiles if item["url"] == value), "Main"),
+            value)
+        self._default_endpoint = value
+        self.store.set_setting("endpoint", value)
+        return self.selectEndpoint(value)
 
     @Slot()
     def completeOnboarding(self):
@@ -1298,6 +1480,64 @@ class Controller(QObject):
         self.changed.emit()
 
     # ------------------------------------------------------------- history
+    def _active_session(self):
+        return self._run_sessions.get(str(self._task_id or ""))
+
+    def _sync_active_session(self, session: dict | None) -> None:
+        """Project one task-owned run onto the properties the shell reads."""
+        if not session:
+            self._busy = False
+            self._run_job = None
+            self._pending_permission = None
+            self._session_auto = False
+            return
+        self.messages = session["messages"]
+        self._history = session["history"]
+        self._busy = bool(session.get("busy"))
+        self._run_job = session.get("job")
+        self._status = str(session.get("status", "Ready when you are"))
+        self._token_rate = str(session.get("token_rate", "—"))
+        self._run_metrics = dict(session.get("metrics") or _blank_metrics())
+        self._activity = list(session.get("activity") or [])
+        self._think_started = float(session.get("think_started", 0.0) or 0.0)
+        self._think_seconds = float(session.get("think_seconds", 0.0) or 0.0)
+        self._turn_had_message = bool(session.get("turn_had_message"))
+        self._error = str(session.get("error", ""))
+        self._error_title = str(session.get("error_title", ""))
+        self._error_actions = list(session.get("error_actions") or [])
+        self._pending_permission = session.get("permission")
+        self._permission_event = session.get("permission_event", threading.Event())
+        self._permission_answer = bool(session.get("permission_answer", False))
+        self._session_auto = bool(session.get("session_auto", False))
+
+    def _new_message_model(self, history=None):
+        model = Messages(self)
+        if history:
+            model.replace(history)
+        return model
+
+    def _load_task_runtime(self, task: dict) -> None:
+        self._endpoint = str(task.get("endpoint") or self._default_endpoint).strip().rstrip("/")
+        self._model = str(task.get("model") or self._default_model).strip()
+        cached = self._endpoint_catalog_cache.get(self._endpoint)
+        if cached:
+            models, resident = cached
+            self._models = [m["name"] for m in models]
+            self._catalog = [self._catalog_entry(m) for m in models]
+            self._resident_models = system_info.resident_models(resident)
+            self._loaded_models = [entry["name"] for entry in self._resident_models]
+            self._online = True
+            self._decorate_catalog()
+            self._refresh_model_capabilities()
+        else:
+            self._online = False
+            self._models = []
+            self._catalog = []
+            self._resident_models = []
+            self._loaded_models = []
+            self.catalogChanged.emit()
+            self.refreshModels()
+
     def _reset_run_state(self):
         self._activity = []
         self._think_seconds = 0.0
@@ -1328,54 +1568,69 @@ class Controller(QObject):
 
     @Slot()
     def newTask(self):
-        if self._busy:
-            self.toast.emit("Stop the current task before starting another.")
-            return
         self._save_draft()
         self._task_id = ""
         self._task_title = "New task"
         self._history = []
         self._history_tokens = 0
-        self.messages.replace([])
+        self.messages = self._new_message_model()
+        self._endpoint = self._default_endpoint
+        self._model = self._default_model
         self._reset_run_state()
+        self._busy = False
+        self._run_job = None
+        self._pending_permission = None
+        self._session_auto = False
         self._clear_error()
         self.cancelRegion()
         self._restore_draft()
         self.activityChanged.emit()
+        self.permissionChanged.emit()
         self.changed.emit()
+        self.refreshModels()
         self.focusComposer.emit()
 
     @Slot(str)
     def openTask(self, task_id):
-        if self._busy:
-            self.toast.emit("Stop the current task before switching.")
-            return
+        task_id = str(task_id or "")
         task = self.store.get_conversation(task_id)
         if not task:
             return
-        # Moving to another task must not carry the last one's draft, half-made
-        # region capture or error banner with it.
         switching = task_id != self._task_id
         if switching:
             self._save_draft()
             self.cancelRegion()
-        self._clear_error()
         self._task_id = task_id
         self._task_title = task["title"]
+        self._load_task_runtime(task)
         if switching:
             self._restore_draft()
-        self._history = self.store.get_messages(task_id)
-        self.messages.replace(self._history)
+        session = self._run_sessions.get(task_id)
+        if session:
+            self._sync_active_session(session)
+        else:
+            self._history = self.store.get_messages(task_id)
+            self.messages = self._new_message_model(self._history)
+            self._reset_run_state()
+            self._busy = False
+            self._run_job = None
+            self._pending_permission = None
+            self._session_auto = False
+            self._clear_error()
         self._recount_history_tokens()
-        self._reset_run_state()
         self.activityChanged.emit()
+        self.permissionChanged.emit()
         self.changed.emit()
         self.scrollToEnd.emit()
 
     @Slot(str)
     def deleteTask(self, task_id):
-        if self._busy:
+        task_id = str(task_id or "")
+        session = self._run_sessions.get(task_id)
+        if session and session.get("busy"):
+            self.toast.emit("Stop that chat before deleting it.")
             return
+        self._run_sessions.pop(task_id, None)
         self.store.delete_conversation(task_id)
         self._drafts.pop(task_id, None)
         if task_id == self._task_id:
@@ -1402,8 +1657,8 @@ class Controller(QObject):
         source = self.store.get_conversation(task_id)
         if not source:
             return
-        copy_task = self.store.create_conversation(f"{source['title']} copy"[:200], source.get("model", ""))
-        self.store.set_messages(copy_task["id"], self.store.get_messages(task_id), source.get("model", ""))
+        copy_task = self.store.create_conversation(f"{source['title']} copy"[:200], source.get("model", ""), source.get("endpoint", ""))
+        self.store.set_messages(copy_task["id"], self.store.get_messages(task_id), source.get("model", ""), source.get("endpoint", ""))
         self._refresh_tasks()
         self.openTask(copy_task["id"])
         self.toast.emit("Chat duplicated")
@@ -1412,8 +1667,8 @@ class Controller(QObject):
     def duplicateTask(self):
         if self._busy or not self._task_id:
             return
-        task = self.store.create_conversation(f"{self._task_title} copy"[:200], self._model)
-        self.store.set_messages(task["id"], list(self._history), self._model)
+        task = self.store.create_conversation(f"{self._task_title} copy"[:200], self._model, self._endpoint)
+        self.store.set_messages(task["id"], list(self._history), self._model, self._endpoint)
         self._refresh_tasks()
         self.openTask(task["id"])
         self.toast.emit("Chat duplicated")
@@ -1424,7 +1679,7 @@ class Controller(QObject):
             return
         self._history = []
         self._history_tokens = 0
-        self.store.set_messages(self._task_id, [], self._model)
+        self.store.set_messages(self._task_id, [], self._model, self._endpoint)
         self.messages.replace([])
         self._reset_run_state()
         self.activityChanged.emit()
@@ -1478,8 +1733,8 @@ class Controller(QObject):
         if self._busy or not self._task_id:
             return
         history = self._history_cut(int(row))
-        task = self.store.create_conversation(f"{self._task_title} branch"[:200], self._model)
-        self.store.set_messages(task["id"], history, self._model)
+        task = self.store.create_conversation(f"{self._task_title} branch"[:200], self._model, self._endpoint)
+        self.store.set_messages(task["id"], history, self._model, self._endpoint)
         self._refresh_tasks()
         self.openTask(task["id"])
         self.toast.emit("Branched into a new chat")
@@ -1497,7 +1752,7 @@ class Controller(QObject):
             return
         history[-1] = {"role": "user", "content": text}
         self._history = history
-        self.store.set_messages(self._task_id, history, self._model)
+        self.store.set_messages(self._task_id, history, self._model, self._endpoint)
         self.messages.replace(history)
         self._start_run(list(history))
 
@@ -1518,7 +1773,7 @@ class Controller(QObject):
             self.toast.emit("There is no message to regenerate.")
             return
         self._history = history
-        self.store.set_messages(self._task_id, history, self._model)
+        self.store.set_messages(self._task_id, history, self._model, self._endpoint)
         self.messages.replace(history)
         self._start_run(history)
 
@@ -1663,6 +1918,12 @@ class Controller(QObject):
             return {"ok": False, "error": "Wynxq's built-in browser is unavailable"}
         self.browserNavigateRequested.emit(normalized)
         return {"ok": True, "url": normalized, "browser": "Wynxq built-in browser"}
+
+    def _request_builtin_browser_for(self, task_id: str, target: str) -> dict:
+        if str(task_id or "") != self._task_id:
+            return {"ok": False, "error":
+                    "The built-in browser is foreground-only. Open this chat to navigate it."}
+        return self._request_builtin_browser(target)
 
     def _capture(self, kind: str):
         if self._capture_busy:
@@ -1835,37 +2096,88 @@ class Controller(QObject):
             self.toast.emit("No terminal emulator was found on this system.")
 
     # ---------------------------------------------------------- generation
-    def _start_run(self, history):
-        self._busy = True
+    def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
+                    desktop_enabled=None, project=None, extras=None):
+        task_id = str(self._task_id or "")
+        if not task_id:
+            raise RuntimeError("A conversation must exist before generation starts")
+        state = {
+            "task_id": task_id,
+            "title": self._task_title,
+            "model": self._model,
+            "endpoint": self._endpoint,
+            "messages": self.messages,
+            "history": list(history),
+            "busy": True,
+            "job": None,
+            "status": "Thinking",
+            "token_rate": "—",
+            "metrics": _blank_metrics(),
+            "activity": [],
+            "think_started": 0.0,
+            "think_seconds": 0.0,
+            "turn_had_message": False,
+            "run_started": time.monotonic(),
+            "error": "",
+            "error_title": "",
+            "error_actions": [],
+            "permission": None,
+            "permission_event": threading.Event(),
+            "permission_answer": False,
+            "session_auto": False,
+            "permission_mode_snapshot": self._permission_mode,
+            "project": str(self._working_directory if project is None else project or ""),
+        }
+        if extras:
+            state.update(extras)
+        self._run_sessions[task_id] = state
+        self._sync_active_session(state)
         self._clear_error()
-        self._status = "Thinking"
-        self._token_rate = "—"
-        self._think_started = 0.0
-        self._think_seconds = 0.0
-        self._turn_had_message = False
-        self._activity = []
-        self._session_auto = False
-        self._run_started = time.monotonic()
-        self._run_metrics = _blank_metrics()
         self.dock.begin_turn(self._task_title if self._task_title != "New task" else "Turn")
         self.activityChanged.emit()
         self._refresh_tasks()
         self.changed.emit()
-        engine = AgentEngine(
-            OllamaClient(self._endpoint), self.desktop, self._memory_for_run(),
-            browser_open=self._request_builtin_browser if self.dock.browserAvailable else None,
+
+        run_desktop = _RunDesktop(self, task_id)
+        browser_open = (lambda target: self._request_builtin_browser_for(task_id, target)) \
+            if self.dock.browserAvailable else None
+        engine = engine_class(
+            OllamaClient(state["endpoint"]), run_desktop, self._memory_for_run(),
+            browser_open=browser_open,
         )
-        model, enabled, think = self._model, self.desktopEnabled, self._think
+        enabled = self.desktopEnabled if desktop_enabled is None else bool(desktop_enabled)
+        think = self._think
         num_ctx, temperature = self._num_ctx, self._temperature
         keep_alive, max_steps = self._keep_alive, self._max_steps
-        mode, project = self._permission_mode, self._working_directory
-        self._run_job = self._job(
+
+        def permission_mode():
+            current = self._permission_mode
+            if current != state["permission_mode_snapshot"]:
+                state["session_auto"] = False
+                state["permission_mode_snapshot"] = current
+            return current
+
+        job = self._job(
             lambda cancel, emit: engine.run(
-                list(history), model, enabled, cancel, emit, think=think, max_steps=max_steps,
-                num_ctx=num_ctx, temperature=temperature, keep_alive=keep_alive,
-                permission_mode=mode, project=project, confirm=self._confirm_action),
-            self._run_done, self._run_failed, self._on_event,
+                list(history), state["model"], enabled, cancel, emit, think=think,
+                max_steps=max_steps, num_ctx=num_ctx, temperature=temperature,
+                keep_alive=keep_alive, permission_mode=permission_mode,
+                project=state["project"],
+                confirm=lambda name, args, risk: self._confirm_action_for(
+                    task_id, name, args, risk),
+                tools_allowed=bool(tools_allowed)),
+            lambda result: self._run_done(result, task_id),
+            lambda message: self._run_failed(message, task_id),
+            lambda event: self._on_event(event, task_id),
         )
+        state["job"] = job
+        if task_id == self._task_id:
+            self._run_job = job
+            self.changed.emit()
+        return state
+
+    def _start_run(self, history):
+        self._launch_run(history, AgentEngine)
 
     @Slot(str)
     def send(self, text):
@@ -1882,22 +2194,22 @@ class Controller(QObject):
         self._draft_text = ""
         self.draftChanged.emit()
         if not self._task_id:
-            task = self.store.create_conversation(derive_title(text), self._model)
+            task = self.store.create_conversation(
+                derive_title(text), self._model, self._endpoint)
             self._task_id, self._task_title = task["id"], task["title"]
         attachments = [item for item in self._attachments
                        if item.get("enabled", True) is not False]
         deferred_attachments = [item for item in self._attachments
                                 if item.get("enabled", True) is False]
         vision_ready = "vision" in self._model_capabilities
-        # Keep every attachment in local history so the sent user turn can
-        # still show its files/images after reload. AgentEngine removes image
-        # context at the Ollama boundary when the selected model lacks vision.
         extra = ctx.build_messages(attachments)
         self._history.extend(extra)
         self._history.append({"role": "user", "content": text})
         self._recount_history_tokens()
-        self.store.set_messages(self._task_id, self._history, self._model)
-        self.messages.append_message("user", text, attachments=ctx.display_attachments(attachments))
+        self.store.set_messages(
+            self._task_id, self._history, self._model, self._endpoint)
+        self.messages.append_message(
+            "user", text, attachments=ctx.display_attachments(attachments))
         if attachments and not vision_ready and ctx.needs_vision(attachments):
             self.toast.emit(f"{self._model} cannot read images, so pictures were left out.")
         if deferred_attachments:
@@ -1910,45 +2222,57 @@ class Controller(QObject):
         self.scrollToEnd.emit()
 
     # ------------------------------------------------------- permissioning
-    def _confirm_action(self, name: str, args: dict, risk: str) -> bool:
-        """Called on the worker thread; blocks it until the user answers."""
-        # "Allow the rest of this task" is trust in a task, not a blank cheque:
-        # a command that cannot be undone is still put in front of the user.
-        if self._session_auto and risk != "destructive":
+    def _confirm_action_for(self, task_id: str, name: str, args: dict, risk: str) -> bool:
+        """Block only the run asking for permission; other chats stay usable."""
+        state = self._run_sessions.get(str(task_id or ""))
+        if not state:
+            return False
+        if state.get("session_auto") and risk != "destructive":
             return True
-        self._permission_event.clear()
-        self._permission_answer = False
-        self._pending_permission = {
+        event = state["permission_event"]
+        event.clear()
+        state["permission_answer"] = False
+        state["permission"] = {
             "tool": name, "risk": risk, "summary": action_summary(name, args),
             "detail": json.dumps(args, ensure_ascii=False) if args else "",
-            # A command reads differently depending on where it runs, so the
-            # prompt states the directory rather than making you infer it.
             "command": str(args.get("command", "")) if name == "run_command" else "",
-            "directory": (str(args.get("cwd") or self._working_directory or Path.home())
+            "directory": (str(args.get("cwd") or state.get("project") or Path.home())
                           if name == "run_command" else ""),
         }
-        self.permissionChanged.emit()
-        allowed = self._permission_event.wait(self.PERMISSION_TIMEOUT)
-        answer = bool(allowed and self._permission_answer)
-        self._pending_permission = None
-        self.permissionChanged.emit()
+        if task_id == self._task_id:
+            self._pending_permission = state["permission"]
+            self.permissionChanged.emit()
+            self.changed.emit()
+        allowed = event.wait(self.PERMISSION_TIMEOUT)
+        answer = bool(allowed and state.get("permission_answer"))
+        state["permission"] = None
+        if task_id == self._task_id:
+            self._pending_permission = None
+            self.permissionChanged.emit()
+            self.changed.emit()
         return answer
+
+    def _confirm_action(self, name: str, args: dict, risk: str) -> bool:
+        return self._confirm_action_for(self._task_id, name, args, risk)
 
     @Slot(bool)
     def resolvePermission(self, allowed):
-        if self._pending_permission is None:
+        state = self._active_session()
+        if not state or state.get("permission") is None:
             return
+        state["permission_answer"] = bool(allowed)
         self._permission_answer = bool(allowed)
-        self._permission_event.set()
+        state["permission_event"].set()
 
     @Slot()
     def allowRestOfTask(self):
-        """Approve this action and stop prompting for the remainder of the run."""
-        if self._pending_permission is None:
+        state = self._active_session()
+        if not state or state.get("permission") is None:
             return
+        state["session_auto"] = True
+        state["permission_answer"] = True
         self._session_auto = True
-        self._permission_answer = True
-        self._permission_event.set()
+        state["permission_event"].set()
         self.toast.emit("Approving the rest of this task, except anything that cannot be undone")
 
     @Slot(str)
@@ -1958,9 +2282,11 @@ class Controller(QObject):
             return
         self._permission_mode = mode
         self.store.set_setting("permission_mode", mode)
+        for state in self._run_sessions.values():
+            if state.get("busy"):
+                state["session_auto"] = False
+        self._session_auto = False
         self.changed.emit()
-        # The mode governs commands as much as the screen, so name it for what
-        # it is rather than calling all of it "screen control".
         self.toast.emit(f"Permission set to {PERMISSION_LABELS[mode]}")
 
     # -------------------------------------------------------------- memory
@@ -2031,31 +2357,51 @@ class Controller(QObject):
             self.toast.emit("No application opened it, so the path was copied instead.")
 
     # --------------------------------------------------------------- events
-    def _on_event(self, event):
+    def _on_event(self, event, task_id=None):
+        task_id = str(task_id or self._task_id or "")
+        state = self._run_sessions.get(task_id)
+        legacy = state is None
+        if legacy:
+            state = {
+                "task_id": task_id, "messages": self.messages, "history": self._history,
+                "busy": self._busy, "job": self._run_job, "status": self._status,
+                "token_rate": self._token_rate, "metrics": dict(self._run_metrics),
+                "activity": list(self._activity), "think_started": self._think_started,
+                "think_seconds": self._think_seconds,
+                "turn_had_message": self._turn_had_message,
+                "error": self._error, "error_title": self._error_title,
+                "error_actions": list(self._error_actions),
+                "permission": self._pending_permission,
+                "permission_event": self._permission_event,
+                "permission_answer": self._permission_answer,
+                "session_auto": self._session_auto,
+            }
+        messages = state["messages"]
         kind = event.get("type")
         if kind in ("token", "thinking"):
-            if not self._turn_had_message:
-                self.messages.append_message("assistant", streaming=True)
-                self._turn_had_message = True
+            if not state.get("turn_had_message"):
+                messages.append_message("assistant", streaming=True)
+                state["turn_had_message"] = True
             if kind == "thinking":
-                if not self._think_started:
-                    self._think_started = time.monotonic()
-                self.messages.stream("thought", event.get("text", ""))
-                self._status = "Thinking"
+                if not state.get("think_started"):
+                    state["think_started"] = time.monotonic()
+                messages.stream("thought", event.get("text", ""))
+                state["status"] = "Thinking"
             else:
-                if self._think_started and not self._think_seconds:
-                    self._think_seconds = time.monotonic() - self._think_started
-                self.messages.stream("body", event.get("text", ""))
-                self._status = "Writing"
+                if state.get("think_started") and not state.get("think_seconds"):
+                    state["think_seconds"] = time.monotonic() - state["think_started"]
+                messages.stream("body", event.get("text", ""))
+                state["status"] = "Writing"
         elif kind == "message_end":
-            self.messages.finish_stream(self._think_seconds, event.get("message"))
-            self._turn_had_message = False
-            self._think_started = 0.0
-            self._think_seconds = 0.0
+            messages.finish_stream(float(state.get("think_seconds", 0.0) or 0.0),
+                                   event.get("message"))
+            state["turn_had_message"] = False
+            state["think_started"] = 0.0
+            state["think_seconds"] = 0.0
         elif kind == "status":
-            self._status = event.get("text", "Working")
+            state["status"] = event.get("text", "Working")
         elif kind == "session":
-            self._status = "Screen control ready"
+            state["status"] = "Screen control ready"
         elif kind == "tool_start":
             name = event.get("name", "action")
             icon, label = TOOL_PRESENTATION.get(name, ("bolt", name.replace("_", " ").capitalize()))
@@ -2064,20 +2410,21 @@ class Controller(QObject):
                     "detail": json.dumps(event.get("args", {}), ensure_ascii=False)[:200],
                     "state": "waiting" if event.get("confirming") else "running",
                     "risk": event.get("risk", "normal"), "ms": 0, "output": ""}
-            self.messages.append_activity(step)
-            self._activity = (self._activity + [step])[-60:]
-            self._status = summary or label
-            self.dock.record(step)
-            if name == "run_command":
-                self.dock.suggest("terminal")
-            elif name == "browser_open":
-                self.dock.suggest("browser", open_dock=True)
-            self.activityChanged.emit()
-            self.scrollToEnd.emit()
+            messages.append_activity(step)
+            state["activity"] = (list(state.get("activity") or []) + [step])[-60:]
+            state["status"] = summary or label
+            if task_id == self._task_id:
+                self.dock.record(step)
+                if name == "run_command":
+                    self.dock.suggest("terminal")
+                elif name == "browser_open":
+                    self.dock.suggest("browser", open_dock=True)
+                self.activityChanged.emit()
+                self.scrollToEnd.emit()
         elif kind == "tool_end":
             result = event.get("result", {})
             failed = bool(result.get("error")) or result.get("ok") is False
-            state = "declined" if event.get("declined") else ("failed" if failed else "done")
+            step_state = "declined" if event.get("declined") else ("failed" if failed else "done")
             output = str(result.get("error") or "")
             if result.get("output"):
                 output = str(result["output"]) + ("\n" + output if output else "")
@@ -2089,20 +2436,24 @@ class Controller(QObject):
                 output = ("Remembered: " if result.get("stored") else "Already known: ") + str(result.get("note", ""))
             elif not output and event.get("name") == "forget":
                 output = f"Forgot {result.get('forgotten', 0)} note(s)"
-            patch = {"state": state, "ms": int(event.get("ms", 0) or 0), "output": output[:32000]}
-            self.messages.update_last_step(**patch)
-            self.dock.record_update(**patch)
-            if self._activity:
-                self._activity[-1] = {**self._activity[-1], **patch}
+            patch = {"state": step_state, "ms": int(event.get("ms", 0) or 0),
+                     "output": output[:32000]}
+            messages.update_last_step(**patch)
+            activity = list(state.get("activity") or [])
+            if activity:
+                activity[-1] = {**activity[-1], **patch}
+                state["activity"] = activity
+            if task_id == self._task_id:
+                self.dock.record_update(**patch)
                 self.activityChanged.emit()
-            if event.get("name") in ("run_command", "write_file", "edit_file"):
-                self.dock.refreshChanges()
+                if event.get("name") in ("run_command", "write_file", "edit_file"):
+                    self.dock.refreshChanges()
             if event.get("name") in ("remember", "forget"):
                 self.memoryChanged.emit()
         elif kind == "metrics":
             rate = event.get("tokens_per_second", 0)
-            previous = self._run_metrics
-            self._run_metrics = {
+            previous = state.get("metrics") or _blank_metrics()
+            state["metrics"] = {
                 "tokens": previous.get("tokens", 0) + int(event.get("tokens", 0) or 0),
                 "prompt_tokens": int(event.get("prompt_tokens", 0) or 0),
                 "cached_prompt_tokens": int(event.get("cached_prompt_tokens", 0) or 0),
@@ -2110,43 +2461,95 @@ class Controller(QObject):
                 "total_ms": previous.get("total_ms", 0.0) + float(event.get("total_ms", 0.0) or 0.0),
                 "tokens_per_second": float(rate) if isinstance(rate, (int, float)) else 0.0,
             }
-            self._token_rate = f"{rate:.1f} tok/s" if isinstance(rate, (int, float)) else "—"
+            state["token_rate"] = f"{rate:.1f} tok/s" if isinstance(rate, (int, float)) else "—"
         elif kind == "error":
-            self._set_error("The model run did not finish", event.get("text", "Something went wrong"),
-                            [{"label": "Try again", "action": "regenerate"}])
+            state["error_title"] = "The model run did not finish"
+            state["error"] = str(event.get("text", "Something went wrong"))
+            state["error_actions"] = [{"label": "Try again", "action": "regenerate"}]
         elif kind == "cancelled":
-            self._status = "Stopped"
-        self.changed.emit()
+            state["status"] = "Stopped"
 
-    def _run_done(self, history):
-        self._history = history
-        self._recount_history_tokens()
-        self.store.set_messages(self._task_id, history, self._model)
-        stopped = self._run_job is not None and self._run_job.cancel.is_set()
-        elapsed = time.monotonic() - self._run_started if self._run_started else 0.0
-        self._busy = False
-        self._run_job = None
-        self._session_auto = False
-        self.messages.mark_idle()
-        self.dock.settle_turn("cancelled" if stopped else ("failed" if self._error else "done"))
-        if self._working_directory:
-            self.dock.refreshChanges()
-        self._status = "Stopped" if stopped else ("Needs attention" if self._error else "Ready when you are")
+        if legacy or task_id == self._task_id:
+            self._sync_active_session(state)
+            self.changed.emit()
+
+    def _run_done(self, history, task_id=None):
+        task_id = str(task_id or self._task_id or "")
+        state = self._run_sessions.get(task_id)
+        if state is None:
+            # Compatibility for direct unit calls that predate task sessions.
+            self._history = history
+            self._recount_history_tokens()
+            if self._task_id:
+                self.store.set_messages(self._task_id, history, self._model, self._endpoint)
+            self._busy = False
+            self._run_job = None
+            self.messages.mark_idle()
+            self.changed.emit()
+            return
+
+        state["history"] = list(history)
+        job = state.get("job")
+        stopped = bool(job and job.cancel.is_set())
+        elapsed = time.monotonic() - float(state.get("run_started", 0.0) or 0.0)
+        state["busy"] = False
+        state["job"] = None
+        state["session_auto"] = False
+        state["permission"] = None
+        state["messages"].mark_idle()
+        state["status"] = "Stopped" if stopped else (
+            "Needs attention" if state.get("error") else "Ready when you are")
+        try:
+            self.store.set_messages(
+                task_id, state["history"], state["model"], state["endpoint"])
+        except KeyError:
+            # The only supported delete-during-run path cancels first, but be
+            # defensive against an externally modified history database.
+            pass
+
+        if task_id == self._task_id:
+            self._sync_active_session(state)
+            self._recount_history_tokens()
+            self.dock.settle_turn(
+                "cancelled" if stopped else ("failed" if state.get("error") else "done"))
+            if self._working_directory:
+                self.dock.refreshChanges()
+            self.permissionChanged.emit()
+            self.changed.emit()
+            if not stopped and not state.get("error"):
+                self._maybe_notify(elapsed)
         self._refresh_tasks()
-        self.changed.emit()
-        if not stopped and not self._error:
-            self._maybe_notify(elapsed)
 
-    def _run_failed(self, message):
-        self._busy = False
-        self._run_job = None
-        self._session_auto = False
-        self.messages.mark_idle()
-        self.dock.settle_turn("failed")
-        self._status = "Needs attention"
-        self._set_error("The model run did not finish", message,
-                        [{"label": "Try again", "action": "regenerate"},
-                         {"label": "Connection settings", "action": "settings"}])
+    def _run_failed(self, message, task_id=None):
+        task_id = str(task_id or self._task_id or "")
+        state = self._run_sessions.get(task_id)
+        if state is None:
+            self._busy = False
+            self._run_job = None
+            self.messages.mark_idle()
+            self._status = "Needs attention"
+            self._set_error("The model run did not finish", message,
+                            [{"label": "Try again", "action": "regenerate"},
+                             {"label": "Connection settings", "action": "settings"}])
+            return
+        state["busy"] = False
+        state["job"] = None
+        state["session_auto"] = False
+        state["permission"] = None
+        state["messages"].mark_idle()
+        state["status"] = "Needs attention"
+        state["error_title"] = "The model run did not finish"
+        state["error"] = str(message)
+        state["error_actions"] = [
+            {"label": "Try again", "action": "regenerate"},
+            {"label": "Connection settings", "action": "settings"},
+        ]
+        if task_id == self._task_id:
+            self._sync_active_session(state)
+            self.dock.settle_turn("failed")
+            self.permissionChanged.emit()
+            self.changed.emit()
+        self._refresh_tasks()
 
     def _maybe_notify(self, seconds: float):
         if not notify.should_notify(seconds, self._window_active, self._notifications):
@@ -2160,14 +2563,20 @@ class Controller(QObject):
 
     @Slot()
     def stop(self):
-        if self._pending_permission is not None:
-            self._permission_answer = False
-            self._permission_event.set()
-        if self._run_job:
-            self._run_job.cancel.set()
-            self._status = "Stopping…"
+        state = self._active_session()
+        if not state:
+            return
+        if state.get("permission") is not None:
+            state["permission_answer"] = False
+            state["permission_event"].set()
+        job = state.get("job")
+        if job:
+            job.cancel.set()
+            state["status"] = "Stopping…"
+            self._sync_active_session(state)
             self.changed.emit()
 
+    # --------------------------------------------------------------- desktop
     # --------------------------------------------------------------- desktop
     @Slot()
     def toggleDesktop(self):
@@ -2363,11 +2772,21 @@ class Controller(QObject):
     def _show_error(self, message):
         self._set_error("Something went wrong", message)
 
-    @Slot(result=bool)
-    def canClose(self):
+    def _release_all_permission_waits(self) -> None:
+        """Fail closed and wake every run before cancellation or process exit."""
+        for state in self._run_sessions.values():
+            if state.get("permission") is not None:
+                state["permission_answer"] = False
+                event = state.get("permission_event")
+                if event is not None:
+                    event.set()
         if self._pending_permission is not None:
             self._permission_answer = False
             self._permission_event.set()
+
+    @Slot(result=bool)
+    def canClose(self):
+        self._release_all_permission_waits()
         if self._jobs:
             for job in self._jobs:
                 job.cancel.set()
@@ -2378,9 +2797,7 @@ class Controller(QObject):
 
     def shutdown(self):
         self.dock.shutdown()
-        if self._pending_permission is not None:
-            self._permission_answer = False
-            self._permission_event.set()
+        self._release_all_permission_waits()
         for job in list(self._jobs):
             job.cancel.set()
         for job in list(self._jobs):

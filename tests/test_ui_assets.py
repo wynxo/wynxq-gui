@@ -317,7 +317,7 @@ def test_fresh_task_shows_thirty_day_usage_grid():
     task = (MODULE / "TaskStart.qml").read_text(encoding="utf-8")
     heatmap = (MODULE / "UsageHeatmap.qml").read_text(encoding="utf-8")
     assert "UsageHeatmap {" in task
-    assert "30-day usage" in heatmap
+    assert "30-day activity" in heatmap
     assert "Theme.success" in heatmap
     assert "bridge.tokenUsageDays" in heatmap
 
@@ -402,3 +402,35 @@ def test_live_assistant_uses_the_activity_glyph():
     assert "ActivityGlyph {" in assistant
     assert "Thinking through the task" in assistant
     assert "ActivityGlyph {" in header
+
+
+def test_model_picker_pairs_server_and_model_per_chat():
+    picker = (MODULE / "ModelPicker.qml").read_text(encoding="utf-8")
+    assert 'SectionLabel { text: "Server" }' in picker
+    assert "bridge.endpointProfiles" in picker
+    assert "bridge.selectEndpoint(modelData.url)" in picker
+    assert 'SectionLabel { text: "Model · " + (bridge ? bridge.endpointProfileName : "") }' in picker
+
+
+def test_settings_manages_named_ollama_servers_without_reintroducing_global_only_runtime():
+    settings = (MODULE / "SettingsSheet.qml").read_text(encoding="utf-8")
+    assert 'title: "Ollama servers"' in settings
+    assert "bridge.endpointProfiles" in settings
+    assert "bridge.addEndpointProfile" in settings
+    assert "bridge.setDefaultEndpoint" in settings
+    assert "bridge.removeEndpointProfile" in settings
+    assert "each existing chat remembers its own server and model" in settings
+
+
+def test_sidebar_surfaces_background_generation_without_a_spinner():
+    row = (MODULE / "TaskRow.qml").read_text(encoding="utf-8")
+    assert "row.entry.running" in row
+    assert "ActivityGlyph {" in row
+    assert "row.entry.runStatus" in row
+
+
+def test_contribution_grid_aligns_real_dates_to_weekday_rows():
+    heatmap = (MODULE / "UsageHeatmap.qml").read_text(encoding="utf-8")
+    assert "leadingBlanks" in heatmap
+    assert "(day + 6) % 7" in heatmap
+    assert "root.leadingBlanks + root.days.length" in heatmap

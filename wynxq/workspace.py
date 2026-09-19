@@ -249,8 +249,9 @@ class PlanningAgentEngine(AgentEngine):
                     return {"ok": True, "steps": len(arguments.get("steps", []))}
                 return original_execute(name, arguments, cancel)
 
-            # Runs are serialized by Controller; this temporary adapter exists
-            # only on the worker thread for the lifetime of this generation.
+            # Each generation receives its own _RunDesktop wrapper, so this
+            # temporary adapter is isolated even when multiple chats generate
+            # concurrently.
             desktop.execute = execute
             try:
                 result = super().run(*run_args, **run_kwargs)
@@ -348,6 +349,7 @@ class WorkspaceController(Controller):
         self._project_instructions_summary = project_instructions.summary(self._working_directory)
         self._context_omitted_turns = 0
         self._workspace_checkpoint: dict | None = None
+        self._task_checkpoints: dict[str, dict] = {}
         # Draft text is cheap state worth surviving a restart, but attachments are
         # intentionally one-turn context and are never serialized here. Debounce
         # SQLite writes so typing does not become one transaction per keypress.
@@ -574,7 +576,8 @@ class WorkspaceController(Controller):
             return 0
 
     def _reset_usage_context(self) -> None:
-        """Reset transient run metrics and load one exact chat total."""
+        """Use a fresh tracker so leaving a live chat never resets its counter."""
+        self._usage = TokenUsageTracker(self.store)
         self._usage.reset()
         self._conversation_tokens = self._read_conversation_tokens()
         self.usageChanged.emit()
@@ -647,9 +650,18 @@ class WorkspaceController(Controller):
         return "Enter a complete Ollama server URL."
 
     @Slot(str, result=bool)
+    def selectEndpoint(self, endpoint):
+        previous = self._endpoint
+        result = super().selectEndpoint(endpoint)
+        if result and self._endpoint != previous:
+            self.endpointChanged.emit()
+        return result
+
+    @Slot(str, result=bool)
     def setEndpoint(self, endpoint):
+        previous = self._endpoint
         result = super().setEndpoint(endpoint)
-        if result:
+        if result and self._endpoint != previous:
             self.endpointChanged.emit()
         return result
 
@@ -704,7 +716,7 @@ class WorkspaceController(Controller):
     @Slot(str)
     def newTaskMode(self, mode):
         mode = str(mode or "").strip().lower()
-        if mode not in self.VALID_TASK_MODES or self._busy:
+        if mode not in self.VALID_TASK_MODES:
             return
         super().newTask()
         self._reset_usage_context()
@@ -721,9 +733,6 @@ class WorkspaceController(Controller):
 
     @Slot()
     def newTask(self):
-        if self._busy:
-            super().newTask()
-            return
         super().newTask()
         self._reset_usage_context()
         self._set_last_task("")
@@ -746,14 +755,29 @@ class WorkspaceController(Controller):
         super().openTask(task_id)
         if self._task_id != task_id:
             return
-        self._reset_usage_context()
         self._set_last_task(task_id)
         self._task_mode = self._saved_mode(task_id)
         self._task_mode_locked = True
-        self._set_plan(self._saved_plan(task_id), persist=False)
+        state = self._active_session()
+        if state and state.get("usage") is not None:
+            self._usage = state["usage"]
+            self._conversation_tokens = int(state.get(
+                "conversation_tokens", self._read_conversation_tokens(task_id)))
+            self._context_omitted_turns = int(state.get("context_omitted_turns", 0) or 0)
+            self._set_plan(state.get("plan_steps", self._saved_plan(task_id)), persist=False)
+        else:
+            self._reset_usage_context()
+            self._context_omitted_turns = 0
+            self._set_plan(self._saved_plan(task_id), persist=False)
+        self._workspace_checkpoint = self._task_checkpoints.get(task_id)
+        if state and state.get("checkpoint"):
+            self._workspace_checkpoint = state.get("checkpoint")
+        self.usageChanged.emit()
+        self.contextStateChanged.emit()
+        self.checkpointChanged.emit()
         self._emit_mode()
 
-    def _learn_user_memory(self, text: str) -> int:
+    def _learn_user_memory    def _learn_user_memory(self, text: str) -> int:
         """Quietly persist high-confidence durable facts from an accepted message.
 
         This path is deliberately independent of model tool calling. A small or
@@ -898,111 +922,161 @@ class WorkspaceController(Controller):
         self.changed.emit()
         self.toast.emit(f"Undid agent changes in {count} file{'s' if count != 1 else ''}.")
 
+    def _finalize_checkpoint_for_run(self, task_id: str, state: dict) -> None:
+        checkpoint = state.get("checkpoint")
+        if not checkpoint or "before_all" not in checkpoint:
+            return
+        after = _snapshot_git_workspace(checkpoint["root"])
+        if after is None:
+            state["checkpoint"] = None
+            return
+        before, after = _checkpoint_delta(checkpoint.pop("before_all"), after)
+        state["checkpoint"] = None if not before else {
+            **checkpoint, "before": before, "after": after,
+        }
+        if state["checkpoint"]:
+            self._task_checkpoints[task_id] = state["checkpoint"]
+        else:
+            self._task_checkpoints.pop(task_id, None)
+        if task_id == self._task_id:
+            self._workspace_checkpoint = state["checkpoint"]
+            self.checkpointChanged.emit()
+            self.changed.emit()
+
+    def _settle_plan_for_run(self, task_id: str, state: dict, outcome: str) -> None:
+        plan = self._normalise_plan(state.get("plan_steps", []))
+        changed = False
+        for item in plan:
+            if item["status"] == "in_progress":
+                item["status"] = ("failed" if outcome == "failed" else
+                                  "pending" if outcome == "cancelled" else "completed")
+                changed = True
+        if changed:
+            state["plan_steps"] = plan
+            self.store.set_setting(self._plan_key(task_id), plan)
+            if task_id == self._task_id:
+                self._set_plan(plan, persist=False)
+
     def _start_run(self, history):
         self._begin_workspace_checkpoint()
+        checkpoint = self._workspace_checkpoint
         self._refresh_project_instructions()
-        if self._context_omitted_turns:
-            self._context_omitted_turns = 0
-            self.contextStateChanged.emit()
-        self._busy = True
-        self._clear_error()
-        self._status = "Thinking"
-        self._token_rate = "—"
-        self._think_started = 0.0
-        self._think_seconds = 0.0
-        self._turn_had_message = False
-        self._activity = []
-        self._session_auto = False
-        self._run_started = time.monotonic()
-        self._run_metrics = _blank_metrics()
-        self._usage.reset()
+        self._context_omitted_turns = 0
+        self.contextStateChanged.emit()
+
+        usage = TokenUsageTracker(self.store)
+        usage.reset()
+        self._usage = usage
         self.usageChanged.emit()
-        self.dock.begin_turn(self._task_title if self._task_title != "New task" else "Turn")
-        self.activityChanged.emit()
-        self._refresh_tasks()
-        self.changed.emit()
-        engine = PlanningAgentEngine(OllamaClient(self._endpoint), self.desktop, self._memory_for_run())
-        model = self._model
-        enabled = self._task_mode == "work" and self.desktopEnabled
-        # Chat is chat. A Chat task never reaches the shell, the desktop or the
-        # project — not "asks first", not "only safe commands": the tools are
-        # not offered to the model at all, so there is nothing to approve.
-        tools_allowed = self._task_mode == "work"
-        think = self._think
-        num_ctx, temperature = self._num_ctx, self._temperature
-        keep_alive, max_steps = self._keep_alive, self._max_steps
+
+        mode = self._task_mode
         project = self._working_directory
-        permission_snapshot = self._permission_mode
-
-        # Permission mode is deliberately live. The user can tighten or relax
-        # an active task from the UI; the engine re-reads this provider before
-        # every action instead of retaining the mode that happened to be set
-        # when generation started. A manual "allow all in this task" decision
-        # belongs to the old mode, so changing modes revokes it before the next
-        # action is evaluated.
-        def permission_mode():
-            nonlocal permission_snapshot
-            current = self._permission_mode
-            if current != permission_snapshot:
-                self._session_auto = False
-                permission_snapshot = current
-            return current
-
-        self._run_job = self._job(
-            lambda cancel, emit: engine.run(
-                list(history), model, enabled, cancel, emit, think=think,
-                max_steps=max_steps, num_ctx=num_ctx, temperature=temperature,
-                keep_alive=keep_alive, permission_mode=permission_mode,
-                project=project, confirm=self._confirm_action,
-                tools_allowed=tools_allowed),
-            self._run_done, self._run_failed, self._on_event,
+        state = self._launch_run(
+            history, PlanningAgentEngine,
+            tools_allowed=mode == "work",
+            desktop_enabled=mode == "work" and self.desktopEnabled,
+            project=project,
+            extras={
+                "usage": usage,
+                "conversation_tokens": self._read_conversation_tokens(self._task_id),
+                "context_omitted_turns": 0,
+                "plan_steps": [dict(step) for step in self._plan_steps],
+                "checkpoint": checkpoint,
+                "task_mode": mode,
+            },
         )
+        self._workspace_checkpoint = state.get("checkpoint")
 
-    def _on_event(self, event):
+    def _on_event(self, event, task_id=None):
+        task_id = str(task_id or self._task_id or "")
+        state = self._run_sessions.get(task_id)
         kind = event.get("type")
-        if kind == "context_compacted":
-            fresh_omitted = max(0, int(event.get("omitted_turns", 0) or 0))
-            if fresh_omitted != self._context_omitted_turns:
-                self._context_omitted_turns = fresh_omitted
+
+        if state and kind == "context_compacted":
+            fresh = max(0, int(event.get("omitted_turns", 0) or 0))
+            state["context_omitted_turns"] = fresh
+            if task_id == self._task_id:
+                self._context_omitted_turns = fresh
                 self.contextStateChanged.emit()
-            self.changed.emit()
+                self.changed.emit()
             return
-        if kind == "tool_start" and event.get("name") == "update_plan":
-            self._set_plan(event.get("args", {}).get("steps", []))
+
+        if state and kind == "tool_start" and event.get("name") == "update_plan":
+            fresh = self._normalise_plan(event.get("args", {}).get("steps", []))
+            state["plan_steps"] = fresh
+            self.store.set_setting(self._plan_key(task_id), fresh)
             explanation = str(event.get("args", {}).get("explanation", "")).strip()
-            self._status = explanation[:120] or "Planning"
-            self.changed.emit()
+            state["status"] = explanation[:120] or "Planning"
+            if task_id == self._task_id:
+                self._set_plan(fresh, persist=False)
+                self._status = state["status"]
+                self.changed.emit()
             return
-        if kind == "tool_end" and event.get("name") == "update_plan":
+        if state and kind == "tool_end" and event.get("name") == "update_plan":
             return
 
         usage_dirty = False
+        usage = state.get("usage") if state else self._usage
         if kind in ("token", "thinking"):
-            usage_dirty = self._usage.stream(event.get("text", ""))
-            if self._usage.live_rate > 0:
-                self._token_rate = f"{self._usage.live_rate:.1f} tok/s"
+            usage_dirty = usage.stream(event.get("text", ""))
+            if state and usage.live_rate > 0:
+                state["token_rate"] = f"{usage.live_rate:.1f} tok/s"
         elif kind == "metrics":
-            usage_dirty = self._usage.exact_metrics(event)
+            usage_dirty = usage.exact_metrics(event)
 
-        super()._on_event(event)
-        if usage_dirty:
+        super()._on_event(event, task_id)
+        if state and task_id == self._task_id:
+            self._usage = usage
+            if usage.live_rate > 0:
+                self._token_rate = f"{usage.live_rate:.1f} tok/s"
+        if usage_dirty and (not state or task_id == self._task_id):
             self.usageChanged.emit()
 
-    def _run_done(self, history):
-        stopped = self._run_job is not None and self._run_job.cancel.is_set()
-        outcome = "cancelled" if stopped else ("failed" if self._error else "completed")
-        self._finalize_usage()
-        super()._run_done(self._strip_plan_history(history))
-        self._finalize_workspace_checkpoint()
-        self._settle_plan(outcome)
+    def _run_done(self, history, task_id=None):
+        task_id = str(task_id or self._task_id or "")
+        state = self._run_sessions.get(task_id)
+        if state:
+            job = state.get("job")
+            stopped = bool(job and job.cancel.is_set())
+            outcome = "cancelled" if stopped else (
+                "failed" if state.get("error") else "completed")
+            usage = state.get("usage")
+            if usage and usage.finalize(task_id, state.get("model", "")):
+                metrics = usage.metrics
+                state["conversation_tokens"] = int(state.get("conversation_tokens", 0))
+                state["conversation_tokens"] += max(0, int(metrics.get("tokens", 0) or 0))
+                state["conversation_tokens"] += max(0, int(metrics.get("prompt_tokens", 0) or 0))
+            cleaned = self._strip_plan_history(history)
+            super()._run_done(cleaned, task_id)
+            self._finalize_checkpoint_for_run(task_id, state)
+            self._settle_plan_for_run(task_id, state, outcome)
+            if task_id == self._task_id:
+                self._usage = usage or self._usage
+                self._conversation_tokens = int(state.get(
+                    "conversation_tokens", self._read_conversation_tokens(task_id)))
+                self.usageChanged.emit()
+            return
+        super()._run_done(self._strip_plan_history(history), task_id)
 
-    def _run_failed(self, message):
-        self._finalize_usage()
-        super()._run_failed(message)
-        self._finalize_workspace_checkpoint()
-        self._settle_plan("failed")
+    def _run_failed(self, message, task_id=None):
+        task_id = str(task_id or self._task_id or "")
+        state = self._run_sessions.get(task_id)
+        if state:
+            usage = state.get("usage")
+            if usage:
+                usage.finalize(task_id, state.get("model", ""))
+            super()._run_failed(message, task_id)
+            self._finalize_checkpoint_for_run(task_id, state)
+            self._settle_plan_for_run(task_id, state, "failed")
+            if task_id == self._task_id:
+                self._usage = usage or self._usage
+                self._conversation_tokens = self._read_conversation_tokens(task_id)
+                self.usageChanged.emit()
+            return
+        super()._run_failed(message, task_id)
 
     @Slot(str)
+    def deleteTask    @Slot(str)
     def deleteTask(self, task_id):
         task_id = str(task_id or "")
         if task_id:
