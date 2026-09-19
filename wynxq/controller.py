@@ -192,6 +192,7 @@ class Controller(QObject):
         if hasattr(self.desktop, "set_stop_handler"):
             self.desktop.set_stop_handler(self.stopRequested.emit)
         self._jobs: set[Job] = set()
+        self._title_generating: set[str] = set()
         self._run_sessions = {}
         self._run_job: Job | None = None
         self._pull_job: Job | None = None
@@ -1348,6 +1349,81 @@ class Controller(QObject):
         self._refresh_tasks()
         self.changed.emit()
 
+    def _maybe_generate_task_title(self, task_id: str, history: list[dict], state: dict) -> None:
+        """Replace the first-message fallback with a local model-generated title.
+
+        A manual rename always wins. We check the stored title both before and
+        after generation so a rename performed while the title job is running
+        can never be overwritten by a late model response.
+        """
+        task_id = str(task_id or "")
+        if not task_id or task_id in self._title_generating:
+            return
+
+        user_messages = [
+            message for message in history
+            if message.get("role") == "user"
+            and not ctx.is_context_message(message)
+            and str(message.get("content", "") or "").strip()
+        ]
+        assistant_messages = [
+            message for message in history
+            if message.get("role") == "assistant"
+            and str(message.get("content", "") or "").strip()
+        ]
+        if not user_messages or not assistant_messages:
+            return
+
+        first_user = str(user_messages[0].get("content", "") or "").strip()
+        fallback_title = derive_title(first_user)
+        task = self.store.get_conversation(task_id)
+        if not task or str(task.get("title", "")) != fallback_title:
+            return
+
+        # Steering can add another user message before the first finished turn.
+        # A couple of short excerpts make the generated title reflect that
+        # correction without feeding the title request the whole conversation.
+        user_excerpt = "\n".join(
+            str(message.get("content", "") or "").strip()
+            for message in user_messages[:3]
+        )[:1800]
+        assistant_excerpt = str(assistant_messages[-1].get("content", "") or "").strip()[:1800]
+        endpoint = str(state.get("endpoint") or self._endpoint)
+        model = str(state.get("model") or self._model)
+        self._title_generating.add(task_id)
+
+        def settled():
+            self._title_generating.discard(task_id)
+
+        def generated(title):
+            settled()
+            current = self.store.get_conversation(task_id)
+            if not current or str(current.get("title", "")) != fallback_title:
+                return
+            title = str(title or "").strip()[:200]
+            if not title or title == fallback_title:
+                return
+            self.store.rename_conversation(task_id, title)
+            session = self._run_sessions.get(task_id)
+            if session is not None:
+                session["title"] = title
+            if task_id == self._task_id:
+                self._task_title = title
+                self.changed.emit()
+            self._refresh_tasks()
+
+        def failed(_message):
+            # Title generation is polish, not a reason to surface a task error.
+            # The deterministic first-message title remains a perfectly usable fallback.
+            settled()
+
+        self._job(
+            lambda cancel, emit: OllamaClient(endpoint).generate_title(
+                model, user_excerpt, assistant_excerpt, cancel),
+            generated,
+            failed,
+        )
+
     @Slot(str)
     def duplicateTaskById(self, task_id):
         if self._busy:
@@ -2336,6 +2412,8 @@ class Controller(QObject):
             self.changed.emit()
             if not stopped and not state.get("error"):
                 self._maybe_notify(elapsed)
+        if not stopped and not state.get("error"):
+            self._maybe_generate_task_title(task_id, state["history"], state)
         self._refresh_tasks()
 
     def _run_failed(self, message, task_id=None):

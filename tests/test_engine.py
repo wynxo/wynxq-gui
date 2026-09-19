@@ -72,6 +72,31 @@ def test_real_http_protocol_models_show_chat_pull(ollama_server):
     assert list(client.pull("local:test", threading.Event()))[-1]["status"] == "success"
 
 
+def test_generate_title_uses_tool_free_local_chat_and_cleans_response(monkeypatch):
+    client = OllamaClient()
+    captured = {}
+
+    def fake_json(method, path, payload=None):
+        captured.update({"method": method, "path": path, "payload": payload})
+        return {"message": {"role": "assistant",
+                            "content": "### Title: “Fix Wayland Mouse Control.”\nExtra explanation"}}
+
+    monkeypatch.setattr(client, "_json", fake_json)
+    title = client.generate_title(
+        "local:test",
+        "the mouse click lands in the wrong place",
+        "I corrected logical and physical coordinate mapping.",
+        threading.Event(),
+    )
+
+    assert title == "Fix Wayland Mouse Control"
+    assert captured["method"] == "POST"
+    assert captured["path"] == "/api/chat"
+    assert captured["payload"]["stream"] is False
+    assert "tools" not in captured["payload"]
+    assert captured["payload"]["options"]["num_predict"] == 32
+
+
 def test_redirects_are_rejected(ollama_server):
     client, state = ollama_server
     state["redirect"] = True

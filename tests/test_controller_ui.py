@@ -73,6 +73,95 @@ def test_task_groups_put_pinned_first_and_respect_search(tmp_path):
     bridge.shutdown()
 
 
+# ---------------------------------------------------------- generated title
+def test_generated_title_replaces_first_message_fallback(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    first = "please fix the weird mouse clicking problem on wayland"
+    fallback = derive_title(first)
+    task = bridge.store.create_conversation(fallback, bridge.model, bridge.endpoint)
+    bridge._task_id, bridge._task_title = task["id"], task["title"]
+    history = [
+        {"role": "user", "content": first},
+        {"role": "assistant", "content": "I fixed the pointer coordinate mapping and click path."},
+    ]
+    state = {"model": bridge.model, "endpoint": bridge.endpoint}
+
+    monkeypatch.setattr(
+        "wynxq.controller.OllamaClient.generate_title",
+        lambda self, model, user, assistant, cancel: "Fix Wayland Mouse Clicking",
+    )
+
+    def immediate_job(fn, result=None, failure=None, event=None):
+        try:
+            value = fn(threading.Event(), lambda payload: None)
+        except Exception as exc:
+            if failure:
+                failure(str(exc))
+        else:
+            if result:
+                result(value)
+        return None
+
+    monkeypatch.setattr(bridge, "_job", immediate_job)
+    bridge._maybe_generate_task_title(task["id"], history, state)
+
+    assert bridge.store.get_conversation(task["id"])["title"] == "Fix Wayland Mouse Clicking"
+    assert bridge.taskTitle == "Fix Wayland Mouse Clicking"
+    bridge.shutdown()
+
+
+def test_manual_rename_wins_over_generated_title(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    first = "help me configure my desktop setup"
+    fallback = derive_title(first)
+    task = bridge.store.create_conversation(fallback, bridge.model, bridge.endpoint)
+    bridge._task_id, bridge._task_title = task["id"], task["title"]
+    bridge.renameTaskById(task["id"], "My Desktop Setup")
+
+    called = []
+    monkeypatch.setattr(
+        "wynxq.controller.OllamaClient.generate_title",
+        lambda *args, **kwargs: called.append(True) or "Generated Title",
+    )
+    bridge._maybe_generate_task_title(
+        task["id"],
+        [{"role": "user", "content": first},
+         {"role": "assistant", "content": "Sure, here is the setup."}],
+        {"model": bridge.model, "endpoint": bridge.endpoint},
+    )
+
+    assert called == []
+    assert bridge.store.get_conversation(task["id"])["title"] == "My Desktop Setup"
+    bridge.shutdown()
+
+
+def test_late_generated_title_does_not_overwrite_manual_rename(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    first = "explain how the sidebar should behave"
+    fallback = derive_title(first)
+    task = bridge.store.create_conversation(fallback, bridge.model, bridge.endpoint)
+    bridge._task_id, bridge._task_title = task["id"], task["title"]
+    pending = {}
+
+    def capture_job(fn, result=None, failure=None, event=None):
+        pending["result"] = result
+        return None
+
+    monkeypatch.setattr(bridge, "_job", capture_job)
+    bridge._maybe_generate_task_title(
+        task["id"],
+        [{"role": "user", "content": first},
+         {"role": "assistant", "content": "The sidebar can collapse cleanly."}],
+        {"model": bridge.model, "endpoint": bridge.endpoint},
+    )
+    bridge.renameTaskById(task["id"], "Sidebar UX")
+    pending["result"]("AI Sidebar Conversation")
+
+    assert bridge.store.get_conversation(task["id"])["title"] == "Sidebar UX"
+    assert bridge.taskTitle == "Sidebar UX"
+    bridge.shutdown()
+
+
 # ----------------------------------------------------------- steering/queue
 def test_busy_message_steers_current_run_by_default(tmp_path, monkeypatch):
     bridge = controller(tmp_path)
