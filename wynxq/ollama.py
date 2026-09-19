@@ -77,8 +77,12 @@ def _interruptible(function: Callable, cancel):
 
 
 class OllamaClient:
+    """HTTP client with an overridable endpoint-policy boundary."""
+
+    endpoint_validator = staticmethod(validate_endpoint)
+
     def __init__(self, endpoint: str = DEFAULT_ENDPOINT):
-        self.endpoint = validate_endpoint(endpoint)
+        self.endpoint = self.endpoint_validator(endpoint)
 
     def _client(self, streaming: bool = False) -> httpx.Client:
         return httpx.Client(base_url=self.endpoint, trust_env=False, follow_redirects=False,
