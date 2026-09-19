@@ -138,7 +138,7 @@ class OllamaClient:
         title = lines[0].lstrip("#").strip()
         if title.casefold().startswith("title:"):
             title = title[6:].strip()
-        title = title.strip(" \`*_\"'“”‘’")
+        title = title.strip(" `*_\"'“”‘’")
         title = " ".join(title.split()).rstrip(" .,:;!?-—")
         if len(title) > 72:
             cut = title[:72]
