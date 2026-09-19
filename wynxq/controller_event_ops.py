@@ -391,7 +391,7 @@ def pullModel(self, model):
     endpoint = self._endpoint
 
     def pull(cancel, emit):
-        for progress in self.OLLAMA_CLIENT(endpoint).pull(model, cancel):
+        for progress in self._ollama_client(endpoint).pull(model, cancel):
             emit(progress)
 
     def progress(data):
