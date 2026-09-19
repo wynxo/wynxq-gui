@@ -249,7 +249,8 @@ def test_explicitly_sized_popovers_place_using_their_rendered_height():
 def test_the_composer_keeps_drag_and_drop_and_keyboard_send():
     text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
     for feature in ("DropArea", "attachPath", "Keys.priority: Keys.BeforeItem",
-                    "Keys.onReturnPressed", "Keys.onEnterPressed", "ShiftModifier", "pasteImage"):
+                    "Keys.onReturnPressed", "Keys.onEnterPressed", "ShiftModifier", "pasteImage",
+                    'sequence: "Return"', 'sequence: "Enter"', "root.keyboardSend()"):
         assert feature in text
 
 
@@ -326,3 +327,32 @@ def test_dock_rail_is_flat_and_hides_unused_plan():
     assert "background: GlassSurface" not in text
     assert "bridge.planSteps.length > 0" in text
     assert "Theme.surfaceSelected" in text
+
+
+def test_ctrl_v_attaches_images_without_breaking_text_paste():
+    text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
+    assert "Normal Ctrl+V remains normal text paste" in text
+    assert "event.accepted = !!(bridge && bridge.pasteImage())" in text
+    controller = (Path(__file__).resolve().parents[1] / "wynxq" / "controller.py").read_text()
+    assert "@Slot(result=bool)\n    def pasteImage" in controller
+    assert "if image.isNull():\n            return False" in controller
+    assert "return True" in controller.split("def pasteImage", 1)[1].split("def _capture", 1)[0]
+
+
+def test_sent_attachments_render_inside_the_user_turn():
+    message = (MODULE / "UserMessage.qml").read_text(encoding="utf-8")
+    listing = (MODULE / "MessageList.qml").read_text(encoding="utf-8")
+    assert 'objectName: "sentAttachments"' in message
+    assert "data:image/png;base64," in message
+    assert "ContextKinds.icon(modelData.kind)" in message
+    assert "attachments: rowItem.attachments" in listing
+
+
+def test_activity_and_message_spacing_stays_compact():
+    listing = (MODULE / "MessageList.qml").read_text(encoding="utf-8")
+    activity = (MODULE / "RunActivity.qml").read_text(encoding="utf-8")
+    assistant = (MODULE / "AssistantMessage.qml").read_text(encoding="utf-8")
+    assert "spacing: Theme.s4" in listing
+    assert "root.steps.length > 3 ? 24 : 0" in activity
+    assert "stepColumn.implicitHeight + Theme.s1" in activity
+    assert "height: 22" in assistant

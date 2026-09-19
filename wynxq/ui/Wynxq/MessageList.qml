@@ -14,7 +14,7 @@ ListView {
     signal linkClicked(string link)
 
     clip: true
-    spacing: Theme.s6
+    spacing: Theme.s4
     topMargin: Theme.s5
     bottomMargin: Theme.s5
     boundsBehavior: Flickable.StopAtBounds
@@ -65,6 +65,7 @@ ListView {
         required property string tailLanguage
         required property string tailLabel
         required property var steps
+        required property var attachments
         required property bool streaming
         required property real thinkSeconds
         required property bool thinkDone
@@ -99,6 +100,7 @@ ListView {
             id: userTurn
             UserMessage {
                 body: rowItem.body
+                attachments: rowItem.attachments
                 row: rowItem.index
                 onEdited: function(text) { if (bridge) bridge.editMessage(rowItem.index, text); }
             }

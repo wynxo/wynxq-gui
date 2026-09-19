@@ -103,6 +103,7 @@ TOOL_PRESENTATION = {
     "screenshot": ("eye", "Inspecting the screen"),
     "list_apps": ("grid", "Listing installed apps"),
     "open_app": ("launch", "Opening an application"),
+    "browser_open": ("globe", "Opening in Wynxq Browser"),
     "run_command": ("terminal", "Running a command"),
     "click": ("cursor", "Clicking"),
     "move_pointer": ("cursor", "Moving the pointer"),
@@ -131,13 +132,15 @@ class Messages(QAbstractListModel):
     """
 
     KIND, BODY, THOUGHT, BLOCKS, TAIL, TAIL_KIND, TAIL_LANG, TAIL_LABEL, \
-        STEPS, STREAMING, THINK_SECONDS, THINK_DONE = (Qt.UserRole + i for i in range(1, 13))
+        STEPS, STREAMING, THINK_SECONDS, THINK_DONE, ATTACHMENTS = \
+        (Qt.UserRole + i for i in range(1, 14))
 
     ROLES = {
         KIND: b"kind", BODY: b"body", THOUGHT: b"thought", BLOCKS: b"blocks",
         TAIL: b"tail", TAIL_KIND: b"tailKind", TAIL_LANG: b"tailLanguage",
         TAIL_LABEL: b"tailLabel", STEPS: b"steps", STREAMING: b"streaming",
         THINK_SECONDS: b"thinkSeconds", THINK_DONE: b"thinkDone",
+        ATTACHMENTS: b"attachments",
     }
     # Compatibility alias: "speaker" mirrors "kind" for user/assistant rows.
     ROLES[Qt.UserRole + 20] = b"speaker"
@@ -169,7 +172,8 @@ class Messages(QAbstractListModel):
     def _row(kind: str, **fields) -> dict:
         row = {"kind": kind, "speaker": kind, "body": "", "thought": "", "blocks": [],
                "tail": "", "tailKind": md.MARKDOWN, "tailLanguage": "", "tailLabel": "",
-               "steps": [], "streaming": False, "thinkSeconds": 0.0, "thinkDone": False}
+               "steps": [], "streaming": False, "thinkSeconds": 0.0, "thinkDone": False,
+               "attachments": []}
         row.update(fields)
         return row
 
@@ -190,13 +194,14 @@ class Messages(QAbstractListModel):
         self.items = []
         self._documents = {}
         pending_steps: list[dict] = []
+        pending_attachments: list[dict] = []
         for message in messages:
             role = message.get("role")
             if role == "tool":
                 pending_steps.append(self._stored_step(message))
                 continue
             if ctx.is_context_message(message):
-                pending_steps.append(self.context_step(message))
+                pending_attachments.extend(ctx.context_message_attachments(message))
                 continue
             if pending_steps:
                 self.items.append(self._row("activity", steps=pending_steps))
@@ -209,8 +214,11 @@ class Messages(QAbstractListModel):
             if not body and not thought:
                 continue
             row = self._row(role, body=body, thought=thought, thinkDone=bool(thought),
-                            blocks=md.segment(body) if role == "assistant" else [])
+                            blocks=md.segment(body) if role == "assistant" else [],
+                            attachments=list(pending_attachments) if role == "user" else [])
             self.items.append(row)
+            if role == "user":
+                pending_attachments = []
         if pending_steps:
             self.items.append(self._row("activity", steps=pending_steps))
         self.endResetModel()
@@ -232,10 +240,12 @@ class Messages(QAbstractListModel):
                 "state": "declined" if result.get("declined") else ("failed" if failed else "done"),
                 "ms": 0, "output": str(result.get("output") or result.get("error") or "")[:32000]}
 
-    def append_message(self, kind: str, body: str = "", thought: str = "", streaming: bool = False) -> int:
+    def append_message(self, kind: str, body: str = "", thought: str = "", streaming: bool = False,
+                       attachments: list[dict] | None = None) -> int:
         row = len(self.items)
         self.beginInsertRows(QModelIndex(), row, row)
-        item = self._row(kind, body=body, thought=thought, streaming=streaming)
+        item = self._row(kind, body=body, thought=thought, streaming=streaming,
+                         attachments=list(attachments or []))
         if kind == "assistant":
             document = md.StreamingDocument()
             if body:
@@ -383,6 +393,7 @@ class Controller(QObject):
     toast = Signal(str)
     focusComposer = Signal()
     quickBarRequested = Signal()
+    browserNavigateRequested = Signal(str)
     stopRequested = Signal()
     scrollToEnd = Signal()
 
@@ -497,6 +508,7 @@ class Controller(QObject):
         # signal hands it to the GUI thread, which is the only one allowed to
         # touch the run.
         self.stopRequested.connect(self.stop)
+        self.browserNavigateRequested.connect(self._navigate_builtin_browser)
         if hasattr(self.desktop, "set_stop_handler"):
             self.desktop.set_stop_handler(self.stopRequested.emit)
         self._jobs: set[Job] = set()
@@ -1439,7 +1451,9 @@ class Controller(QObject):
         seen = -1
         pending = False
         for position, message in enumerate(self._history):
-            if message.get("role") == "tool" or ctx.is_context_message(message):
+            if ctx.is_context_message(message):
+                continue
+            if message.get("role") == "tool":
                 pending = True
                 continue
             if message.get("role") not in ("user", "assistant"):
@@ -1603,13 +1617,12 @@ class Controller(QObject):
         except ctx.ContextError as exc:
             self.toast.emit(str(exc))
 
-    @Slot()
+    @Slot(result=bool)
     def pasteImage(self):
         from PySide6.QtCore import QBuffer, QByteArray
         image = QGuiApplication.clipboard().image()
         if image.isNull():
-            self.toast.emit("There is no image on the clipboard.")
-            return
+            return False
         buffer = QBuffer(QByteArray())
         buffer.open(QBuffer.WriteOnly)
         image.save(buffer, "PNG")
@@ -1619,6 +1632,27 @@ class Controller(QObject):
             self.toast.emit(str(exc))
         finally:
             buffer.close()
+        return True
+
+    @Slot(str)
+    def _navigate_builtin_browser(self, target):
+        if not self.dock.browserAvailable:
+            return
+        self.dock.setTab("browser")
+        if not self.dock.visible:
+            self.dock.setVisible(True)
+        self.dock.navigate(str(target))
+
+    def _request_builtin_browser(self, target: str) -> dict:
+        """Worker-safe bridge from an agent tool into the GUI-owned browser."""
+        from . import browser as browser_policy
+        normalized = browser_policy.normalize(target)
+        if not normalized:
+            return {"ok": False, "error": "That is not a valid web address or search query"}
+        if not self.dock.browserAvailable:
+            return {"ok": False, "error": "Wynxq's built-in browser is unavailable"}
+        self.browserNavigateRequested.emit(normalized)
+        return {"ok": True, "url": normalized, "browser": "Wynxq built-in browser"}
 
     def _capture(self, kind: str):
         if self._capture_busy:
@@ -1807,7 +1841,10 @@ class Controller(QObject):
         self.activityChanged.emit()
         self._refresh_tasks()
         self.changed.emit()
-        engine = AgentEngine(OllamaClient(self._endpoint), self.desktop, self._memory_for_run())
+        engine = AgentEngine(
+            OllamaClient(self._endpoint), self.desktop, self._memory_for_run(),
+            browser_open=self._request_builtin_browser if self.dock.browserAvailable else None,
+        )
         model, enabled, think = self._model, self.desktopEnabled, self._think
         num_ctx, temperature = self._num_ctx, self._temperature
         keep_alive, max_steps = self._keep_alive, self._max_steps
@@ -1842,17 +1879,15 @@ class Controller(QObject):
         deferred_attachments = [item for item in self._attachments
                                 if item.get("enabled", True) is False]
         vision_ready = "vision" in self._model_capabilities
-        extra = ctx.build_messages([a for a in attachments if vision_ready or not a.get("image")])
+        # Keep every attachment in local history so the sent user turn can
+        # still show its files/images after reload. AgentEngine removes image
+        # context at the Ollama boundary when the selected model lacks vision.
+        extra = ctx.build_messages(attachments)
         self._history.extend(extra)
         self._history.append({"role": "user", "content": text})
         self._recount_history_tokens()
         self.store.set_messages(self._task_id, self._history, self._model)
-        if attachments:
-            self.messages.append_activity({
-                "name": "context", "icon": "paperclip", "label": "Context attached",
-                "summary": ctx.describe(attachments), "detail": "", "state": "done", "ms": 0, "output": "",
-            })
-        self.messages.append_message("user", text)
+        self.messages.append_message("user", text, attachments=ctx.display_attachments(attachments))
         if attachments and not vision_ready and ctx.needs_vision(attachments):
             self.toast.emit(f"{self._model} cannot read images, so pictures were left out.")
         if deferred_attachments:
@@ -2025,6 +2060,8 @@ class Controller(QObject):
             self.dock.record(step)
             if name == "run_command":
                 self.dock.suggest("terminal")
+            elif name == "browser_open":
+                self.dock.suggest("browser", open_dock=True)
             self.activityChanged.emit()
             self.scrollToEnd.emit()
         elif kind == "tool_end":

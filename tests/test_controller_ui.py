@@ -566,7 +566,7 @@ def test_message_roles_expose_everything_the_delegate_requires(tmp_path):
     bridge = controller(tmp_path)
     names = {value.decode() for value in Messages.ROLES.values()}
     for role in ("kind", "body", "thought", "blocks", "tail", "tailKind",
-                 "tailLanguage", "tailLabel", "steps", "streaming",
+                 "tailLanguage", "tailLabel", "steps", "attachments", "streaming",
                  "thinkSeconds", "thinkDone", "speaker"):
         assert role in names
     bridge.shutdown()
@@ -582,7 +582,7 @@ def test_the_bridge_exposes_theme_aware_rendering(tmp_path):
     bridge.shutdown()
 
 
-def test_reopening_a_chat_folds_attached_context_into_a_chip(tmp_path):
+def test_reopening_a_chat_keeps_sent_context_on_the_user_turn(tmp_path):
     bridge = controller(tmp_path)
     task = bridge.store.create_conversation("With context", "local:test")
     history = ctx.build_messages([
@@ -595,8 +595,9 @@ def test_reopening_a_chat_folds_attached_context_into_a_chip(tmp_path):
     bridge.openTask(task["id"])
 
     kinds = [item["kind"] for item in bridge.messages.items]
-    assert kinds == ["activity", "user", "assistant"]
-    assert bridge.messages.items[0]["steps"][0]["summary"] == "main.py"
+    assert kinds == ["user", "assistant"]
+    assert bridge.messages.items[0]["attachments"][0]["title"] == "main.py"
+    assert bridge.messages.items[0]["attachments"][0]["kind"] == ctx.FILE
     # The file body must not reappear as something the user typed.
     assert all("print(1)" not in item["body"] for item in bridge.messages.items)
     bridge.shutdown()
@@ -615,9 +616,9 @@ def test_branching_maps_view_rows_past_folded_groups(tmp_path):
     bridge.store.set_messages(task["id"], history, "local:test")
     bridge.openTask(task["id"])
     assert [item["kind"] for item in bridge.messages.items] == \
-           ["activity", "user", "assistant", "activity", "user", "assistant"]
+           ["user", "assistant", "activity", "user", "assistant"]
 
-    bridge.branchFrom(2)  # the first assistant reply
+    bridge.branchFrom(1)  # the first assistant reply
     assert [m.get("content") for m in bridge._history][-2:] == ["first", "reply one"]
     bridge.shutdown()
 
@@ -1024,3 +1025,36 @@ def test_reopening_chat_keeps_command_output():
     step = model.items[0]["steps"][0]
     assert step["summary"] == "Run printf hello"
     assert step["output"] == "hello"
+
+
+def test_sent_image_context_stays_with_user_message_after_reload(tmp_path):
+    bridge = controller(tmp_path)
+    task = bridge.store.create_conversation("Image context", "local:test")
+    history = ctx.build_messages([
+        ctx.make(ctx.IMAGE, "clipboard.png", image="QUJD", width=32, height=24,
+                 subtitle="32 × 24"),
+    ]) + [{"role": "user", "content": "what is this?"}]
+    bridge.store.set_messages(task["id"], history, "local:test")
+    bridge.openTask(task["id"])
+    assert [item["kind"] for item in bridge.messages.items] == ["user"]
+    attached = bridge.messages.items[0]["attachments"]
+    assert len(attached) == 1
+    assert attached[0]["title"] == "clipboard.png"
+    assert attached[0]["image"] == "QUJD"
+    bridge.shutdown()
+
+
+def test_builtin_browser_tool_routes_to_dock_without_system_browser(tmp_path):
+    bridge = controller(tmp_path)
+    routed = []
+    bridge.browserNavigateRequested.disconnect()
+    bridge.browserNavigateRequested.connect(routed.append)
+    bridge.dock._browser_error = ""
+    result = bridge._request_builtin_browser("youtube.com")
+    if bridge.dock.browserAvailable:
+        assert result["ok"] is True
+        assert result["url"] == "https://youtube.com"
+        assert routed == ["https://youtube.com"]
+    else:
+        assert result["ok"] is False
+    bridge.shutdown()

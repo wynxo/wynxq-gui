@@ -519,7 +519,7 @@ class DemoController(WorkspaceController):
 
 def Messages_roles():
     from .controller import Messages
-    return (Messages.BODY, Messages.BLOCKS, Messages.THOUGHT,
+    return (Messages.BODY, Messages.BLOCKS, Messages.THOUGHT, Messages.ATTACHMENTS,
             Messages.THINK_SECONDS, Messages.THINK_DONE, Messages.STREAMING)
 
 

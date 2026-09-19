@@ -87,6 +87,11 @@ Item {
         root.submitted(input.text);
         input.text = "";
     }
+    function keyboardSend() {
+        if (!input.activeFocus || input.inputMethodComposing) return;
+        if (root.slashMatches.length) root.runSlash(root.slashIndex);
+        else root.send();
+    }
 
     GlassSurface {
         id: shell
@@ -341,13 +346,32 @@ Item {
                         } else if (root.slashMatches.length && event.key === Qt.Key_Up) {
                             root.slashIndex = Math.max(0, root.slashIndex - 1);
                             event.accepted = true;
-                        } else if (event.key === Qt.Key_V && (event.modifiers & Qt.ControlModifier)
+                        } else if (event.key === Qt.Key_V
+                                && (event.modifiers & Qt.ControlModifier)
+                                && !(event.modifiers & Qt.ShiftModifier)) {
+                            // Normal Ctrl+V remains normal text paste unless
+                            // the clipboard currently holds an image.
+                            event.accepted = !!(bridge && bridge.pasteImage());
+                        } else if (event.key === Qt.Key_V
+                                && (event.modifiers & Qt.ControlModifier)
                                 && (event.modifiers & Qt.ShiftModifier)) {
-                            if (bridge) bridge.pasteImage();
-                            event.accepted = true;
+                            event.accepted = !!(bridge && bridge.pasteImage());
                         }
                     }
                 }
+            }
+
+            Shortcut {
+                sequence: "Return"
+                context: Qt.WindowShortcut
+                enabled: input.activeFocus && !input.inputMethodComposing
+                onActivated: root.keyboardSend()
+            }
+            Shortcut {
+                sequence: "Enter"
+                context: Qt.WindowShortcut
+                enabled: input.activeFocus && !input.inputMethodComposing
+                onActivated: root.keyboardSend()
             }
 
             GlassSurface {

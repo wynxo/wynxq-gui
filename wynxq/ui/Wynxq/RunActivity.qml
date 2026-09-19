@@ -60,7 +60,7 @@ Item {
                 required property var modelData
                 required property int index
                 width: column.width
-                height: stepColumn.implicitHeight + Theme.s2
+                height: stepColumn.implicitHeight + Theme.s1
                 property bool expanded: false
                 property color tone: Theme.stateColor(modelData.state)
                 readonly property bool isCommand: modelData.name === "run_command"
@@ -221,10 +221,10 @@ Item {
         AbstractButton {
             id: summaryButton
             width: column.width
-            height: root.settled && root.steps.length > 1 ? 26 : 0
+            height: root.settled && root.steps.length > 3 ? 24 : 0
             visible: height > 0
-            hoverEnabled: root.steps.length > 3
-            enabled: root.steps.length > 3
+            hoverEnabled: visible
+            enabled: visible
             Accessible.name: root.collapsedSummary ? "Show action details" : "Hide action details"
             onClicked: root.detailsVisible = !root.detailsVisible
             background: GlassSurface {
