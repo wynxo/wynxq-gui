@@ -49,6 +49,8 @@ from . import controller_misc_ops as _misc_ops
 
 
 class Controller(QObject):
+    OLLAMA_CLIENT = OllamaClient
+
     changed = Signal()
     tasksChanged = Signal()
     activityChanged = Signal()
