@@ -140,13 +140,27 @@ Sheet {
                         Accessible.checked: sheet.page === index
                         onClicked: sheet.page = index
 
-                        background: Rectangle {
+                        scale: down ? Theme.pressScale : 1
+                        Behavior on scale {
+                            enabled: !Theme.reducedMotion
+                            NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+                        }
+                        background: GlassSurface {
                             radius: Theme.r2
-                            color: sheet.page === index ? Theme.surfaceSelected
-                                 : pageButton.hovered ? Theme.surfaceHover : "transparent"
-                            border.width: pageButton.visualFocus ? 2 : 0
-                            border.color: Theme.accentEdge
-                            Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
+                            solid: sheet.page === index
+                            glassEnabled: pageButton.hovered || pageButton.down || pageButton.visualFocus
+                            tint: sheet.page === index ? Theme.surfaceSelected
+                                  : pageButton.down ? Theme.glassTintStrong : Theme.glassTintHover
+                            fillOpacity: sheet.page === index ? 1.0
+                                       : pageButton.down ? 0.60
+                                       : pageButton.hovered ? 0.46
+                                       : pageButton.visualFocus ? 0.32 : 0.0
+                            outlineVisible: sheet.page === index || pageButton.visualFocus
+                            strongEdge: pageButton.hovered || pageButton.down || pageButton.visualFocus
+                            active: pageButton.visualFocus
+                            sheen: pageButton.hovered || pageButton.down
+                            edgeColor: pageButton.visualFocus ? Theme.accentEdge
+                                     : sheet.page === index ? Theme.glassEdge : "transparent"
                         }
                         contentItem: Row {
                             leftPadding: Theme.s3
@@ -1291,11 +1305,24 @@ Sheet {
             hoverEnabled: true
             Accessible.name: disclosure.title
             onClicked: disclosure.expanded = !disclosure.expanded
-            background: Rectangle {
+            scale: down ? Theme.pressScale : 1
+            Behavior on scale {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+            }
+            background: GlassSurface {
                 radius: Theme.r2
-                color: toggle.hovered ? Theme.surfaceHover : "transparent"
-                border.width: toggle.visualFocus ? 2 : 0
-                border.color: Theme.accentEdge
+                solid: false
+                glassEnabled: toggle.hovered || toggle.down || toggle.visualFocus
+                tint: toggle.down ? Theme.glassTintStrong : Theme.glassTintHover
+                fillOpacity: toggle.down ? 0.56
+                           : toggle.hovered ? 0.42
+                           : toggle.visualFocus ? 0.30 : 0.0
+                outlineVisible: toggle.visualFocus
+                strongEdge: toggle.visualFocus
+                active: toggle.visualFocus
+                sheen: toggle.hovered || toggle.down
+                edgeColor: toggle.visualFocus ? Theme.accentEdge : "transparent"
             }
             contentItem: Row {
                 spacing: Theme.s2

@@ -199,7 +199,7 @@ Item {
                     onClicked: step.expanded = !step.expanded
                     ToolTip.visible: containsMouse && enabled && !step.expanded
                     ToolTip.text: "Show details"
-                    ToolTip.delay: 700
+                    ToolTip.delay: Theme.tooltipDelay
                 }
 
                 IconButton {

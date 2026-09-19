@@ -67,13 +67,28 @@ Sheet {
                 Accessible.checked: modelData.selected
                 onClicked: { if (bridge) bridge.setModel(modelData.name); sheet.close(); }
 
-                background: Rectangle {
+                scale: down ? Theme.pressScale : 1
+                Behavior on scale {
+                    enabled: !Theme.reducedMotion
+                    NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+                }
+
+                background: GlassSurface {
                     radius: Theme.r2
-                    color: entry.hovered ? Theme.surfaceHover
-                         : modelData.selected ? Theme.surfaceSelected : "transparent"
-                    border.width: entry.visualFocus ? 2 : 0
-                    border.color: Theme.accentEdge
-                    Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
+                    solid: modelData.selected
+                    glassEnabled: entry.hovered || entry.down || entry.visualFocus
+                    tint: modelData.selected ? Theme.surfaceSelected
+                          : entry.down ? Theme.glassTintStrong : Theme.glassTintHover
+                    fillOpacity: modelData.selected ? 1.0
+                               : entry.down ? 0.62
+                               : entry.hovered ? 0.48
+                               : entry.visualFocus ? 0.34 : 0.0
+                    outlineVisible: modelData.selected || entry.visualFocus
+                    strongEdge: entry.hovered || entry.down || entry.visualFocus
+                    active: entry.visualFocus
+                    sheen: entry.hovered || entry.down
+                    edgeColor: entry.visualFocus ? Theme.accentEdge
+                             : modelData.selected ? Theme.glassEdge : "transparent"
                 }
 
                 contentItem: RowLayout {

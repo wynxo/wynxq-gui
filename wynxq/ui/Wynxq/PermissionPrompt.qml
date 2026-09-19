@@ -41,17 +41,23 @@ Popup {
 
     Overlay.modal: Rectangle { color: Theme.scrim }
 
-    background: Rectangle {
+    background: GlassSurface {
         radius: Theme.r4
-        color: Theme.surface
-        border.width: 1
-        border.color: prompt.sensitive ? Theme.warning : Theme.borderStrong
+        tint: Theme.glassTintStrong
+        fillOpacity: 0.94
+        glassEnabled: true
+        backdropBlur: true
+        blurAmount: Theme.popupBlur
+        elevated: true
+        strongEdge: true
+        sheen: true
+        edgeColor: prompt.sensitive ? Theme.alpha(Theme.warning, 0.62) : Theme.borderStrong
     }
 
     enter: Transition {
         ParallelAnimation {
-            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.reducedMotion ? 0 : Theme.base }
-            NumberAnimation { property: "scale"; from: 0.98; to: 1; duration: Theme.reducedMotion ? 0 : Theme.base; easing.type: Theme.easing }
+            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.base }
+            NumberAnimation { property: "scale"; from: Theme.popupScale; to: 1; duration: Theme.base; easing.type: Theme.easing }
         }
     }
 
@@ -188,11 +194,24 @@ Popup {
                         hoverEnabled: true
                         Accessible.name: detailsLabel.text
                         onClicked: prompt.showDetails = !prompt.showDetails
-                        background: Rectangle {
+                        scale: down ? Theme.pressScale : 1
+                        Behavior on scale {
+                            enabled: !Theme.reducedMotion
+                            NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+                        }
+                        background: GlassSurface {
                             radius: Theme.r1
-                            color: detailsToggle.hovered ? Theme.surfaceHover : "transparent"
-                            border.width: detailsToggle.visualFocus ? 2 : 0
-                            border.color: Theme.accentEdge
+                            solid: false
+                            glassEnabled: detailsToggle.hovered || detailsToggle.down || detailsToggle.visualFocus
+                            tint: detailsToggle.down ? Theme.glassTintStrong : Theme.glassTintHover
+                            fillOpacity: detailsToggle.down ? 0.56
+                                       : detailsToggle.hovered ? 0.42
+                                       : detailsToggle.visualFocus ? 0.30 : 0.0
+                            outlineVisible: detailsToggle.visualFocus
+                            strongEdge: detailsToggle.visualFocus
+                            active: detailsToggle.visualFocus
+                            sheen: detailsToggle.hovered || detailsToggle.down
+                            edgeColor: detailsToggle.visualFocus ? Theme.accentEdge : "transparent"
                         }
                         contentItem: Row {
                             id: detailsRow

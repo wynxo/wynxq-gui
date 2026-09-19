@@ -290,7 +290,7 @@ Item {
                         onClicked: root.requestMode(modelData.id)
                         ToolTip.visible: hovered
                         ToolTip.text: modelData.hint
-                        ToolTip.delay: 450
+                        ToolTip.delay: Theme.tooltipDelay
                         background: GlassSurface {
                             radius: Theme.r1
                             solid: choice.chosen
@@ -349,7 +349,7 @@ Item {
             onClicked: autonomyMenu.opened ? autonomyMenu.close() : autonomyMenu.open()
             ToolTip.visible: hovered
             ToolTip.text: bridge ? root.permissionDetail(bridge.permissionMode) : ""
-            ToolTip.delay: 450
+            ToolTip.delay: Theme.tooltipDelay
             background: GlassSurface {
                 radius: Theme.r2
                 solid: true
@@ -516,7 +516,7 @@ Item {
             text: "Project rules"
             iconName: "code"
             ToolTip.visible: hovered
-            ToolTip.delay: 450
+            ToolTip.delay: Theme.tooltipDelay
             ToolTip.text: bridge ? "Active repository guidance: " + bridge.projectInstructionsSummary
                                   + ". These files guide coding conventions but never grant permissions." : ""
         }

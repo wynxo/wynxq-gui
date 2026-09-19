@@ -48,14 +48,28 @@ AbstractButton {
     ToolTip.text: !bridge ? ""
         : !bridge.online ? "Ollama offline · click to inspect"
         : (button.modelLoaded ? "Loaded · " : "Ready · ") + bridge.modelCapabilitySummary
-    ToolTip.delay: 500
+    ToolTip.delay: Theme.tooltipDelay
 
-    background: Rectangle {
+    scale: down ? Theme.pressScale : 1
+    Behavior on scale {
+        enabled: !Theme.reducedMotion
+        NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+    }
+
+    background: GlassSurface {
         radius: Theme.r2
-        color: button.hovered || popover.opened ? Theme.surfaceHover : "transparent"
-        border.width: button.visualFocus ? 2 : 0
-        border.color: Theme.accentEdge
-        Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
+        solid: false
+        glassEnabled: button.hovered || popover.opened || button.visualFocus
+        tint: popover.opened ? Theme.glassTintStrong : Theme.glassTintHover
+        fillOpacity: popover.opened ? 0.58
+                   : button.hovered ? 0.46
+                   : button.visualFocus ? 0.34 : 0.0
+        outlineVisible: popover.opened || button.visualFocus
+        strongEdge: popover.opened || button.visualFocus
+        active: button.visualFocus
+        sheen: button.hovered || popover.opened
+        edgeColor: button.visualFocus ? Theme.accentEdge
+                 : popover.opened ? Theme.glassEdgeStrong : "transparent"
     }
 
     contentItem: Item {
@@ -190,13 +204,28 @@ AbstractButton {
                     Accessible.checked: modelData.selected
                     onClicked: { if (bridge) bridge.setModel(modelData.name); popover.close(); }
 
-                    background: Rectangle {
+                    scale: down ? Theme.pressScale : 1
+                    Behavior on scale {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
+                    }
+
+                    background: GlassSurface {
                         radius: Theme.r2
-                        color: entry.hovered ? Theme.surfaceHover
-                             : modelData.selected ? Theme.surfaceSelected : "transparent"
-                        border.width: entry.visualFocus ? 2 : 0
-                        border.color: Theme.accentEdge
-                        Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
+                        solid: modelData.selected
+                        glassEnabled: entry.hovered || entry.down || entry.visualFocus
+                        tint: modelData.selected ? Theme.surfaceSelected
+                              : entry.down ? Theme.glassTintStrong : Theme.glassTintHover
+                        fillOpacity: modelData.selected ? 1.0
+                                   : entry.down ? 0.62
+                                   : entry.hovered ? 0.48
+                                   : entry.visualFocus ? 0.34 : 0.0
+                        outlineVisible: modelData.selected || entry.visualFocus
+                        strongEdge: entry.hovered || entry.down || entry.visualFocus
+                        active: entry.visualFocus
+                        sheen: entry.hovered || entry.down
+                        edgeColor: entry.visualFocus ? Theme.accentEdge
+                                 : modelData.selected ? Theme.glassEdge : "transparent"
                     }
                     contentItem: RowLayout {
                         spacing: Theme.s3
