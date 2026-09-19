@@ -7,8 +7,16 @@ import sys
 
 import pytest
 
-UI = Path(__file__).resolve().parents[1] / "wynxq" / "ui"
+ROOT = Path(__file__).resolve().parents[1]
+UI = ROOT / "wynxq" / "ui"
 MODULE = UI / "Wynxq"
+
+
+def controller_sources():
+    """Controller facade plus focused implementation slices as one source view."""
+    root = ROOT / "wynxq"
+    paths = [root / "controller.py", *sorted(root.glob("controller_*_ops.py"))]
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths)
 
 
 def declared_types():
@@ -110,7 +118,7 @@ def test_renderers_are_told_when_the_palette_changes():
     for name in ("Markdown.qml", "CodeBlock.qml"):
         text = (MODULE / name).read_text(encoding="utf-8")
         assert "onPaletteChanged" in text, f"{name} ignores palette changes"
-    controller = (Path(__file__).resolve().parents[1] / "wynxq" / "controller.py").read_text()
+    controller = controller_sources()
     assert controller.count("self.paletteChanged.emit()") == 2
 
 
@@ -333,9 +341,9 @@ def test_ctrl_v_attaches_images_without_breaking_text_paste():
     text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
     assert "Normal Ctrl+V remains normal text paste" in text
     assert "event.accepted = !!(bridge && bridge.pasteImage())" in text
-    controller = (Path(__file__).resolve().parents[1] / "wynxq" / "controller.py").read_text()
-    assert "@Slot(result=bool)\n    def pasteImage" in controller
-    assert "if image.isNull():\n            return False" in controller
+    controller = controller_sources()
+    assert "@Slot(result=bool)\ndef pasteImage" in controller
+    assert "if image.isNull():\n        return False" in controller
     assert "return self._attach_clipboard_png(image_png)" in controller
     assert "def _attach_clipboard_png" in controller
 
