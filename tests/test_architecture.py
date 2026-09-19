@@ -144,3 +144,25 @@ def test_policy_and_transport_layers_are_qt_free():
         text = (root / relative).read_text(encoding="utf-8")
         assert "PySide6" not in text, f"{relative} must stay independent of Qt"
 
+def test_settings_shell_is_composed_from_focused_pages():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "wynxq" / "ui" / "Wynxq"
+    shell = root / "SettingsSheet.qml"
+    assert len(shell.read_text(encoding="utf-8").splitlines()) <= 350
+
+    expected = {
+        "SettingsGeneralPage.qml",
+        "SettingsModelPage.qml",
+        "SettingsAgentPage.qml",
+        "SettingsWorkspacePage.qml",
+        "SettingsUsagePage.qml",
+        "SettingsAppearancePage.qml",
+        "SettingsAdvancedPage.qml",
+    }
+    pages = {path.name for path in root.glob("Settings*Page.qml")}
+    assert pages == expected
+    for name in expected:
+        count = len((root / name).read_text(encoding="utf-8").splitlines())
+        assert count <= 260, f"{name} grew to {count} lines; split the page further"
+
