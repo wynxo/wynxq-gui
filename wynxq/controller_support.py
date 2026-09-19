@@ -10,7 +10,7 @@ import threading
 
 from PySide6.QtCore import QThread, Signal
 
-from .desktop import SessionTokens
+from .desktop_common import SessionTokens
 
 
 def _bounded_int(value, low, high, default):
