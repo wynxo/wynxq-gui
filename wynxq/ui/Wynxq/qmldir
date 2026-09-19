@@ -78,6 +78,9 @@ ModelPicker 1.0 ModelPicker.qml
 ModelManager 1.0 ModelManager.qml
 CommandPalette 1.0 CommandPalette.qml
 SettingsSheet 1.0 SettingsSheet.qml
+SettingsGroup 1.0 SettingsGroup.qml
+SettingsDisclosure 1.0 SettingsDisclosure.qml
+SettingsFieldLabel 1.0 SettingsFieldLabel.qml
 ShortcutsSheet 1.0 ShortcutsSheet.qml
 PermissionPrompt 1.0 PermissionPrompt.qml
 Onboarding 1.0 Onboarding.qml
