@@ -29,6 +29,10 @@ from .usage import TokenUsageTracker
 from .endpoint_policy import (
     WorkspaceOllamaClient, endpoint_scope, validate_workspace_endpoint,
 )
+
+# Compatibility seam: callers historically patched workspace.OllamaClient.
+# Keep that name live while the concrete default now comes from endpoint_policy.
+OllamaClient = WorkspaceOllamaClient
 from .planning import PLAN_STATES, PlanningAgentEngine, _install_plan_tool
 from .workspace_checkpoint import (
     _checkpoint_delta, _restore_workspace_checkpoint, _snapshot_git_workspace,
@@ -36,7 +40,11 @@ from .workspace_checkpoint import (
 
 
 class WorkspaceController(Controller):
-    OLLAMA_CLIENT = WorkspaceOllamaClient
+    OLLAMA_CLIENT = None
+
+    def _ollama_client(self, endpoint):
+        client_type = self.OLLAMA_CLIENT or OllamaClient
+        return client_type(endpoint)
     modeChanged = Signal()
     endpointChanged = Signal()
     planChanged = Signal()
