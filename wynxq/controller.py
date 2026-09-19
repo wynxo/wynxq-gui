@@ -1306,8 +1306,12 @@ class Controller(QObject):
         self._model = model
         if self._task_id:
             self.store.set_conversation_runtime(self._task_id, model=model, endpoint=self._endpoint)
-        # A blank composer is pending task state. Do not rewrite the global
-        # model default merely because this one new chat picked another server.
+        elif self._endpoint == self._default_endpoint:
+            # Picking a model on the ordinary blank task remains the user's
+            # default. A blank task pointed at a non-default server is only a
+            # one-chat override and must not poison the global pair.
+            self._default_model = model
+            self.store.set_setting("model", model)
         self._recent_models = [model] + [m for m in self._recent_models if m != model][:5]
         self.store.set_setting("recent_models", self._recent_models)
         self._decorate_catalog()
@@ -1517,9 +1521,22 @@ class Controller(QObject):
         return model
 
     def _load_task_runtime(self, task: dict) -> None:
-        self._endpoint = str(task.get("endpoint") or self._default_endpoint).strip().rstrip("/")
-        self._model = str(task.get("model") or self._default_model).strip()
-        cached = self._endpoint_catalog_cache.get(self._endpoint)
+        target_endpoint = str(task.get("endpoint") or self._default_endpoint).strip().rstrip("/")
+        target_model = str(task.get("model") or self._default_model).strip()
+        endpoint_changed = target_endpoint != self._endpoint
+        self._endpoint = target_endpoint
+        self._model = target_model
+
+        # Merely opening another chat on the same Ollama server must not tear
+        # down the known-good connection or launch a redundant network probe.
+        # Only a real server switch swaps catalogues.
+        if not endpoint_changed:
+            self._decorate_catalog()
+            if self._online:
+                self._refresh_model_capabilities()
+            return
+
+        cached = self._endpoint_catalog_cache.get(target_endpoint)
         if cached:
             models, resident = cached
             self._models = [m["name"] for m in models]
@@ -1574,8 +1591,10 @@ class Controller(QObject):
         self._history = []
         self._history_tokens = 0
         self.messages = self._new_message_model()
-        self._endpoint = self._default_endpoint
-        self._model = self._default_model
+        self._load_task_runtime({
+            "endpoint": self._default_endpoint,
+            "model": self._default_model,
+        })
         self._reset_run_state()
         self._busy = False
         self._run_job = None
@@ -1587,7 +1606,6 @@ class Controller(QObject):
         self.activityChanged.emit()
         self.permissionChanged.emit()
         self.changed.emit()
-        self.refreshModels()
         self.focusComposer.emit()
 
     @Slot(str)
@@ -2226,7 +2244,27 @@ class Controller(QObject):
         """Block only the run asking for permission; other chats stay usable."""
         state = self._run_sessions.get(str(task_id or ""))
         if not state:
-            return False
+            # Preserve the direct/foreground permission path used by small
+            # controller hosts and tests that do not create a run session.
+            if self._session_auto and risk != "destructive":
+                return True
+            self._permission_event.clear()
+            self._permission_answer = False
+            self._pending_permission = {
+                "tool": name, "risk": risk, "summary": action_summary(name, args),
+                "detail": json.dumps(args, ensure_ascii=False) if args else "",
+                "command": str(args.get("command", "")) if name == "run_command" else "",
+                "directory": (str(args.get("cwd") or self._working_directory or Path.home())
+                              if name == "run_command" else ""),
+            }
+            self.permissionChanged.emit()
+            self.changed.emit()
+            allowed = self._permission_event.wait(self.PERMISSION_TIMEOUT)
+            answer = bool(allowed and self._permission_answer)
+            self._pending_permission = None
+            self.permissionChanged.emit()
+            self.changed.emit()
+            return answer
         if state.get("session_auto") and risk != "destructive":
             return True
         event = state["permission_event"]
@@ -2258,22 +2296,30 @@ class Controller(QObject):
     @Slot(bool)
     def resolvePermission(self, allowed):
         state = self._active_session()
-        if not state or state.get("permission") is None:
+        if state and state.get("permission") is not None:
+            state["permission_answer"] = bool(allowed)
+            self._permission_answer = bool(allowed)
+            state["permission_event"].set()
             return
-        state["permission_answer"] = bool(allowed)
-        self._permission_answer = bool(allowed)
-        state["permission_event"].set()
+        if self._pending_permission is not None:
+            self._permission_answer = bool(allowed)
+            self._permission_event.set()
 
     @Slot()
     def allowRestOfTask(self):
         state = self._active_session()
-        if not state or state.get("permission") is None:
+        if state and state.get("permission") is not None:
+            state["session_auto"] = True
+            state["permission_answer"] = True
+            self._session_auto = True
+            state["permission_event"].set()
+            self.toast.emit("Approving the rest of this task, except anything that cannot be undone")
             return
-        state["session_auto"] = True
-        state["permission_answer"] = True
-        self._session_auto = True
-        state["permission_event"].set()
-        self.toast.emit("Approving the rest of this task, except anything that cannot be undone")
+        if self._pending_permission is not None:
+            self._session_auto = True
+            self._permission_answer = True
+            self._permission_event.set()
+            self.toast.emit("Approving the rest of this task, except anything that cannot be undone")
 
     @Slot(str)
     def setPermissionMode(self, mode):
@@ -2565,6 +2611,13 @@ class Controller(QObject):
     def stop(self):
         state = self._active_session()
         if not state:
+            if self._pending_permission is not None:
+                self._permission_answer = False
+                self._permission_event.set()
+            if self._run_job:
+                self._run_job.cancel.set()
+                self._status = "Stopping…"
+                self.changed.emit()
             return
         if state.get("permission") is not None:
             state["permission_answer"] = False

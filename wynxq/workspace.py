@@ -1001,18 +1001,26 @@ class WorkspaceController(Controller):
                 self.changed.emit()
             return
 
-        if state and kind == "tool_start" and event.get("name") == "update_plan":
+        if kind == "tool_start" and event.get("name") == "update_plan":
             fresh = self._normalise_plan(event.get("args", {}).get("steps", []))
-            state["plan_steps"] = fresh
-            self.store.set_setting(self._plan_key(task_id), fresh)
             explanation = str(event.get("args", {}).get("explanation", "")).strip()
-            state["status"] = explanation[:120] or "Planning"
-            if task_id == self._task_id:
-                self._set_plan(fresh, persist=False)
-                self._status = state["status"]
+            status = explanation[:120] or "Planning"
+            if state:
+                state["plan_steps"] = fresh
+                self.store.set_setting(self._plan_key(task_id), fresh)
+                state["status"] = status
+                if task_id == self._task_id:
+                    self._set_plan(fresh, persist=False)
+                    self._status = status
+                    self.changed.emit()
+            else:
+                # Direct foreground events (preview/small hosts/tests) still
+                # behave exactly like the pre-concurrency controller.
+                self._set_plan(fresh)
+                self._status = status
                 self.changed.emit()
             return
-        if state and kind == "tool_end" and event.get("name") == "update_plan":
+        if kind == "tool_end" and event.get("name") == "update_plan":
             return
 
         usage_dirty = False
@@ -1075,7 +1083,6 @@ class WorkspaceController(Controller):
             return
         super()._run_failed(message, task_id)
 
-    @Slot(str)
     @Slot(str)
     def deleteTask(self, task_id):
         task_id = str(task_id or "")
