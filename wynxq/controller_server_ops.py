@@ -61,7 +61,7 @@ def _remember_endpoint_profile(self, name: str, endpoint: str) -> None:
 def addEndpointProfile(self, name, endpoint):
     try:
         value = str(endpoint or "").strip().rstrip("/")
-        OllamaClient(value)
+        self.OLLAMA_CLIENT(value)
     except Exception as exc:
         self._set_error("That Ollama address is not usable", str(exc))
         return False
@@ -94,7 +94,7 @@ def removeEndpointProfile(self, endpoint):
 def setDefaultEndpoint(self, endpoint):
     try:
         value = str(endpoint or "").strip().rstrip("/")
-        OllamaClient(value)
+        self.OLLAMA_CLIENT(value)
     except Exception as exc:
         self._set_error("That Ollama address is not usable", str(exc))
         return False
@@ -113,7 +113,7 @@ def selectEndpoint(self, endpoint):
         return False
     try:
         value = str(endpoint or "").strip().rstrip("/")
-        OllamaClient(value)
+        self.OLLAMA_CLIENT(value)
     except Exception as exc:
         self._set_error("That Ollama address is not usable", str(exc))
         return False
@@ -190,7 +190,7 @@ def _refresh_model_capabilities(self):
         self._capability_error = message
         self.changed.emit()
 
-    self._job(lambda cancel, emit: OllamaClient(endpoint).describe(model), done, failed)
+    self._job(lambda cancel, emit: self.OLLAMA_CLIENT(endpoint).describe(model), done, failed)
 
 
 def _decorate_catalog(self):
@@ -247,7 +247,7 @@ def refreshModels(self):
     self.changed.emit()
 
     def fetch(cancel, emit):
-        client = OllamaClient(endpoint)
+        client = self.OLLAMA_CLIENT(endpoint)
         models = client.models()
         try:
             resident = client.resident()
@@ -351,7 +351,7 @@ def deleteModel(self, model):
         self.toast.emit(f"{model} removed")
         self.refreshModels()
 
-    self._job(lambda cancel, emit: OllamaClient(endpoint).delete(model), done)
+    self._job(lambda cancel, emit: self.OLLAMA_CLIENT(endpoint).delete(model), done)
 
 
 def _persist_runtime(self):
@@ -474,7 +474,7 @@ def setEndpoint(self, endpoint):
     """Compatibility action used by Settings: save as default and use here."""
     try:
         value = str(endpoint or "").strip().rstrip("/")
-        OllamaClient(value)
+        self.OLLAMA_CLIENT(value)
     except Exception as exc:
         self._set_error("That Ollama address is not usable", str(exc))
         return False
