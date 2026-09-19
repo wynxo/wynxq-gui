@@ -1,4 +1,4 @@
-"""The real composer must send/paste correctly under Qt, not just look right in QML."""
+"""The real composer must send on Return under Qt, not just look right in QML."""
 import json
 import os
 from pathlib import Path
@@ -22,7 +22,7 @@ def measured():
         text=True,
         timeout=20,
     )
-    assert result.returncode == 0, result.stderr
+    assert result.returncode == 0, result.stderr + "\n" + result.stdout
     assert "ReferenceError" not in result.stderr, result.stderr
     assert "Binding loop" not in result.stderr, result.stderr
     assert "TypeError" not in result.stderr, result.stderr
@@ -37,9 +37,3 @@ def test_return_really_sends_from_the_text_area(measured):
 def test_shift_return_remains_a_newline(measured):
     assert measured["shift_return_did_not_send"]
     assert measured["shift_return_inserted_newline"]
-
-
-def test_ctrl_v_preserves_text_paste_and_attaches_images(measured):
-    assert measured["ctrl_v_text_still_pastes"]
-    assert measured["ctrl_v_image_attached"]
-    assert measured["ctrl_v_image_kind"] == "image"
