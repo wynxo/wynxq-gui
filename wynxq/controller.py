@@ -51,7 +51,10 @@ from . import controller_misc_ops as _misc_ops
 
 
 class Controller(QObject):
-    OLLAMA_CLIENT = OllamaClient
+    # None means use the module-level OllamaClient at call time. Tests and
+    # embedders can still replace controller.OllamaClient; product subclasses
+    # may inject a different policy-specific client class explicitly.
+    OLLAMA_CLIENT = None
 
     changed = Signal()
     tasksChanged = Signal()
@@ -244,6 +247,10 @@ class Controller(QObject):
     def _forget_job(self, job):
         self._jobs.discard(job)
         job.deleteLater()
+
+    def _ollama_client(self, endpoint):
+        client_type = self.OLLAMA_CLIENT or OllamaClient
+        return client_type(endpoint)
 
 
     # ------------------------------------------------ behavior slices
