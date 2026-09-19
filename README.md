@@ -451,8 +451,16 @@ Layout:
 | --- | --- |
 | `wynxq/ui/Main.qml` | The application shell: three columns, shortcuts, overlays |
 | `wynxq/ui/Wynxq/` | The QML module — `Theme.qml` plus ~55 components |
-| `wynxq/controller.py` | Qt bridge; owns conversation, Ollama, task and desktop state |
-| `wynxq/dock.py` | The workspace dock: tab state, file tree, terminal view, changes, context, activity, browser |
+| `wynxq/controller.py` | Stable Qt/QML facade: signals, exposed properties, construction and shared state |
+| `wynxq/controller_*_ops.py` | Focused Controller behavior: server/model, tasks, context, generation, permissions, events, presentation |
+| `wynxq/dock.py` | Stable workspace-dock facade and QML-facing state |
+| `wynxq/dock_*_ops.py` | Focused dock behavior: layout, files, terminal, Git, context/activity, browser/preview |
+| `wynxq/workspace.py` | Chat/Work product state and orchestration |
+| `wynxq/planning.py` | Planning-aware engine policy and bounded project context |
+| `wynxq/workspace_checkpoint.py` | Conflict-safe bounded Work-mode undo checkpoints |
+| `wynxq/endpoint_policy.py` | Product endpoint validation/classification and Workspace Ollama client policy |
+| `wynxq/engine.py` | Bounded agent/tool loop; independent of Qt and HTTP transport |
+| `wynxq/ollama.py` | Ollama HTTP transport, model management, streaming and base endpoint policy |
 | `wynxq/project_files.py` | The file tree, the viewer's reader and writer, and path containment |
 | `wynxq/terminal.py` | PTY shell sessions and the ANSI screen |
 | `wynxq/diffs.py` | Git status, line counts, unified diffs, reverting |
@@ -460,7 +468,6 @@ Layout:
 | `wynxq/browser.py` | Embedded-browser policy: availability, URL rules, page context |
 | `wynxq/system.py` | Measured runtime state for the System panel |
 | `wynxq/commands.py` | Local Bash execution, bounded output, timeout and cancellation |
-| `wynxq/engine.py` | Ollama transport and the bounded desktop tool loop |
 | `wynxq/desktop.py` | Wayland portal and X11 backends |
 | `wynxq/markdown.py` | Message segmentation, highlighting, Markdown rendering |
 | `wynxq/context.py` | Composer attachments |
@@ -468,7 +475,7 @@ Layout:
 | `wynxq/notify.py` | Desktop notifications and system integration |
 | `wynxq/demo.py` | Fixed state for previews and screenshots |
 
-The dock is deliberately not part of `controller.py`: the controller owns the
+See [`docs/architecture.md`](docs/architecture.md) for the dependency rules and growth budgets.\n\nThe dock is deliberately not part of `controller.py`: the controller owns the
 conversation, the dock owns the tools, and they meet at a handful of calls —
 the project folder, the run timeline, and the attachment list.
 
