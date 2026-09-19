@@ -1524,15 +1524,17 @@ class Controller(QObject):
         target_endpoint = str(task.get("endpoint") or self._default_endpoint).strip().rstrip("/")
         target_model = str(task.get("model") or self._default_model).strip()
         endpoint_changed = target_endpoint != self._endpoint
+        model_changed = target_model != self._model
         self._endpoint = target_endpoint
         self._model = target_model
 
         # Merely opening another chat on the same Ollama server must not tear
         # down the known-good connection or launch a redundant network probe.
-        # Only a real server switch swaps catalogues.
+        # Re-probe capabilities only when the model actually changed or the
+        # current capability set is unknown.
         if not endpoint_changed:
             self._decorate_catalog()
-            if self._online:
+            if self._online and (model_changed or not self._model_capabilities):
                 self._refresh_model_capabilities()
             return
 
