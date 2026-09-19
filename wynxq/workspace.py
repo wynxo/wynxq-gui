@@ -777,7 +777,7 @@ class WorkspaceController(Controller):
         self.checkpointChanged.emit()
         self._emit_mode()
 
-    def _learn_user_memory    def _learn_user_memory(self, text: str) -> int:
+    def _learn_user_memory(self, text: str) -> int:
         """Quietly persist high-confidence durable facts from an accepted message.
 
         This path is deliberately independent of model tool calling. A small or
