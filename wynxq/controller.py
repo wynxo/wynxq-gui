@@ -24,10 +24,11 @@ from . import notify
 from . import system as system_info
 from .desktop import DesktopController
 from .dock import DockController
-from .engine import (
+from .agent_tools import (
     PERMISSION_DETAILS, PERMISSION_LABELS, PERMISSION_MODES, SAFE,
-    AgentEngine, OllamaClient, action_summary, normalise_mode,
+    action_summary, normalise_mode,
 )
+from .engine import AgentEngine, OllamaClient
 from .memory import Memory
 from .storage import Store
 
