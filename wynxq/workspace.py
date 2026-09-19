@@ -23,10 +23,12 @@ from PySide6.QtCore import Property, QTimer, Signal, Slot
 
 from . import context as ctx
 from . import project_instructions
-from .controller import Controller, OllamaClient, _blank_metrics
+from .controller import Controller, _blank_metrics
 from .memory_learning import learnable_memories
 from .usage import TokenUsageTracker
-from .endpoint_policy import endpoint_scope, validate_workspace_endpoint
+from .endpoint_policy import (
+    WorkspaceOllamaClient, endpoint_scope, validate_workspace_endpoint,
+)
 from .planning import PLAN_STATES, PlanningAgentEngine, _install_plan_tool
 from .workspace_checkpoint import (
     _checkpoint_delta, _restore_workspace_checkpoint, _snapshot_git_workspace,
@@ -34,6 +36,7 @@ from .workspace_checkpoint import (
 
 
 class WorkspaceController(Controller):
+    OLLAMA_CLIENT = WorkspaceOllamaClient
     modeChanged = Signal()
     endpointChanged = Signal()
     planChanged = Signal()
@@ -49,10 +52,6 @@ class WorkspaceController(Controller):
         self._task_mode_locked = False
         self._plan_steps: list[dict] = []
         _install_plan_tool()
-        # OllamaClient resolves this name at construction time. Swap only the
-        # endpoint policy; redirects and environment proxies remain disabled by
-        # the transport itself.
-        engine_module.validate_endpoint = validate_workspace_endpoint
         super().__init__(*args, **kwargs)
         self._usage = TokenUsageTracker(self.store)
         self._conversation_tokens = 0
