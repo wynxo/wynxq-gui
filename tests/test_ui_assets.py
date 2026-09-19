@@ -249,7 +249,7 @@ def test_explicitly_sized_popovers_place_using_their_rendered_height():
 def test_the_composer_keeps_drag_and_drop_and_keyboard_send():
     text = (MODULE / "Composer.qml").read_text(encoding="utf-8")
     for feature in ("DropArea", "attachPath", "Keys.priority: Keys.BeforeItem",
-                    "Qt.Key_Return", "Qt.Key_Enter", "ShiftModifier", "pasteImage"):
+                    "Keys.onReturnPressed", "Keys.onEnterPressed", "ShiftModifier", "pasteImage"):
         assert feature in text
 
 

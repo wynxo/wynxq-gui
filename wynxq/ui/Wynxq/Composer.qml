@@ -322,18 +322,19 @@ Item {
                     Accessible.description: placeholderText
 
                     Keys.priority: Keys.BeforeItem
+                    Keys.onReturnPressed: function(event) {
+                        if (input.inputMethodComposing) { event.accepted = false; return; }
+                        if (event.modifiers & Qt.ShiftModifier) { event.accepted = false; return; }
+                        if (root.slashMatches.length) { root.runSlash(root.slashIndex); event.accepted = true; return; }
+                        root.send(); event.accepted = true;
+                    }
+                    Keys.onEnterPressed: function(event) {
+                        if (input.inputMethodComposing) { event.accepted = false; return; }
+                        if (event.modifiers & Qt.ShiftModifier) { event.accepted = false; return; }
+                        if (root.slashMatches.length) { root.runSlash(root.slashIndex); event.accepted = true; return; }
+                        root.send(); event.accepted = true;
+                    }
                     Keys.onPressed: function(event) {
-                        if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
-                                && !input.inputMethodComposing) {
-                            if (event.modifiers & Qt.ShiftModifier) {
-                                event.accepted = false;
-                                return;
-                            }
-                            if (root.slashMatches.length) root.runSlash(root.slashIndex);
-                            else root.send();
-                            event.accepted = true;
-                            return;
-                        }
                         if (root.slashMatches.length && event.key === Qt.Key_Down) {
                             root.slashIndex = Math.min(root.slashMatches.length - 1, root.slashIndex + 1);
                             event.accepted = true;

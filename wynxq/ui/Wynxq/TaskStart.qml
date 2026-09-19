@@ -104,7 +104,8 @@ Item {
         }
 
         UsageHeatmap {
-            Layout.topMargin: Theme.s3
+            visible: root.showSculpture
+            Layout.topMargin: visible ? Theme.s3 : 0
             Layout.preferredWidth: Math.min(420, root.width)
             Layout.maximumWidth: 420
             Layout.alignment: Qt.AlignHCenter
