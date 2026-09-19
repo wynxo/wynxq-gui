@@ -1076,7 +1076,7 @@ class WorkspaceController(Controller):
         super()._run_failed(message, task_id)
 
     @Slot(str)
-    def deleteTask    @Slot(str)
+    @Slot(str)
     def deleteTask(self, task_id):
         task_id = str(task_id or "")
         if task_id:
