@@ -69,23 +69,17 @@ Item {
                 NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
             }
 
-            background: GlassSurface {
+            background: Rectangle {
                 radius: Theme.r2
-                solid: planTab.chosen
-                glassEnabled: planTab.hovered || planTab.down || planTab.visualFocus
-                tint: planTab.chosen ? Theme.surfaceSelected
-                      : planTab.down ? Theme.glassTintStrong : Theme.glassTintHover
-                fillOpacity: planTab.chosen ? 1.0
-                           : planTab.down ? 0.62
-                           : planTab.hovered ? 0.46
-                           : planTab.visualFocus ? 0.34 : 0.0
-                outlineVisible: planTab.chosen || planTab.hovered || planTab.visualFocus
-                strongEdge: planTab.hovered || planTab.down || planTab.visualFocus
-                active: planTab.visualFocus
-                sheen: planTab.hovered || planTab.down
-                edgeColor: planTab.visualFocus ? Theme.accentEdge
-                         : planTab.chosen ? Theme.glassEdge
-                         : planTab.hovered ? Theme.glassEdgeStrong : "transparent"
+                color: planTab.chosen ? Theme.surfaceSelected
+                     : planTab.down ? Theme.surfacePressed
+                     : planTab.hovered ? Theme.surfaceHover : "transparent"
+                border.width: planTab.visualFocus ? 1 : 0
+                border.color: Theme.accentEdge
+                Behavior on color {
+                    enabled: !Theme.reducedMotion
+                    ColorAnimation { duration: Theme.fast }
+                }
             }
 
             contentItem: Item {
@@ -150,23 +144,17 @@ Item {
                     NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
                 }
 
-                background: GlassSurface {
+                background: Rectangle {
                     radius: Theme.r2
-                    solid: tab.chosen
-                    glassEnabled: tab.hovered || tab.down || tab.visualFocus
-                    tint: tab.chosen ? Theme.surfaceSelected
-                          : tab.down ? Theme.glassTintStrong : Theme.glassTintHover
-                    fillOpacity: tab.chosen ? 1.0
-                               : tab.down ? 0.62
-                               : tab.hovered ? 0.46
-                               : tab.visualFocus ? 0.34 : 0.0
-                    outlineVisible: tab.chosen || tab.hovered || tab.visualFocus
-                    strongEdge: tab.hovered || tab.down || tab.visualFocus
-                    active: tab.visualFocus
-                    sheen: tab.hovered || tab.down
-                    edgeColor: tab.visualFocus ? Theme.accentEdge
-                             : tab.chosen ? Theme.glassEdge
-                             : tab.hovered ? Theme.glassEdgeStrong : "transparent"
+                    color: tab.chosen ? Theme.surfaceSelected
+                         : tab.down ? Theme.surfacePressed
+                         : tab.hovered ? Theme.surfaceHover : "transparent"
+                    border.width: tab.visualFocus ? 1 : 0
+                    border.color: Theme.accentEdge
+                    Behavior on color {
+                        enabled: !Theme.reducedMotion
+                        ColorAnimation { duration: Theme.fast }
+                    }
                 }
 
                 contentItem: Item {
