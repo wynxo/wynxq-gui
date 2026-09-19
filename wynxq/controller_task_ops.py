@@ -360,7 +360,7 @@ def _maybe_generate_task_title(self, task_id: str, history: list[dict], state: d
         settled()
 
     self._job(
-        lambda cancel, emit: OllamaClient(endpoint).generate_title(
+        lambda cancel, emit: self._ollama_client(endpoint).generate_title(
             model, user_excerpt, assistant_excerpt, cancel),
         generated,
         failed,
