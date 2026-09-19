@@ -44,7 +44,9 @@ from .controller_support import (
 from . import controller_server_ops as _server_ops
 from . import controller_task_ops as _task_ops
 from . import controller_context_ops as _context_ops
-from . import controller_run_ops as _run_ops
+from . import controller_generation_ops as _generation_ops
+from . import controller_permission_ops as _permission_ops
+from . import controller_event_ops as _event_ops
 from . import controller_misc_ops as _misc_ops
 
 
@@ -334,37 +336,37 @@ class Controller(QObject):
     openTerminalHere = _context_ops.openTerminalHere
 
     # generation/permissions/desktop operations
-    _launch_run = _run_ops._launch_run
-    _start_run = _run_ops._start_run
-    _queued_text = _run_ops._queued_text
-    _send_while_busy = _run_ops._send_while_busy
-    send = _run_ops.send
-    _confirm_action_for = _run_ops._confirm_action_for
-    _confirm_action = _run_ops._confirm_action
-    resolvePermission = _run_ops.resolvePermission
-    allowRestOfTask = _run_ops.allowRestOfTask
-    setPermissionMode = _run_ops.setPermissionMode
-    _memory_for_run = _run_ops._memory_for_run
-    setMemoryEnabled = _run_ops.setMemoryEnabled
-    saveMemory = _run_ops.saveMemory
-    rememberNote = _run_ops.rememberNote
-    clearMemory = _run_ops.clearMemory
-    reloadMemory = _run_ops.reloadMemory
-    revealMemory = _run_ops.revealMemory
-    _on_event = _run_ops._on_event
-    _run_done = _run_ops._run_done
-    _run_failed = _run_ops._run_failed
-    _maybe_notify = _run_ops._maybe_notify
-    setWindowActive = _run_ops.setWindowActive
-    _desktop_control_released = _run_ops._desktop_control_released
-    _release_desktop_control = _run_ops._release_desktop_control
-    stop = _run_ops.stop
-    promoteComputerControlOverlay = _run_ops.promoteComputerControlOverlay
-    toggleDesktop = _run_ops.toggleDesktop
-    _desktop_done = _run_ops._desktop_done
-    _desktop_failed = _run_ops._desktop_failed
-    pullModel = _run_ops.pullModel
-    cancelPull = _run_ops.cancelPull
+    _launch_run = _generation_ops._launch_run
+    _start_run = _generation_ops._start_run
+    _queued_text = _generation_ops._queued_text
+    _send_while_busy = _generation_ops._send_while_busy
+    send = _generation_ops.send
+    _confirm_action_for = _permission_ops._confirm_action_for
+    _confirm_action = _permission_ops._confirm_action
+    resolvePermission = _permission_ops.resolvePermission
+    allowRestOfTask = _permission_ops.allowRestOfTask
+    setPermissionMode = _permission_ops.setPermissionMode
+    _memory_for_run = _permission_ops._memory_for_run
+    setMemoryEnabled = _permission_ops.setMemoryEnabled
+    saveMemory = _permission_ops.saveMemory
+    rememberNote = _permission_ops.rememberNote
+    clearMemory = _permission_ops.clearMemory
+    reloadMemory = _permission_ops.reloadMemory
+    revealMemory = _permission_ops.revealMemory
+    _on_event = _event_ops._on_event
+    _run_done = _event_ops._run_done
+    _run_failed = _event_ops._run_failed
+    _maybe_notify = _event_ops._maybe_notify
+    setWindowActive = _event_ops.setWindowActive
+    _desktop_control_released = _event_ops._desktop_control_released
+    _release_desktop_control = _event_ops._release_desktop_control
+    stop = _event_ops.stop
+    promoteComputerControlOverlay = _event_ops.promoteComputerControlOverlay
+    toggleDesktop = _event_ops.toggleDesktop
+    _desktop_done = _event_ops._desktop_done
+    _desktop_failed = _event_ops._desktop_failed
+    pullModel = _event_ops.pullModel
+    cancelPull = _event_ops.cancelPull
 
     # presentation/export/lifecycle operations
     renderMarkdown = _misc_ops.renderMarkdown
