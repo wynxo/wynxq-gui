@@ -35,6 +35,9 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
   engine globals.
 - `dock.py` owns QML-facing workspace state/properties. Files, Terminal, Git,
   Context/Activity, Browser/Preview, and layout operations live in separate slices.
+- `SettingsSheet.qml` is only the settings navigation/shell. Each settings domain
+  lives in a focused `Settings*Page.qml` component so unrelated settings do not
+  share one giant declarative file.
 - `endpoint_policy.py`, `workspace_checkpoint.py`, `planning.py`, and `ollama.py`
   must remain Qt-free.
 
