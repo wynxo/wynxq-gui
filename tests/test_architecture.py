@@ -49,3 +49,98 @@ def test_desktop_facade_reexports_shared_types_and_backends():
     assert desktop._PortalBackend is desktop_backends._PortalBackend
     assert desktop.X11GlobalStop is desktop_backends.X11GlobalStop
     assert desktop.GlobalStop is desktop_backends.GlobalStop
+
+def test_controller_facade_binds_focused_behavior_modules():
+    from wynxq import (
+        controller_context_ops, controller_event_ops, controller_generation_ops,
+        controller_misc_ops, controller_permission_ops, controller_server_ops,
+        controller_task_ops,
+    )
+
+    assert controller.Controller.refreshModels is controller_server_ops.refreshModels
+    assert controller.Controller.newTask is controller_task_ops.newTask
+    assert controller.Controller.attachScreenshot is controller_context_ops.attachScreenshot
+    assert controller.Controller.send is controller_generation_ops.send
+    assert controller.Controller.resolvePermission is controller_permission_ops.resolvePermission
+    assert controller.Controller._run_done is controller_event_ops._run_done
+    assert controller.Controller.exportTask is controller_misc_ops.exportTask
+
+
+def test_dock_facade_binds_focused_behavior_modules():
+    from wynxq import (
+        dock_browser_ops, dock_change_ops, dock_context_ops, dock_file_ops,
+        dock_layout_ops, dock_terminal_ops,
+    )
+
+    assert dock.DockController.set_project is dock_layout_ops.set_project
+    assert dock.DockController.openFile is dock_file_ops.openFile
+    assert dock.DockController.startTerminal is dock_terminal_ops.startTerminal
+    assert dock.DockController.refreshChanges is dock_change_ops.refreshChanges
+    assert dock.DockController.begin_turn is dock_context_ops.begin_turn
+    assert dock.DockController.navigate is dock_browser_ops.navigate
+
+
+def test_engine_reexports_ollama_transport():
+    from wynxq import ollama
+
+    assert engine.OllamaClient is ollama.OllamaClient
+    assert engine.OllamaError is ollama.OllamaError
+    assert engine.Cancelled is ollama.Cancelled
+    assert engine.validate_endpoint is ollama.validate_endpoint
+
+
+def test_workspace_injects_endpoint_policy_without_engine_monkey_patch():
+    from wynxq import endpoint_policy, workspace
+
+    assert workspace.WorkspaceController.OLLAMA_CLIENT is endpoint_policy.WorkspaceOllamaClient
+    assert endpoint_policy.WorkspaceOllamaClient.endpoint_validator is endpoint_policy.validate_workspace_endpoint
+
+
+def test_coordinator_modules_have_hard_size_budgets():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    budgets = {
+        "wynxq/controller.py": 900,
+        "wynxq/workspace.py": 900,
+        "wynxq/engine.py": 550,
+        "wynxq/dock.py": 550,
+    }
+    for relative, maximum in budgets.items():
+        count = len((root / relative).read_text(encoding="utf-8").splitlines())
+        assert count <= maximum, f"{relative} grew to {count} lines (budget {maximum})"
+
+
+def test_behavior_slices_stay_focused():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    slices = [
+        *root.glob("wynxq/controller_*_ops.py"),
+        *root.glob("wynxq/dock_*_ops.py"),
+    ]
+    assert slices
+    for path in slices:
+        text = path.read_text(encoding="utf-8")
+        count = len(text.splitlines())
+        assert count <= 550, f"{path.name} grew to {count} lines; split the concern again"
+        if path.name.startswith("controller_"):
+            assert "from .controller import" not in text
+        if path.name.startswith("dock_"):
+            assert "from .dock import" not in text
+
+
+def test_policy_and_transport_layers_are_qt_free():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    pure_layers = [
+        "wynxq/ollama.py",
+        "wynxq/endpoint_policy.py",
+        "wynxq/workspace_checkpoint.py",
+        "wynxq/planning.py",
+    ]
+    for relative in pure_layers:
+        text = (root / relative).read_text(encoding="utf-8")
+        assert "PySide6" not in text, f"{relative} must stay independent of Qt"
+
