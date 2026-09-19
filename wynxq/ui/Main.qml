@@ -529,6 +529,26 @@ ApplicationWindow {
         }
     }
 
+    ComputerControlPanel {
+        id: computerControlPanel
+        targetScreen: window.screen || (Application.screens.length ? Application.screens[0] : null)
+        controlVisible: !!(bridge && bridge.computerControlActive)
+        statusText: bridge ? bridge.computerControlStatus : "Working…"
+        thoughtText: bridge ? bridge.computerControlThought : ""
+        replyText: bridge ? bridge.computerControlReply : ""
+        queuedCount: bridge ? bridge.computerControlQueuedCount : 0
+        stopShortcut: bridge ? bridge.computerControlStopShortcut : "Esc"
+        onSubmitted: function(text) { if (bridge) bridge.send(text); }
+        onStopRequested: if (bridge) bridge.stop()
+    }
+
+    Timer {
+        interval: 180
+        repeat: false
+        running: computerControlPanel.visible
+        onTriggered: if (bridge) bridge.promoteComputerControlOverlay()
+    }
+
     ModelManager { id: models }
     SettingsSheet {
         id: settings

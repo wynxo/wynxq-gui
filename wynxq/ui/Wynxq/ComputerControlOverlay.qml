@@ -19,6 +19,10 @@ Window {
     property string stopDetail: "Press Esc to stop instantly"
     readonly property color controlPurple: "#a78bfa"
 
+    // Keep this as an independent top-level instead of a transient child of
+    // the main Wynxq window, so it remains mapped over the app being driven.
+    transientParent: null
+    modality: Qt.NonModal
     screen: targetScreen
     x: targetScreen ? targetScreen.virtualX : 0
     y: targetScreen ? targetScreen.virtualY : 0
@@ -31,6 +35,7 @@ Window {
          | Qt.WindowStaysOnTopHint
          | Qt.Tool
          | Qt.WindowTransparentForInput
+         | Qt.WindowDoesNotAcceptFocus
 
     Rectangle {
         anchors.fill: parent

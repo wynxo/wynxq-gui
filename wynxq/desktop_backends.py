@@ -687,13 +687,16 @@ class _PortalBackend:
         for index, (stream, properties) in enumerate(streams):
             properties = properties or {}
             position = properties.get("position")
-            size = properties.get("size") or properties.get("logical_size")
+            capture_size = properties.get("size")
+            logical_size = properties.get("logical_size")
             if position is not None and (not isinstance(position, (list, tuple)) or len(position) != 2):
                 raise DesktopError("The desktop portal returned invalid monitor positions.")
-            if size is not None and (not isinstance(size, (list, tuple)) or len(size) != 2
-                                     or any(not isinstance(v, (int, float)) or v <= 0 for v in size)):
-                raise DesktopError("The desktop portal returned invalid monitor dimensions.")
-            entries.append({"index": index, "stream": stream, "position": position, "size": size})
+            for label, size in (("capture", capture_size), ("logical", logical_size)):
+                if size is not None and (not isinstance(size, (list, tuple)) or len(size) != 2
+                                         or any(not isinstance(v, (int, float)) or v <= 0 for v in size)):
+                    raise DesktopError(f"The desktop portal returned invalid {label} monitor dimensions.")
+            entries.append({"index": index, "stream": stream, "position": position,
+                            "capture_size": capture_size, "logical_size": logical_size})
 
         unused = sorted(self.layout, key=lambda monitor: (monitor["x"], monitor["y"]))
         assigned = {}
@@ -713,13 +716,18 @@ class _PortalBackend:
             assigned[entry["index"]] = (entry, candidates[0])
             unused.remove(candidates[0])
 
-        # A unique stream size is enough to identify monitors with different
-        # resolutions, even when the optional position field is absent.
+        # Qt screen geometry and RemoteDesktop absolute pointer coordinates are
+        # logical pixels. Prefer the portal's explicit logical_size. The
+        # ScreenCast "size" may instead be the physical/capture resolution
+        # (for example 3840×2160 for a 1920×1080 screen at 200% scaling), so it
+        # must never be used as the absolute input coordinate space.
         unresolved = []
         for entry in pending:
-            size = entry["size"]
-            candidates = [m for m in unused if size is not None and
-                          m["width"] == size[0] and m["height"] == size[1]]
+            logical = entry["logical_size"]
+            fallback = entry["capture_size"] if logical is None else None
+            match_size = logical or fallback
+            candidates = [m for m in unused if match_size is not None and
+                          m["width"] == match_size[0] and m["height"] == match_size[1]]
             if len(candidates) == 1:
                 assigned[entry["index"]] = (entry, candidates[0])
                 unused.remove(candidates[0])
@@ -729,23 +737,27 @@ class _PortalBackend:
         if unresolved:
             if len(unresolved) != len(unused):
                 raise DesktopError("The desktop portal did not return all selected monitors.")
-            # No position or unique size was available. Pair in the stream
-            # order returned by the compositor and document that it is a
-            # deterministic fallback rather than an absolute guarantee.
+            # No position or unique logical size was available. Pair in the
+            # compositor's stable stream order. A physical capture size may
+            # legitimately differ from Qt's logical geometry under scaling.
             for entry, monitor in zip(unresolved, unused):
-                size = entry["size"] or [monitor["width"], monitor["height"]]
-                if size[0] != monitor["width"] or size[1] != monitor["height"]:
-                    raise DesktopError("The desktop portal returned monitor dimensions that do not match this desktop.")
+                logical = entry["logical_size"]
+                if logical is not None and (
+                        logical[0] != monitor["width"] or logical[1] != monitor["height"]):
+                    raise DesktopError("The desktop portal returned logical monitor dimensions that do not match this desktop.")
                 assigned[entry["index"]] = (entry, monitor)
             unused = []
 
         mapped = []
         for index in range(len(entries)):
             entry, monitor = assigned[index]
-            size = entry["size"] or [monitor["width"], monitor["height"]]
+            logical = entry["logical_size"] or [monitor["width"], monitor["height"]]
+            capture = entry["capture_size"]
             mapped.append({"stream": entry["stream"], "x": monitor["x"], "y": monitor["y"],
                            "width": monitor["width"], "height": monitor["height"],
-                           "stream_width": float(size[0]), "stream_height": float(size[1])})
+                           "input_width": float(logical[0]), "input_height": float(logical[1]),
+                           "capture_width": float(capture[0]) if capture is not None else 0.0,
+                           "capture_height": float(capture[1]) if capture is not None else 0.0})
         if unused:
             raise DesktopError("The desktop portal did not return all selected monitors.")
         return mapped
@@ -774,8 +786,8 @@ class _PortalBackend:
             if selected is None:
                 raise DesktopError("The pointer coordinate is outside the shared monitors.")
             stream = selected["stream"]
-            lx = (logical_x - selected["x"]) * selected["stream_width"] / selected["width"]
-            ly = (logical_y - selected["y"]) * selected["stream_height"] / selected["height"]
+            lx = (logical_x - selected["x"]) * selected["input_width"] / selected["width"]
+            ly = (logical_y - selected["y"]) * selected["input_height"] / selected["height"]
         self._notify("NotifyPointerMotionAbsolute", "udd", [stream, lx, ly], cancel)
 
     def button(self, button, down, cancel):

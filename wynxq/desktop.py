@@ -202,10 +202,10 @@ class DesktopController:
 
     def _glide(self, x: float, y: float, cancel) -> None:
         start = self._pointer
-        self._pointer = (x, y)
         distance = 0.0 if start is None else math.hypot(x - start[0], y - start[1])
         if start is None or distance < 8:
             self._backend.move(x, y, cancel)
+            self._pointer = (x, y)
             return
         steps = max(2, min(self._GLIDE_STEPS, int(distance / 24)))
         for step in range(1, steps + 1):
@@ -214,8 +214,12 @@ class DesktopController:
             # Ease out, so the pointer settles on its target rather than
             # arriving at full speed.
             eased = 1 - (1 - fraction) ** 3
-            self._backend.move(start[0] + (x - start[0]) * eased,
-                               start[1] + (y - start[1]) * eased, cancel)
+            px = start[0] + (x - start[0]) * eased
+            py = start[1] + (y - start[1]) * eased
+            self._backend.move(px, py, cancel)
+            # Record only moves that the backend actually accepted. A failed
+            # portal call must never poison the next glide with a fake origin.
+            self._pointer = (px, py)
             if step < steps:
                 _pause(self._GLIDE_SECONDS / steps, cancel)
 

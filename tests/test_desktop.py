@@ -342,6 +342,27 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
             self.portal.move(2000, 1000, None)
             self.portal._notify.assert_called_once_with("NotifyPointerMotionAbsolute", "udd", [91, 1000.0, 500.0], None)
 
+    async def test_scaled_stream_uses_logical_coordinates_for_absolute_pointer(self):
+        portal = _PortalBackend([{"x": 0, "y": 0, "width": 1920, "height": 1080}])
+        portal._streams = portal._map_streams([
+            [91, {"position": [0, 0], "size": [3840, 2160],
+                  "logical_size": [1920, 1080]}],
+        ])
+        portal._stream = 91
+        portal._origin = (0, 0)
+        portal._logical_size = (1920, 1080)
+        portal._pixel_size = (3840, 2160)
+        portal.connected = True
+        portal._session = "/session/test"
+        portal._notify = Mock()
+
+        portal.move(2000, 1000, None)
+
+        # Screenshot pixel (2000,1000) -> logical desktop (1000,500).
+        # The old implementation accidentally sent physical stream coords here.
+        portal._notify.assert_called_once_with(
+            "NotifyPointerMotionAbsolute", "udd", [91, 1000.0, 500.0], None)
+
     async def test_ambiguous_screenshot_geometry_is_rejected(self):
         from PIL import Image
         with tempfile.TemporaryDirectory() as temp:

@@ -22,6 +22,7 @@ from . import context as ctx
 from . import markdown as md
 from . import notify
 from . import system as system_info
+from . import kwin
 from .desktop import DesktopController
 from .dock import DockController
 from .agent_tools import (
@@ -205,6 +206,7 @@ class Controller(QObject):
         self._permission_answer = False
         self._session_auto = False
         self._capture_busy = False
+        self._overlay_promotion_active = False
         self._region: dict = {}
         self._code_palette = dict(md.DEFAULT_PALETTE)
         self._html_palette = dict(md.HTML_PALETTE)
@@ -525,6 +527,22 @@ class Controller(QObject):
     @Property(str, notify=changed)
     def computerControlStopDetail(self):
         return str(self._desktop_status.get("stopDetail") or "Press Esc to stop instantly")
+    @Property(str, notify=changed)
+    def computerControlStatus(self):
+        state = self._run_sessions.get(self._task_id)
+        return str(state.get("status", "Working…")) if state else "Working…"
+    @Property(str, notify=changed)
+    def computerControlThought(self):
+        state = self._run_sessions.get(self._task_id)
+        return str(state.get("overlay_thought", ""))[-1800:] if state else ""
+    @Property(str, notify=changed)
+    def computerControlReply(self):
+        state = self._run_sessions.get(self._task_id)
+        return str(state.get("overlay_reply", ""))[-1800:] if state else ""
+    @Property(int, notify=changed)
+    def computerControlQueuedCount(self):
+        state = self._run_sessions.get(self._task_id)
+        return len(state.get("queued_messages", [])) if state else 0
     @Property(str, notify=changed)
     def permissionMode(self): return self._permission_mode
     @Property(str, notify=changed)
@@ -1806,6 +1824,10 @@ class Controller(QObject):
             "permission_answer": False,
             "session_auto": False,
             "computer_control_active": False,
+            "overlay_thought": "",
+            "overlay_reply": "",
+            "steering_messages": [],
+            "queued_messages": [],
             "permission_mode_snapshot": self._permission_mode,
             "project": str(self._working_directory if project is None else project or ""),
         }
@@ -1860,11 +1882,59 @@ class Controller(QObject):
     def _start_run(self, history):
         self._launch_run(history, AgentEngine)
 
+    @staticmethod
+    def _queued_text(text: str):
+        lowered = text.casefold()
+        if lowered == "/queue":
+            return ""
+        if lowered.startswith("/queue "):
+            return text[7:].strip()
+        return None
+
+    def _send_while_busy(self, text: str) -> None:
+        state = self._active_session()
+        if not state:
+            return
+        queued = self._queued_text(text)
+        if queued is not None:
+            if not queued:
+                self.toast.emit("Use /queue followed by the message you want to send next.")
+                return
+            state.setdefault("queued_messages", []).append(queued)
+            count = len(state["queued_messages"])
+            state["status"] = f"Queued {count} message" + ("s" if count != 1 else "")
+            self._sync_active_session(state)
+            self.changed.emit()
+            self.toast.emit("Queued — Wynxq will handle it after the current turn.")
+            return
+
+        # Steering is the default mid-run behavior. Ollama streaming is not
+        # duplex, so cancel at the nearest boundary, retain the partial
+        # assistant/tool history, then immediately resume with this instruction.
+        state.setdefault("steering_messages", []).append(text)
+        state["messages"].append_message("user", text)
+        state["status"] = "Steering…"
+        job = state.get("job")
+        if job is not None:
+            job.cancel.set()
+        self._sync_active_session(state)
+        self.changed.emit()
+        self.scrollToEnd.emit()
+
     @Slot(str)
     def send(self, text):
         text = str(text).strip()
-        if not text or self._busy or self._connecting:
+        if not text or self._connecting:
             return
+        if self._busy:
+            self._send_while_busy(text)
+            return
+        queued = self._queued_text(text)
+        if queued is not None:
+            if not queued:
+                self.toast.emit("Use /queue followed by the message you want to send next.")
+                return
+            text = queued
         if not self._online:
             self._set_error("Ollama isn't connected",
                             "Wynxq needs a running local Ollama server before it can answer.",
@@ -2091,15 +2161,18 @@ class Controller(QObject):
             if not state.get("turn_had_message"):
                 messages.append_message("assistant", streaming=True)
                 state["turn_had_message"] = True
+            streamed = str(event.get("text", "") or "")
             if kind == "thinking":
                 if not state.get("think_started"):
                     state["think_started"] = time.monotonic()
-                messages.stream("thought", event.get("text", ""))
+                messages.stream("thought", streamed)
+                state["overlay_thought"] = (str(state.get("overlay_thought", "")) + streamed)[-4000:]
                 state["status"] = "Thinking"
             else:
                 if state.get("think_started") and not state.get("think_seconds"):
                     state["think_seconds"] = time.monotonic() - state["think_started"]
-                messages.stream("body", event.get("text", ""))
+                messages.stream("body", streamed)
+                state["overlay_reply"] = (str(state.get("overlay_reply", "")) + streamed)[-4000:]
                 state["status"] = "Writing"
         elif kind == "message_end":
             messages.finish_stream(float(state.get("think_seconds", 0.0) or 0.0),
@@ -2192,6 +2265,31 @@ class Controller(QObject):
     def _run_done(self, history, task_id=None):
         task_id = str(task_id or self._task_id or "")
         state = self._run_sessions.get(task_id)
+        if state is not None:
+            steering = list(state.get("steering_messages") or [])
+            queued = list(state.get("queued_messages") or [])
+            if steering and task_id == self._task_id:
+                continued = list(history)
+                for message in steering:
+                    continued.append({"role": "user", "content": message})
+                self._history = continued
+                self.store.set_messages(task_id, continued, state["model"], state["endpoint"])
+                # Keep queued follow-ups across the steering restart. Desktop
+                # ownership intentionally stays with this task; the resumed run
+                # will reuse it and the eventual final run releases it.
+                self._launch_run(continued, AgentEngine, extras={"queued_messages": queued})
+                self.scrollToEnd.emit()
+                return
+            if queued and task_id == self._task_id:
+                continued = list(history)
+                next_message, remaining = queued[0], queued[1:]
+                continued.append({"role": "user", "content": next_message})
+                state["messages"].append_message("user", next_message)
+                self._history = continued
+                self.store.set_messages(task_id, continued, state["model"], state["endpoint"])
+                self._launch_run(continued, AgentEngine, extras={"queued_messages": remaining})
+                self.scrollToEnd.emit()
+                return
         if state is None:
             # Compatibility for direct unit calls that predate task sessions.
             self._history = history
@@ -2318,7 +2416,19 @@ class Controller(QObject):
             self._sync_active_session(state)
             self.changed.emit()
 
-    # --------------------------------------------------------------- desktop
+    @Slot()
+    def promoteComputerControlOverlay(self):
+        """Best-effort Plasma/Wayland promotion for independent HUD windows."""
+        if self._overlay_promotion_active:
+            return
+        self._overlay_promotion_active = True
+
+        def settled(_result=None):
+            self._overlay_promotion_active = False
+
+        self._job(lambda cancel, emit: kwin.promote_control_windows(cancel),
+                  settled, lambda _message: settled())
+
     # --------------------------------------------------------------- desktop
     @Slot()
     def toggleDesktop(self):

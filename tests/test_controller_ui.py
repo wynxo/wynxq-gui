@@ -73,6 +73,48 @@ def test_task_groups_put_pinned_first_and_respect_search(tmp_path):
     bridge.shutdown()
 
 
+# ----------------------------------------------------------- steering/queue
+def test_busy_message_steers_current_run_by_default(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    bridge._online = True
+    task = bridge.store.create_conversation("Steer", bridge.model, bridge.endpoint)
+    bridge._task_id, bridge._task_title = task["id"], task["title"]
+
+    class FakeJob:
+        def __init__(self):
+            self.cancel = threading.Event()
+
+    monkeypatch.setattr(bridge, "_job", lambda *args, **kwargs: FakeJob())
+    state = bridge._launch_run([{"role": "user", "content": "start"}])
+    bridge.send("click the other button instead")
+
+    assert state["steering_messages"] == ["click the other button instead"]
+    assert state["job"].cancel.is_set()
+    assert state["status"] == "Steering…"
+    assert bridge.messages.items[-1]["body"] == "click the other button instead"
+    bridge.shutdown()
+
+
+def test_queue_during_busy_run_does_not_interrupt_it(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    bridge._online = True
+    task = bridge.store.create_conversation("Queue", bridge.model, bridge.endpoint)
+    bridge._task_id, bridge._task_title = task["id"], task["title"]
+
+    class FakeJob:
+        def __init__(self):
+            self.cancel = threading.Event()
+
+    monkeypatch.setattr(bridge, "_job", lambda *args, **kwargs: FakeJob())
+    state = bridge._launch_run([{"role": "user", "content": "start"}])
+    bridge.send("/queue then open the next app")
+
+    assert state["queued_messages"] == ["then open the next app"]
+    assert not state["job"].cancel.is_set()
+    assert bridge.computerControlQueuedCount == 1
+    bridge.shutdown()
+
+
 # -------------------------------------------------------------- attachments
 def test_attaching_and_removing_local_context(tmp_path):
     bridge = controller(tmp_path)

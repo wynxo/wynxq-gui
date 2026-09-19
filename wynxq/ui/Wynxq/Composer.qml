@@ -42,7 +42,9 @@ Item {
     readonly property bool hasAttachments: bridge && bridge.attachmentCount > 0
     readonly property bool tight: root.width < 560
     readonly property bool veryTight: root.width < 430
-    readonly property bool canSend: input.text.trim().length > 0 && bridge && bridge.online && !bridge.connecting
+    readonly property bool hasPrompt: input.text.trim().length > 0
+    readonly property bool queuePrompt: input.text.trim().toLowerCase().indexOf("/queue ") === 0
+    readonly property bool canSend: root.hasPrompt && bridge && bridge.online && !bridge.connecting
     property int slashIndex: 0
     readonly property string slashQuery: input.text.length > 0 && input.text.charAt(0) === "/"
         && input.text.indexOf("\n") < 0 && input.text.indexOf(" ") < 0
@@ -83,7 +85,7 @@ Item {
     }
 
     function send() {
-        if (!canSend || (bridge && bridge.busy)) return;
+        if (!canSend) return;
         root.submitted(input.text);
         input.text = "";
     }
@@ -537,25 +539,28 @@ Item {
                 IconButton {
                     id: sendButton
                     objectName: "sendButton"
-                    iconName: bridge && bridge.busy ? "stop" : "arrow"
+                    readonly property bool stopping: !!(bridge && bridge.busy && !root.hasPrompt)
+                    iconName: stopping ? "stop" : "arrow"
                     Layout.preferredWidth: Theme.control
                     Layout.preferredHeight: Theme.control
                     iconSize: 14
-                    tint: bridge && bridge.busy ? Theme.textPrimary
+                    tint: stopping ? Theme.textPrimary
                         : sendButton.enabled ? Theme.onAccent : Theme.textMuted
                     activeTint: tint
-                    tooltip: bridge && bridge.busy ? "Stop" : "Send"
-                    shortcut: bridge && bridge.busy ? "Esc" : "Enter"
-                    enabled: (bridge && bridge.busy) || root.canSend
+                    tooltip: bridge && bridge.busy
+                        ? (stopping ? "Stop" : (root.queuePrompt ? "Queue after this turn" : "Steer current turn"))
+                        : "Send"
+                    shortcut: stopping ? "Esc" : "Enter"
+                    enabled: stopping || root.canSend
                     scale: down ? 0.90 : hovered && enabled ? 1.025 : 1.0
-                    onClicked: bridge && bridge.busy ? bridge.stop() : root.send()
+                    onClicked: stopping ? bridge.stop() : root.send()
                     Behavior on scale {
                         enabled: !Theme.reducedMotion
                         NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
                     }
                     background: Rectangle {
                         radius: width / 2
-                        color: bridge && bridge.busy
+                        color: sendButton.stopping
                             ? (sendButton.hovered ? Theme.surfacePressed : Theme.surfaceSelected)
                             : sendButton.enabled
                                 ? (sendButton.hovered ? Theme.accentHover : Theme.accent)

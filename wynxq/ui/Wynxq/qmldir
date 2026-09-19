@@ -32,6 +32,7 @@ Sheet 1.0 Sheet.qml
 ConfirmSheet 1.0 ConfirmSheet.qml
 Toast 1.0 Toast.qml
 ComputerControlOverlay 1.0 ComputerControlOverlay.qml
+ComputerControlPanel 1.0 ComputerControlPanel.qml
 
 # The task
 CodeBlock 1.0 CodeBlock.qml
