@@ -111,7 +111,7 @@ def test_file_urls_from_a_drop_are_accepted(tmp_path):
     bridge.shutdown()
 
 
-def test_images_are_dropped_when_the_model_cannot_see(tmp_path, monkeypatch):
+def test_nonvision_send_keeps_image_locally_for_transcript_but_warns_user(tmp_path, monkeypatch):
     bridge = controller(tmp_path)
     bridge._online = True
     bridge._model_capabilities = ["completion"]
@@ -121,7 +121,12 @@ def test_images_are_dropped_when_the_model_cannot_see(tmp_path, monkeypatch):
     bridge.send("look at this")
 
     payloads = [m for m in bridge._history if m.get("images")]
-    assert payloads == []
+    assert len(payloads) == 1
+    assert payloads[0]["images"] == ["AAA"]
+    assert bridge.messages.items[-1]["attachments"][0]["title"] == "shot.png"
+    # AgentEngine owns the inference boundary; it strips unsupported images
+    # immediately before the Ollama request, while local history keeps them.
+
     assert any("a.py" in str(m.get("content", "")) for m in bridge._history)
     assert bridge.attachmentCount == 0
     bridge.shutdown()

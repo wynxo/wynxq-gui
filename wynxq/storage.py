@@ -1,6 +1,8 @@
 """Small, private, thread-safe SQLite history store.
 
-Screen images are transient: history preserves text and tool evidence, not screenshots.
+Automatic desktop screenshots are transient. Images the user explicitly sends
+as message context are persisted locally so the conversation can render the
+same attachment thumbnail after it is reopened.
 """
 from __future__ import annotations
 
@@ -173,11 +175,15 @@ class Store:
             return [json.loads(row[0]) for row in rows]
 
     def set_messages(self, conversation_id: str, messages: list[dict], model: str | None = None) -> None:
-        # Never mutate the live conversation; it may still contain images for inference.
+        # Never mutate the live conversation; it may still contain images for
+        # inference. Automatic agent screenshots are always transient. Explicit
+        # user attachments carry _wynxq_attachments metadata and are kept
+        # locally so their sent-message thumbnails survive a reload.
         saved = copy.deepcopy([message for message in messages
             if not (message.get("images") and message.get("content", "").startswith("Current desktop screenshot ("))])
         for message in saved:
-            message.pop("images", None)
+            if message.get("images") and not message.get("_wynxq_attachments"):
+                message.pop("images", None)
         encoded = [json.dumps(message, ensure_ascii=False, allow_nan=False) for message in saved]
         with self._lock, self._db:
             if self._db.execute("SELECT 1 FROM conversations WHERE id=?", (conversation_id,)).fetchone() is None:

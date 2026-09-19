@@ -145,7 +145,7 @@ def test_build_messages_separates_text_from_images_and_frames_it_as_data():
     assert messages[0][ctx.DISPLAY_KEY][0]["title"] == "a.py"
     assert messages[1][ctx.DISPLAY_KEY][0]["imageIndex"] == 0
     rebuilt = ctx.context_message_attachments(messages[1])
-    assert rebuilt[0]["title"] == "Screen"
+    assert rebuilt[0]["title"] == "shot.png"
     assert rebuilt[0]["image"] == "AAA"
     assert ctx.build_messages([]) == []
 
