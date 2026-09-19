@@ -4,6 +4,8 @@ from __future__ import annotations
 import ipaddress
 from urllib.parse import urlsplit
 
+from .ollama import OllamaClient
+
 def validate_workspace_endpoint(endpoint: str) -> str:
     """Validate an explicit Ollama origin without forcing it to loopback."""
     value = str(endpoint or "").strip()
@@ -60,3 +62,9 @@ def endpoint_scope(endpoint: str) -> str:
         return "remote"
     except Exception:
         return "invalid"
+
+
+class WorkspaceOllamaClient(OllamaClient):
+    """Ollama client whose endpoint policy permits explicit non-loopback origins."""
+
+    endpoint_validator = staticmethod(validate_workspace_endpoint)
