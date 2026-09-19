@@ -19,6 +19,13 @@ def controller_sources():
     return "\n".join(path.read_text(encoding="utf-8") for path in paths)
 
 
+def dock_sources():
+    """Dock facade plus focused implementation slices as one source view."""
+    root = ROOT / "wynxq"
+    paths = [root / "dock.py", *sorted(root.glob("dock_*_ops.py"))]
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths)
+
+
 def declared_types():
     types = {}
     for line in (MODULE / "qmldir").read_text(encoding="utf-8").splitlines():
@@ -217,7 +224,7 @@ def test_the_dock_never_moves_the_panel_the_user_chose():
         assert "autoTab" not in text and "chosenTab" not in text, path.name
     # `suggest` is the only path that may change the tab on the app's behalf,
     # it is not reachable from QML, and it refuses once the user has chosen.
-    dock = (Path(__file__).resolve().parents[1] / "wynxq" / "dock.py").read_text(encoding="utf-8")
+    dock = dock_sources()
     assert "def suggest(self" in dock
     assert "if name not in TABS or self._tab_pinned:" in dock
     assert "@Slot" not in dock.split("def suggest(self")[0].rsplit("\n", 3)[-2]
