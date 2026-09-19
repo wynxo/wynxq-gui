@@ -216,7 +216,7 @@ Sheet {
                     // ------------------------------------------------ GENERAL
                     Column {
                         spacing: Theme.s6
-                        Group {
+                        SettingsGroup {
                             title: "Ollama servers"
                             description: "Keep several Ollama machines. The default starts new chats; each existing chat remembers its own server and model."
 
@@ -388,7 +388,7 @@ Sheet {
                                 }
                             }
                         }
-                        Group {
+                        SettingsGroup {
                             title: "Behaviour"
                             Toggle {
                                 width: parent.width
@@ -410,7 +410,7 @@ Sheet {
                     // ----------------------------------------- MODEL & RUNTIME
                     Column {
                         spacing: Theme.s6
-                        Group {
+                        SettingsGroup {
                             title: "Current chat model"
                             description: "This chat's model. Server + model switching lives together in the composer picker; the server default for new chats is managed under General."
                             Row {
@@ -437,7 +437,7 @@ Sheet {
                                 wrapMode: Text.WordWrap; lineHeight: 1.45
                             }
                         }
-                        Group {
+                        SettingsGroup {
                             title: "Speed"
                             description: bridge ? bridge.runtimeHint : ""
                             Segmented {
@@ -464,7 +464,7 @@ Sheet {
                                 onSwitched: function(value) { if (bridge) bridge.setFlag("think", value); }
                             }
                         }
-                        Disclosure {
+                        SettingsDisclosure {
                             width: parent.width
                             title: "Advanced generation options"
                             hint: "Ollama options. Saving these switches the preset to Custom."
@@ -479,25 +479,25 @@ Sheet {
                                 Column {
                                     width: advancedGrid.cellWidth
                                     spacing: Theme.s2
-                                    FieldLabel { text: "Context tokens" }
+                                    SettingsFieldLabel { text: "Context tokens" }
                                     Field { id: ctxField; width: parent.width; inputMethodHints: Qt.ImhDigitsOnly }
                                 }
                                 Column {
                                     width: advancedGrid.cellWidth
                                     spacing: Theme.s2
-                                    FieldLabel { text: "Temperature" }
+                                    SettingsFieldLabel { text: "Temperature" }
                                     Field { id: tempField; width: parent.width }
                                 }
                                 Column {
                                     width: advancedGrid.cellWidth
                                     spacing: Theme.s2
-                                    FieldLabel { text: "Keep model loaded" }
+                                    SettingsFieldLabel { text: "Keep model loaded" }
                                     Field { id: keepField; width: parent.width; placeholderText: "5m" }
                                 }
                                 Column {
                                     width: advancedGrid.cellWidth
                                     spacing: Theme.s2
-                                    FieldLabel { text: "Desktop action budget" }
+                                    SettingsFieldLabel { text: "Desktop action budget" }
                                     Field { id: stepsField; width: parent.width; inputMethodHints: Qt.ImhDigitsOnly }
                                 }
                             }
@@ -514,11 +514,11 @@ Sheet {
                     // -------------------------------------------------- AGENT
                     Column {
                         spacing: Theme.s6
-                        Group {
+                        SettingsGroup {
                             title: "Local copilot"
                             description: "Ask Wynxq to open apps, run commands, inspect files or help with code. Tools execute on this computer even when Ollama inference runs on another server. Commands run in your workspace folder, or your home folder when none is selected."
                         }
-                        Group {
+                        SettingsGroup {
                             title: "Screen control"
                             description: "Wynxq can see your screen and use your mouse and keyboard. It starts off every time Wynxq opens."
                             Row {
@@ -570,7 +570,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Stopping a run"
                             description: "Escape stops generation and desktop actions whenever Wynxq has focus. While a model is driving another window, Wynxq does not — so it also asks your desktop for a shortcut that works from anywhere."
                             Row {
@@ -606,7 +606,7 @@ Sheet {
                                 wrapMode: Text.WordWrap; lineHeight: 1.45
                             }
                         }
-                        Group {
+                        SettingsGroup {
                             title: "Permission"
                             description: "How much Wynxq may do — commands as well as the desktop — without asking first. It applies to Work and Wynxi tasks. A Chat task has no tools at all, so nothing there is ever approved."
                             Repeater {
@@ -666,7 +666,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Memory"
                             description: "One Markdown file Wynxq reads at the start of every task, in Wynxq and Wynxi alike, so what you tell it once does not have to be told again. Read it, correct it and delete from it in the Memory panel — Ctrl+Shift+M."
 
@@ -682,7 +682,7 @@ Sheet {
                                 Column {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 1
-                                    FieldLabel { text: "Remember things between tasks" }
+                                    SettingsFieldLabel { text: "Remember things between tasks" }
                                     Text {
                                         text: bridge ? bridge.memorySummary : ""
                                         color: Theme.textMuted
@@ -722,7 +722,7 @@ Sheet {
                     Column {
                         spacing: Theme.s6
 
-                        Group {
+                        SettingsGroup {
                             title: "The dock"
                             description: "Files, Terminal, Changes, Context, Memory, Activity, Browser and Preview live on the right. Closing the workspace removes the panel and rail together; restore it from the lower-right button or Ctrl+Shift+B."
 
@@ -740,7 +740,7 @@ Sheet {
                                 Column {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 1
-                                    FieldLabel { text: "Open the dock panel" }
+                                    SettingsFieldLabel { text: "Open the dock panel" }
                                     Text {
                                         text: "Remembered between sessions, along with its width and the tab you left open."
                                         color: Theme.textMuted
@@ -764,7 +764,7 @@ Sheet {
                                 Column {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 1
-                                    FieldLabel { text: "Show dotfiles in the file tree" }
+                                    SettingsFieldLabel { text: "Show dotfiles in the file tree" }
                                     Text {
                                         text: "Build folders and caches stay hidden either way."
                                         color: Theme.textMuted
@@ -774,7 +774,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Terminal"
                             description: "The Terminal panel runs a real shell in the project folder, with your own environment. It starts when you first open the panel and stays open for the session."
 
@@ -783,7 +783,7 @@ Sheet {
                                 spacing: Theme.s3
                                 Column {
                                     spacing: 2
-                                    FieldLabel { text: "Shell" }
+                                    SettingsFieldLabel { text: "Shell" }
                                     Text {
                                         text: bridge && bridge.workspaceDock && bridge.workspaceDock.terminalShell
                                               ? bridge.workspaceDock.terminalShell : "Your login shell ($SHELL)"
@@ -794,7 +794,7 @@ Sheet {
                                 Item { width: Theme.s5; height: 1 }
                                 Column {
                                     spacing: 2
-                                    FieldLabel { text: "Working directory" }
+                                    SettingsFieldLabel { text: "Working directory" }
                                     Text {
                                         text: bridge && bridge.workspaceDock && bridge.workspaceDock.terminalDirectoryLabel
                                               ? bridge.workspaceDock.terminalDirectoryLabel : "The project folder, or home"
@@ -813,7 +813,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Browser"
                             description: "A page opens beside the conversation instead of pulling you out of Wynxq. Nothing on it reaches the model until you attach it."
 
@@ -846,7 +846,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Changes"
                             description: "Uncommitted work is read from Git in the project folder. Discarding a file's changes always asks first."
 
@@ -876,7 +876,7 @@ Sheet {
                     // --------------------------------------------------- USAGE
                     Column {
                         spacing: Theme.s6
-                        Group {
+                        SettingsGroup {
                             title: "Recorded token usage"
                             description: "Exact completed Ollama accounting. Total is input + output; cached input is already part of input and is never counted twice."
 
@@ -948,7 +948,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Last 7 days"
                             description: "A quiet local trend from exact completed runs — no cloud analytics."
                             visible: bridge && bridge.tokenUsageDays && bridge.tokenUsageDays.length > 0
@@ -996,7 +996,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Models · last 30 days"
                             description: "Which local models handled the work, ranked by exact input + output tokens."
                             visible: bridge && bridge.tokenUsageModels && bridge.tokenUsageModels.length > 0
@@ -1047,7 +1047,7 @@ Sheet {
                             }
                         }
 
-                        Group {
+                        SettingsGroup {
                             title: "Current chat"
                             description: "Completed runs recorded for the conversation that is open now. A run is added only after Ollama reports exact token metrics."
                             RowLayout {
@@ -1073,7 +1073,7 @@ Sheet {
                     // --------------------------------------------- APPEARANCE
                     Column {
                         spacing: Theme.s6
-                        Group {
+                        SettingsGroup {
                             title: "Accent"
                             description: "One restrained highlight colour, used sparingly across the app."
                             Flow {
@@ -1135,7 +1135,7 @@ Sheet {
                                 WButton { text: "Apply"; onClicked: if (bridge) bridge.setAccent(accentField.text) }
                             }
                         }
-                        Group {
+                        SettingsGroup {
                             title: "Density and motion"
                             Segmented {
                                 width: 240
@@ -1170,7 +1170,7 @@ Sheet {
                     // ----------------------------------------------- ADVANCED
                     Column {
                         spacing: Theme.s6
-                        Group {
+                        SettingsGroup {
                             title: "Privacy & data path"
                             description: bridge ? bridge.endpointPrivacyHint : ""
                             Repeater {
@@ -1195,7 +1195,7 @@ Sheet {
                                 }
                             }
                         }
-                        Group {
+                        SettingsGroup {
                             title: "Local data"
                             Text {
                                 width: parent.width
@@ -1219,7 +1219,7 @@ Sheet {
                                 }
                             }
                         }
-                        Group {
+                        SettingsGroup {
                             title: "Global quick bar"
                             description: "Linux gives applications no system-wide hotkey. Bind your desktop's custom shortcut to this command and the quick bar will open from anywhere."
                             Rectangle {
@@ -1242,7 +1242,7 @@ Sheet {
                                 }
                             }
                         }
-                        Group {
+                        SettingsGroup {
                             title: "About"
                             Text {
                                 width: parent.width
@@ -1261,106 +1261,4 @@ Sheet {
         }
     }
 
-    component Group: Column {
-        property string title: ""
-        property string description: ""
-        default property alias groupBody: holder.data
-        width: parent ? parent.width : 400
-        spacing: Theme.s3
-        Text {
-            text: parent.title
-            color: Theme.textPrimary
-            font.family: Theme.sansFamily; font.pixelSize: Theme.heading
-            font.weight: Font.DemiBold
-        }
-        Text {
-            width: parent.width
-            visible: parent.description !== ""
-            text: parent.description
-            color: Theme.textMuted
-            font.family: Theme.sansFamily; font.pixelSize: Theme.caption
-            wrapMode: Text.WordWrap; lineHeight: 1.5
-            bottomPadding: Theme.s1
-        }
-        Column {
-            id: holder
-            width: parent.width
-            spacing: Theme.s3
-        }
-    }
-
-    component Disclosure: Column {
-        id: disclosure
-        property string title: ""
-        property string hint: ""
-        property bool expanded: false
-        default property alias disclosureBody: inner.data
-        width: parent ? parent.width : 400
-        spacing: Theme.s3
-
-        AbstractButton {
-            id: toggle
-            width: parent.width
-            implicitHeight: Theme.control
-            hoverEnabled: true
-            Accessible.name: disclosure.title
-            onClicked: disclosure.expanded = !disclosure.expanded
-            scale: down ? Theme.pressScale : 1
-            Behavior on scale {
-                enabled: !Theme.reducedMotion
-                NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
-            }
-            background: GlassSurface {
-                radius: Theme.r2
-                solid: false
-                glassEnabled: toggle.hovered || toggle.down || toggle.visualFocus
-                tint: toggle.down ? Theme.glassTintStrong : Theme.glassTintHover
-                fillOpacity: toggle.down ? 0.56
-                           : toggle.hovered ? 0.42
-                           : toggle.visualFocus ? 0.30 : 0.0
-                outlineVisible: toggle.visualFocus
-                strongEdge: toggle.visualFocus
-                active: toggle.visualFocus
-                sheen: toggle.hovered || toggle.down
-                edgeColor: toggle.visualFocus ? Theme.accentEdge : "transparent"
-            }
-            contentItem: Row {
-                spacing: Theme.s2
-                Icon {
-                    name: disclosure.expanded ? "down" : "chevron"
-                    ink: Theme.textSecondary; width: 13; height: 13
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                Text {
-                    text: disclosure.title
-                    color: Theme.textPrimary
-                    font.family: Theme.sansFamily; font.pixelSize: Theme.heading
-                    font.weight: Font.DemiBold
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-            MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.PointingHandCursor }
-        }
-        Text {
-            width: parent.width
-            visible: disclosure.expanded && disclosure.hint !== ""
-            text: disclosure.hint
-            color: Theme.textMuted
-            font.family: Theme.sansFamily; font.pixelSize: Theme.caption
-            wrapMode: Text.WordWrap; lineHeight: 1.5
-        }
-        Column {
-            id: inner
-            width: parent.width
-            spacing: Theme.s3
-            visible: disclosure.expanded
-            height: visible ? implicitHeight : 0
-        }
-    }
-
-    component FieldLabel: Text {
-        color: Theme.textSecondary
-        font.family: Theme.sansFamily
-        font.pixelSize: Theme.caption
-    }
 }
