@@ -174,13 +174,13 @@ def test_tool_roundtrip_preserves_thinking_calls_and_image():
     client = FakeClient([response("Opening the app.", [("open_app", {"app": "paint.desktop"})], "Need paint"),
                          response("Paint launched.")])
     history, events, desktop = run(client, think=True)
-    assert desktop.calls == [("open_app", {"app": "paint.desktop"})]
+    assert desktop.calls == [("open_app", {"app": "paint.desktop"}), ("screenshot", {})]
     second = client.requests[1]
     prior = next(m for m in second["messages"] if m["role"] == "assistant")
     assert prior["thinking"] == "Need paint"
     assert prior["tool_calls"][0]["function"]["name"] == "open_app"
     assert next(m for m in second["messages"] if m["role"] == "tool")["tool_name"] == "open_app"
-    assert not any(m.get("images") for m in second["messages"])
+    assert any(m.get("images") == ["fakepng"] for m in second["messages"])
     assert second["think"] is True
     assert history[-1]["content"] == "Paint launched."
     assert all(m["role"] != "system" for m in history)
@@ -219,6 +219,22 @@ def test_screenshot_is_captured_only_when_the_model_requests_it():
     assert any(m.get("images") == ["fakepng"] for m in client.requests[1]["messages"])
 
 
+def test_gui_action_automatically_refreshes_visual_state_for_next_turn():
+    client = FakeClient([
+        response(calls=[("click", {"x": 20, "y": 30, "button": "right"})]),
+        response("The menu opened."),
+    ])
+    _, events, desktop = run(client)
+    assert desktop.calls == [
+        ("click", {"x": 20, "y": 30, "button": "right"}),
+        ("screenshot", {}),
+    ]
+    assert any(m.get("images") == ["fakepng"] for m in client.requests[1]["messages"])
+    assert any(e.get("type") == "control_active" for e in events)
+    assert any(e.get("type") == "screen_observed" and e.get("action") == "click"
+               for e in events)
+
+
 def test_tool_errors_return_evidence_to_model():
     client = FakeClient([response(calls=[("open_app", {"app": "paint.desktop"})]), response("I could not open Paint.")])
     history, events, _ = run(client, FakeDesktop("open_app"))
@@ -230,7 +246,9 @@ def test_tool_errors_return_evidence_to_model():
 @pytest.mark.parametrize("name,args", [("shell", {"cmd": "id"}), ("click", {"x": True, "y": 3}),
     ("click", {"x": -1, "y": 3}), ("click", {"x": 1, "y": 2, "surprise": "x"}),
     ("drag", {"points": [[1, 2]]}), ("drag", {"points": [[1, 2], [3, 4]], "duration": float("nan")}),
-    ("press_key", {"keys": "ENTER"}), ("wait", {"seconds": 1000}), ("type_text", {"text": 12})])
+    ("press_key", {"keys": "ENTER"}), ("hold_key", {"keys": ["W"], "seconds": 8}),
+    ("hold_button", {"x": 1, "y": 2, "button": "left", "seconds": 0}),
+    ("wait", {"seconds": 1000}), ("type_text", {"text": 12})])
 def test_tool_arguments_are_checked(name, args):
     with pytest.raises(ValueError):
         validate_tool_call(name, args)

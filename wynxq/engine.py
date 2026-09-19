@@ -288,6 +288,9 @@ TOOLS = [
     _tool("click", "Click an observed control at screen pixel coordinates.",
           {"x": _COORD, "y": _COORD, "button": {"type": "string", "enum": ["left", "middle", "right"]},
            "count": {"type": "integer", "minimum": 1, "maximum": 3}}, ["x", "y"]),
+    _tool("hold_button", "Move to an observed point and hold a mouse button for a bounded duration, then always release it.",
+          {"x": _COORD, "y": _COORD, "button": {"type": "string", "enum": ["left", "middle", "right"]},
+           "seconds": {"type": "number", "minimum": 0.05, "maximum": 5}}, ["x", "y", "seconds"]),
     _tool("drag", "Hold the left button and follow points, for drawing or moving an object.",
           {"points": {"type": "array", "minItems": 2, "maxItems": 256,
                       "items": {"type": "array", "items": _COORD, "minItems": 2, "maxItems": 2}},
@@ -297,6 +300,10 @@ TOOLS = [
     _tool("press_key", "Press a key or chord, e.g. ['CTRL','S'], ['ENTER'], ['ESC']. Release after pressing.",
           {"keys": {"type": "array", "minItems": 1, "maxItems": 8,
                     "items": {"type": "string", "minLength": 1, "maxLength": 40}}}, ["keys"]),
+    _tool("hold_key", "Hold one key or a chord for a bounded duration, then always release every key.",
+          {"keys": {"type": "array", "minItems": 1, "maxItems": 8,
+                    "items": {"type": "string", "minLength": 1, "maxLength": 40}},
+           "seconds": {"type": "number", "minimum": 0.05, "maximum": 5}}, ["keys", "seconds"]),
     _tool("scroll", "Scroll at the pointer; positive dy scrolls downward, negative upward.",
           {"dx": {"type": "integer", "minimum": -20, "maximum": 20},
            "dy": {"type": "integer", "minimum": -20, "maximum": 20}}, ["dx", "dy"]),
@@ -328,6 +335,10 @@ BROWSER_TOOLS = {"browser_open"}
 # Qt WebEngine is available; keeping it out of this base set prevents a model
 # from seeing a tool the current installation cannot execute.
 _NONVISUAL = {"open_app", "list_apps", "wait", "run_command"} | MEMORY_TOOLS
+# GUI actions that are followed by a fresh visual observation so the next
+# reasoning turn sees what actually happened instead of guessing.
+_AUTO_OBSERVE = {"open_app", "wait", "click", "hold_button", "drag",
+                 "type_text", "press_key", "hold_key", "scroll"}
 
 # Permission modes: a ladder, from approving every action to approving none.
 #
@@ -371,7 +382,8 @@ LOW_RISK = {"screenshot", "list_apps", "wait", "move_pointer", "scroll", "rememb
 # Typing, key chords, clicks and drags can save, send, delete, submit, or move
 # data in whichever application is focused. Safe mode therefore keeps all of
 # them behind approval; Auto and Full deliberately opt into unattended input.
-SENSITIVE = {"type_text", "press_key", "run_command", "click", "drag"}
+SENSITIVE = {"type_text", "press_key", "hold_key", "run_command",
+             "click", "hold_button", "drag"}
 
 # Commands that can take the machine, its disks, its packages or its accounts
 # with them. Auto runs everything else unattended; these it still puts in front
@@ -458,14 +470,18 @@ def action_summary(name: str, args: dict | None = None) -> str:
         clicks = {2: "Double-click", 3: "Triple-click"}.get(count, "Click")
         where = f" at {args.get('x')}, {args.get('y')}" if "x" in args else ""
         return f"{clicks} the {button} button{where}"
+    if name == "hold_button":
+        return (f"Hold the {args.get('button', 'left')} button at "
+                f"{args.get('x')}, {args.get('y')} for {args.get('seconds', 0.25)}s")
     if name == "type_text":
         text = str(args.get("text", ""))
         preview = text if len(text) <= 60 else text[:57] + "…"
         return f"Type “{preview}”"
-    if name == "press_key":
+    if name in ("press_key", "hold_key"):
         keys = args.get("keys")
         combo = " + ".join(str(k).upper() for k in keys) if isinstance(keys, list) else "a key"
-        return f"Press {combo}"
+        return (f"Hold {combo} for {args.get('seconds', 0.25)}s"
+                if name == "hold_key" else f"Press {combo}")
     if name == "run_command":
         return "Run " + str(args.get("command", "a command"))[:120]
     if name == "open_app":
@@ -631,7 +647,10 @@ not proof the desired window or drawing exists. For visual tasks inspect a scree
 before clicking, use its pixel coordinates, and inspect again after meaningful changes.
 Screenshots show the real desktop and may include this chat. Never click Wynxq GUI's Stop or
 permission controls. After completing a visual task, verify with a fresh screenshot.
-Use drag with a series of points to draw continuous strokes. If visual tools are absent,
+Use drag with a series of points to draw continuous strokes. Use hold_key or hold_button
+for bounded continuous input; never simulate a held key by leaving input pressed across turns.
+After GUI actions, use the refreshed screen observation to decide the next action instead of
+assuming the application changed. If visual tools are absent,
 explain that the chosen model needs both vision and tools for mouse/keyboard copilot work.
 The user may be asked to approve individual actions. A declined action is a decision, not
 an error: acknowledge it, do not retry it, and offer an alternative or ask what to do next.
@@ -767,9 +786,27 @@ class AgentEngine:
                         requested = base / requested
                     result = run_command(args["command"], str(requested), args.get("timeout", 60), cancel)
                 else:
+                    if name not in _NONVISUAL:
+                        event("control_active", action=name)
                     result = self.desktop.execute(name, args, cancel)
                 if not isinstance(result, dict):
                     raise RuntimeError("Desktop tool returned an invalid result")
+                if (visual and result.get("ok", True) and name in _AUTO_OBSERVE
+                        and not _stopped(cancel)):
+                    try:
+                        event("control_active", action="screenshot")
+                        observed = self.desktop.execute("screenshot", {}, cancel)
+                        append_screen(observed)
+                        result = {**result, "screen_observed": {
+                            "width": observed.get("width"), "height": observed.get("height")}}
+                        event("screen_observed", action=name,
+                              width=observed.get("width"), height=observed.get("height"))
+                    except Cancelled:
+                        raise
+                    except Exception as exc:
+                        # The primary input may have succeeded even if observing
+                        # its result did not; report both truths to the model.
+                        result = {**result, "screen_observation_error": str(exc)}
             except Cancelled:
                 finish({"ok": False, "error": "Stopped; the action may be partial"})
                 raise

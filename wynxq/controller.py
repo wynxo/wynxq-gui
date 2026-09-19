@@ -111,6 +111,8 @@ TOOL_PRESENTATION = {
     "drag": ("paint", "Dragging"),
     "type_text": ("keyboard", "Typing"),
     "press_key": ("keyboard", "Pressing keys"),
+    "hold_key": ("keyboard", "Holding keys"),
+    "hold_button": ("cursor", "Holding a mouse button"),
     "scroll": ("scroll", "Scrolling"),
     "wait": ("clock", "Waiting"),
     "remember": ("memory", "Saving to memory"),
@@ -384,6 +386,8 @@ class _RunDesktop:
         if name not in self._NONVISUAL_DESKTOP and self.task_id != self.owner._task_id:
             return {"ok": False, "error":
                     "Screen interaction is foreground-only. Open this task to continue visual control."}
+        if name not in self._NONVISUAL_DESKTOP and hasattr(self.owner.desktop, "begin_control"):
+            self.owner.desktop.begin_control(self.task_id)
         return self.owner.desktop.execute(name, arguments, cancel)
 
 
@@ -875,6 +879,16 @@ class Controller(QObject):
     def desktopStopShortcut(self): return self._desktop_status.get("stopShortcut", "")
     @Property(str, notify=changed)
     def desktopStopDetail(self): return self._desktop_status.get("stopDetail", "")
+    @Property(bool, notify=changed)
+    def computerControlActive(self):
+        state = self._run_sessions.get(self._task_id)
+        return bool(state and state.get("computer_control_active") and state.get("busy"))
+    @Property(str, notify=changed)
+    def computerControlStopShortcut(self):
+        return str(self._desktop_status.get("stopShortcut") or "Esc")
+    @Property(str, notify=changed)
+    def computerControlStopDetail(self):
+        return str(self._desktop_status.get("stopDetail") or "Press Esc to stop instantly")
     @Property(str, notify=changed)
     def permissionMode(self): return self._permission_mode
     @Property(str, notify=changed)
@@ -1587,6 +1601,11 @@ class Controller(QObject):
 
     @Slot()
     def newTask(self):
+        previous = self._task_id
+        previous_state = self._run_sessions.get(previous)
+        if previous_state and previous_state.get("computer_control_active"):
+            previous_state["computer_control_active"] = False
+            self._release_desktop_control(previous)
         self._save_draft()
         self._task_id = ""
         self._task_title = "New task"
@@ -1618,6 +1637,11 @@ class Controller(QObject):
             return
         switching = task_id != self._task_id
         if switching:
+            previous = self._task_id
+            previous_state = self._run_sessions.get(previous)
+            if previous_state and previous_state.get("computer_control_active"):
+                previous_state["computer_control_active"] = False
+                self._release_desktop_control(previous)
             self._save_draft()
             self.cancelRegion()
         self._task_id = task_id
@@ -2145,6 +2169,7 @@ class Controller(QObject):
             "permission_event": threading.Event(),
             "permission_answer": False,
             "session_auto": False,
+            "computer_control_active": False,
             "permission_mode_snapshot": self._permission_mode,
             "project": str(self._working_directory if project is None else project or ""),
         }
@@ -2450,6 +2475,13 @@ class Controller(QObject):
             state["status"] = event.get("text", "Working")
         elif kind == "session":
             state["status"] = "Screen control ready"
+        elif kind == "control_active":
+            state["computer_control_active"] = True
+            state["status"] = "Controlling your computer"
+            self._desktop_status = self.desktop.status()
+        elif kind == "screen_observed":
+            state["status"] = "Observed the updated screen"
+            self._desktop_status = self.desktop.status()
         elif kind == "tool_start":
             name = event.get("name", "action")
             icon, label = TOOL_PRESENTATION.get(name, ("bolt", name.replace("_", " ").capitalize()))
@@ -2543,6 +2575,8 @@ class Controller(QObject):
         state["busy"] = False
         state["job"] = None
         state["session_auto"] = False
+        state["computer_control_active"] = False
+        self._release_desktop_control(task_id)
         state["permission"] = None
         state["messages"].mark_idle()
         state["status"] = "Stopped" if stopped else (
@@ -2583,6 +2617,8 @@ class Controller(QObject):
         state["busy"] = False
         state["job"] = None
         state["session_auto"] = False
+        state["computer_control_active"] = False
+        self._release_desktop_control(task_id)
         state["permission"] = None
         state["messages"].mark_idle()
         state["status"] = "Needs attention"
@@ -2609,6 +2645,19 @@ class Controller(QObject):
     def setWindowActive(self, active):
         self._window_active = bool(active)
 
+    def _desktop_control_released(self, status):
+        self._desktop_status = dict(status or self.desktop.status())
+        self.changed.emit()
+
+    def _release_desktop_control(self, task_id: str) -> None:
+        if not task_id or not hasattr(self.desktop, "end_control"):
+            return
+        self._job(
+            lambda cancel, emit: self.desktop.end_control(task_id),
+            self._desktop_control_released,
+            lambda message: None,
+        )
+
     @Slot()
     def stop(self):
         state = self._active_session()
@@ -2627,6 +2676,8 @@ class Controller(QObject):
         job = state.get("job")
         if job:
             job.cancel.set()
+            state["computer_control_active"] = False
+            self._release_desktop_control(str(state.get("task_id") or self._task_id))
             state["status"] = "Stopping…"
             self._sync_active_session(state)
             self.changed.emit()

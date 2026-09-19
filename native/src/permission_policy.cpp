@@ -107,8 +107,9 @@ ActionRisk action_risk(std::string_view action, std::string_view command) {
     static constexpr std::array<std::string_view, 6> low_risk = {
         "screenshot", "list_apps", "wait", "move_pointer", "scroll", "remember"
     };
-    static constexpr std::array<std::string_view, 5> sensitive = {
-        "type_text", "press_key", "run_command", "click", "drag"
+    static constexpr std::array<std::string_view, 7> sensitive = {
+        "type_text", "press_key", "hold_key", "run_command",
+        "click", "hold_button", "drag"
     };
 
     const std::string lowered = ascii_lower(trim_ascii(action));

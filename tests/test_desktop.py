@@ -109,6 +109,42 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(self.backend.events, [("key", _keysym("ctrl"), True),
                                                ("key", _keysym("ctrl"), False)])
 
+    def test_bounded_key_hold_always_releases(self):
+        self.enabled()
+        with patch("wynxq.desktop._pause"):
+            self.desktop.execute(
+                "hold_key", {"keys": ["ctrl", "a"], "seconds": 0.4}, self.cancel)
+        self.assertEqual(self.backend.events, [
+            ("key", _keysym("ctrl"), True),
+            ("key", _keysym("a"), True),
+            ("key", _keysym("a"), False),
+            ("key", _keysym("ctrl"), False),
+        ])
+
+    def test_cancelled_mouse_hold_always_releases(self):
+        self.enabled()
+
+        def stop_during_hold(seconds, cancel):
+            cancel.set()
+            raise DesktopCancelled("Stopped")
+
+        with patch("wynxq.desktop._pause", side_effect=stop_during_hold),              self.assertRaises(DesktopCancelled):
+            self.desktop.execute(
+                "hold_button",
+                {"x": 2, "y": 3, "button": "right", "seconds": 0.4},
+                self.cancel,
+            )
+        self.assertEqual(self.backend.events[-2:], [
+            ("button", "right", True), ("button", "right", False)])
+
+    def test_active_control_has_an_owner_and_wrong_owner_cannot_end_it(self):
+        self.enabled()
+        status = self.desktop.begin_control("task-a")
+        self.assertTrue(status["controlActive"])
+        self.assertEqual(status["controlOwner"], "task-a")
+        self.assertTrue(self.desktop.end_control("task-b")["controlActive"])
+        self.assertFalse(self.desktop.end_control("task-a")["controlActive"])
+
     def test_drag_validates_all_points_before_input(self):
         self.enabled()
         with self.assertRaises(DesktopError):
@@ -136,6 +172,8 @@ class DesktopTests(unittest.TestCase):
         for name, args in [("wait", {"seconds": 11}), ("scroll", {"dy": 31}),
                            ("type_text", {"text": "a" * 4001}),
                            ("press_key", {"keys": ["ctrl", "ctrl"]}),
+                           ("hold_key", {"keys": ["a"], "seconds": 6}),
+                           ("hold_button", {"x": 1, "y": 2, "seconds": 0.01}),
                            ("click", {"x": 1, "y": 2, "count": 1.5})]:
             with self.subTest(name=name), self.assertRaises(DesktopError):
                 self.desktop.execute(name, args, self.cancel)

@@ -434,3 +434,14 @@ def test_contribution_grid_aligns_real_dates_to_weekday_rows():
     assert "leadingBlanks" in heatmap
     assert "(day + 6) % 7" in heatmap
     assert "root.leadingBlanks + root.days.length" in heatmap
+
+
+def test_computer_control_overlay_is_visible_clickthrough_and_escape_stops_first():
+    overlay = (MODULE / "ComputerControlOverlay.qml").read_text(encoding="utf-8")
+    main = (MODULE.parent / "Main.qml").read_text(encoding="utf-8")
+    assert "WindowTransparentForInput" in overlay
+    assert "WindowStaysOnTopHint" in overlay
+    assert "Wynxq is controlling your computer" in overlay
+    assert "Application.screens" in main
+    assert "bridge.computerControlActive" in main
+    assert "if (bridge && bridge.computerControlActive) bridge.stop()" in main

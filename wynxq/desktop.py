@@ -199,6 +199,10 @@ class DesktopController:
         self._size: tuple[int, int] | None = None
         # Where the pointer was last put, so motion can be drawn from it.
         self._pointer: tuple[float, float] | None = None
+        # Desktop permission may stay connected for the whole app session, but
+        # the emergency shortcut belongs only to the foreground run that is
+        # actually observing/controlling the screen.
+        self._control_owner = ""
 
     def status(self) -> dict:
         backend = self._backend
@@ -214,6 +218,8 @@ class DesktopController:
             detail = "Desktop access ended. Enable control to reconnect."
         return {"backend": backend.name if backend else "unavailable", "available": available,
                 "connected": connected, "detail": detail,
+                "controlActive": bool(connected and self._control_owner),
+                "controlOwner": self._control_owner if connected else "",
                 # True once the desktop granted control without asking again.
                 "remembered": bool(connected and getattr(backend, "restored", False)),
                 # How to stop a run while another window has focus, when the
@@ -227,6 +233,9 @@ class DesktopController:
                 return self.status()
             if not self.status()["available"]:
                 return self.status()
+            # An unexpectedly closed portal session must never carry an old
+            # takeover owner into a freshly authorized connection.
+            self._control_owner = ""
             try:
                 self._backend.connect()
                 self._enabled = True
@@ -236,11 +245,48 @@ class DesktopController:
                 self._detail = str(exc) or type(exc).__name__
             return self.status()
 
+    def begin_control(self, owner: str = "") -> dict:
+        """Start the visible/emergency-stop layer for one foreground run.
+
+        Authorization and active control are deliberately separate: keeping a
+        portal permission does not mean Wynxq is currently driving the desktop.
+        """
+        requested = str(owner or "active")
+        with self._lock:
+            self._permission(None)
+            if self._control_owner and self._control_owner != requested:
+                if hasattr(self._backend, "end_control"):
+                    self._backend.end_control()
+                self._control_owner = ""
+            if not self._control_owner:
+                if hasattr(self._backend, "begin_control"):
+                    self._backend.begin_control()
+                self._control_owner = requested
+            return self.status()
+
+    def end_control(self, owner: str = "") -> dict:
+        """Release held input and the temporary global stop shortcut."""
+        requested = str(owner or "")
+        with self._lock:
+            if requested and self._control_owner and requested != self._control_owner:
+                return self.status()
+            try:
+                if self._backend and hasattr(self._backend, "end_control"):
+                    self._backend.end_control()
+            finally:
+                self._control_owner = ""
+            return self.status()
+
     def disconnect(self) -> None:
         # Revoke the permission gate immediately, even while an action holds
         # the lock. The worker should also receive its cancellation Event.
         self._enabled = False
         with self._lock:
+            try:
+                if self._backend and hasattr(self._backend, "end_control"):
+                    self._backend.end_control()
+            finally:
+                self._control_owner = ""
             if self._backend:
                 self._backend.disconnect()
             self._size = None
@@ -379,6 +425,18 @@ class DesktopController:
                         _pause(duration / segments, cancel)
                 finally:
                     self._backend.button("left", False, None)
+            elif name == "hold_button":
+                point = self._point(args)
+                button = args.get("button", "left")
+                if button not in ("left", "middle", "right"):
+                    raise DesktopError("button must be left, middle, or right.")
+                duration = _number(args.get("seconds", 0.25), "seconds", 0.05, 5)
+                self._glide(*point, cancel=cancel)
+                try:
+                    self._backend.button(button, True, cancel)
+                    _pause(duration, cancel)
+                finally:
+                    self._backend.button(button, False, None)
             elif name == "type_text":
                 value = args.get("text")
                 if not isinstance(value, str) or not 1 <= len(value) <= 4000:
@@ -388,15 +446,17 @@ class DesktopController:
                 for sym in syms:
                     self._permission(cancel)
                     self._chord([sym], cancel)
-            elif name == "press_key":
+            elif name in ("press_key", "hold_key"):
                 keys = args.get("keys")
-                if not isinstance(keys, list) or not 1 <= len(keys) <= 5:
-                    raise DesktopError("keys must contain 1 to 5 key names.")
+                if not isinstance(keys, list) or not 1 <= len(keys) <= 8:
+                    raise DesktopError("keys must contain 1 to 8 key names.")
                 syms = [_keysym(key) for key in keys]
                 if len(set(syms)) != len(syms):
                     raise DesktopError("A key chord cannot contain duplicate keys.")
                 self._backend.validate_keys(syms)
-                self._chord(syms, cancel)
+                duration = 0.025 if name == "press_key" else _number(
+                    args.get("seconds", 0.25), "seconds", 0.05, 5)
+                self._hold_chord(syms, duration, cancel)
             elif name == "scroll":
                 dx = _integer(args.get("dx", 0), "dx", -30, 30)
                 dy = _integer(args.get("dy", 0), "dy", -30, 30)
@@ -407,13 +467,16 @@ class DesktopController:
             return {"ok": True, "action": name}
 
     def _chord(self, syms, cancel) -> None:
+        self._hold_chord(syms, 0.025, cancel)
+
+    def _hold_chord(self, syms, seconds, cancel) -> None:
         pressed = []
         try:
             for sym in syms:
                 self._permission(cancel)
                 pressed.append(sym)
                 self._backend.key(sym, True, cancel)
-            _pause(0.025, cancel)
+            _pause(seconds, cancel)
         finally:
             # Never let cancellation skip key releases.
             failures = []
@@ -458,6 +521,9 @@ class _X11Backend:
         self.connected = False
         self._display = None
         self._held = {}
+        self._held_buttons = set()
+        self.on_stop = None
+        self.stop_shortcut = None
 
     def connect(self):
         from Xlib import display
@@ -468,13 +534,35 @@ class _X11Backend:
             raise DesktopError("This X server does not support the XTEST input extension.")
         self.connected = True
 
+    def begin_control(self):
+        if self.on_stop is not None and self.stop_shortcut is None:
+            shortcut = X11GlobalStop(self.on_stop)
+            shortcut.bind()
+            self.stop_shortcut = shortcut
+
+    def release_all(self):
+        if not self._display:
+            return
+        for button in list(self._held_buttons):
+            try:
+                self.button(button, False, None)
+            except Exception:
+                pass
+        for sym in list(self._held):
+            try:
+                self.key(sym, False, None)
+            except Exception:
+                pass
+
+    def end_control(self):
+        self.release_all()
+        shortcut, self.stop_shortcut = self.stop_shortcut, None
+        if shortcut is not None:
+            shortcut.release()
+
     def disconnect(self):
         if self._display:
-            for sym in list(self._held):
-                try:
-                    self.key(sym, False, None)
-                except Exception:
-                    pass
+            self.end_control()
             self._display.close()
         self._display = None
         self.connected = False
@@ -553,6 +641,10 @@ class _X11Backend:
         _check(cancel)
         code = {"left": 1, "middle": 2, "right": 3}[button]
         xtest.fake_input(self._display, X.ButtonPress if down else X.ButtonRelease, code)
+        if down:
+            self._held_buttons.add(button)
+        else:
+            self._held_buttons.discard(button)
         self._display.sync()
 
     def _mapping(self, sym):
@@ -602,6 +694,71 @@ class _X11Backend:
                 self._display.sync()
 
 
+class X11GlobalStop:
+    """Temporary bare-Escape grab while Wynxq is actively controlling X11."""
+
+    trigger = "Esc"
+    detail = "Emergency stop: Esc"
+
+    def __init__(self, on_stop):
+        self._on_stop = on_stop
+        self._display = None
+        self._root = None
+        self._keycode = 0
+        self._stop = threading.Event()
+        self._thread = None
+
+    def bind(self) -> None:
+        from Xlib import X, display
+        try:
+            connection = display.Display()
+            root = connection.screen().root
+            code = connection.keysym_to_keycode(_KEYSYMS["escape"])
+            root.grab_key(code, X.AnyModifier, False, X.GrabModeAsync, X.GrabModeAsync)
+            connection.sync()
+            self._display, self._root, self._keycode = connection, root, code
+            self._thread = threading.Thread(
+                target=self._watch, name="wynxq-x11-emergency-stop", daemon=True)
+            self._thread.start()
+        except Exception as exc:
+            self.detail = "Global Esc unavailable: " + str(exc)[:100]
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    def _watch(self) -> None:
+        from Xlib import X
+        while not self._stop.wait(0.02):
+            try:
+                while self._display and self._display.pending_events():
+                    event = self._display.next_event()
+                    if event.type == X.KeyPress and event.detail == self._keycode:
+                        self._on_stop()
+                        return
+            except Exception:
+                return
+
+    def release(self) -> None:
+        self._stop.set()
+        connection, root = self._display, self._root
+        self._display = self._root = None
+        if connection and root:
+            try:
+                from Xlib import X
+                root.ungrab_key(self._keycode, X.AnyModifier)
+                connection.sync()
+            except Exception:
+                pass
+            try:
+                connection.close()
+            except Exception:
+                pass
+        if self._thread and self._thread is not threading.current_thread():
+            self._thread.join(0.2)
+        self._thread = None
+
+
 class GlobalStop:
     """A stop key that works while another application has focus.
 
@@ -617,9 +774,9 @@ class GlobalStop:
     _PATH = "/org/freedesktop/portal/desktop"
     _IFACE = "org.freedesktop.portal.GlobalShortcuts"
     SHORTCUT = "stop"
-    # A bare Escape cannot be taken globally without breaking Escape for every
-    # other application, so the request is for a deliberate chord.
-    PREFERRED = "CTRL+ALT+ESCAPE"
+    # This shortcut only exists while a foreground control session is active,
+    # so asking for bare Escape does not steal Escape during normal use.
+    PREFERRED = "ESCAPE"
 
     def __init__(self, portal, on_stop):
         self._portal = portal
@@ -721,6 +878,8 @@ class _PortalBackend:
         self._pixel_size = None
         self._requests = {}
         self._early = {}
+        self._held_keys = set()
+        self._held_buttons = set()
 
     def _ensure_loop(self):
         if self._loop is None:
@@ -891,9 +1050,6 @@ class _PortalBackend:
             self._logical_size = (max_x - min_x, max_y - min_y)
             self._pixel_size = None
             self.connected = True
-            if self.on_stop is not None:
-                self.stop_shortcut = GlobalStop(self, self.on_stop)
-                await self.stop_shortcut.bind()
         except BaseException:
             # A token the portal would not restore is worse than none: keep it
             # and every future launch fails the same way. Drop it so the next
@@ -903,7 +1059,39 @@ class _PortalBackend:
             await self._disconnect()
             raise
 
+    def begin_control(self):
+        if not self.connected:
+            raise DesktopError("The desktop sharing session ended. Reconnect to continue.")
+        if self.on_stop is not None and self.stop_shortcut is None:
+            shortcut = GlobalStop(self, self.on_stop)
+            self._run(shortcut.bind(), timeout=80)
+            self.stop_shortcut = shortcut
+
+    def release_all(self):
+        if not self.connected:
+            self._held_keys.clear()
+            self._held_buttons.clear()
+            return
+        for button in list(self._held_buttons):
+            try:
+                self.button(button, False, None)
+            except Exception:
+                pass
+        for sym in list(self._held_keys):
+            try:
+                self.key(sym, False, None)
+            except Exception:
+                pass
+
+    def end_control(self):
+        self.release_all()
+        shortcut, self.stop_shortcut = self.stop_shortcut, None
+        if shortcut is not None and self._loop:
+            self._run(shortcut.release(), timeout=20)
+
     def disconnect(self):
+        if self.connected:
+            self.end_control()
         self.connected = False
         if self._loop:
             self._run(self._disconnect(), timeout=20)
@@ -1085,12 +1273,20 @@ class _PortalBackend:
     def button(self, button, down, cancel):
         code = {"left": 0x110, "right": 0x111, "middle": 0x112}[button]
         self._notify("NotifyPointerButton", "iu", [code, int(down)], cancel)
+        if down:
+            self._held_buttons.add(button)
+        else:
+            self._held_buttons.discard(button)
 
     def validate_keys(self, syms):
         pass  # The compositor resolves XKB/Unicode keysyms.
 
     def key(self, sym, down, cancel):
         self._notify("NotifyKeyboardKeysym", "iu", [sym, int(down)], cancel)
+        if down:
+            self._held_keys.add(sym)
+        else:
+            self._held_keys.discard(sym)
 
     def scroll(self, dx, dy, cancel):
         if dy:

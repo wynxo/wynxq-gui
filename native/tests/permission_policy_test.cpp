@@ -95,6 +95,8 @@ int main() {
     expect(confirms("drag", "safe"), "safe mode confirms drags");
     expect(confirms("type_text", "safe"), "safe mode confirms typing");
     expect(confirms("press_key", "safe"), "safe mode confirms key chords");
+    expect(confirms("hold_key", "safe"), "safe mode confirms held key chords");
+    expect(confirms("hold_button", "safe"), "safe mode confirms held mouse buttons");
     expect(confirms("run_command", "safe", "git status"),
            "safe mode confirms ordinary commands");
 

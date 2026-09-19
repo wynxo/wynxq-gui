@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import QtQml.Models
 import Wynxq
 
 /*!
@@ -161,7 +162,8 @@ ApplicationWindow {
     Shortcut {
         sequences: ["Escape"]
         onActivated: {
-            if (bridge && bridge.permissionPending) bridge.resolvePermission(false);
+            if (bridge && bridge.computerControlActive) bridge.stop();
+            else if (bridge && bridge.permissionPending) bridge.resolvePermission(false);
             else if (bridge && bridge.busy) bridge.stop();
         }
     }
@@ -513,6 +515,20 @@ ApplicationWindow {
     }
 
     // --------------------------------------------------------- overlays
+    // One click-through window per physical screen makes active control
+    // impossible to miss without blocking the application Wynxq is operating.
+    Instantiator {
+        id: computerControlWindows
+        model: Application.screens
+        delegate: ComputerControlOverlay {
+            required property var modelData
+            targetScreen: modelData
+            controlVisible: !!(bridge && bridge.computerControlActive)
+            stopShortcut: bridge ? bridge.computerControlStopShortcut : "Esc"
+            stopDetail: bridge ? bridge.computerControlStopDetail : "Press Esc to stop instantly"
+        }
+    }
+
     ModelManager { id: models }
     SettingsSheet {
         id: settings
