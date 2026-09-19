@@ -359,6 +359,9 @@ class DemoController(WorkspaceController):
             self._reset_usage_context()
             return
 
+        if self.scene == "sent-context":
+            self._seed_sent_context_scene()
+            return
         if self.scene == "work-run":
             self._seed_code_run()
             return
@@ -387,6 +390,35 @@ class DemoController(WorkspaceController):
         item["body"] = ANSWER
         item["blocks"] = md.segment(ANSWER)
         self.messages._emit(row, list(Messages_roles()))
+
+    def _seed_sent_context_scene(self):
+        """A sent turn with persistent file and image context, for visual QA."""
+        self._task_mode, self._task_mode_locked = "chat", True
+        self._task_title = "Review attached context"
+        self.messages.replace([])
+        attached = [
+            ctx.from_capture(
+                {"ok": True, "image": _SWATCH, "width": 1280, "height": 720},
+                ctx.SCREENSHOT, title="screen.png", detail="Full screen",
+            ),
+            ctx.make(
+                ctx.FILE, "Composer.qml",
+                path="/home/you/wynxq/ui/Wynxq/Composer.qml",
+                text="Item {\n    property bool polished: true\n}\n",
+                subtitle="312 lines · 18 KB",
+            ),
+        ]
+        self.messages.append_message(
+            "user", "Can you review these and tell me what looks off?",
+            attachments=ctx.display_attachments(attached),
+        )
+        self.messages.append_message(
+            "assistant",
+            "Yep — I have both the screenshot and Composer.qml. The attachment "
+            "context stays with your message, so the conversation reads as one turn "
+            "instead of a detached tool event.",
+        )
+        self.changed.emit()
 
     def _seed_code_run(self):
         """A project-focused Work turn: execution blocks, then the answer."""
@@ -549,6 +581,7 @@ SCENES = [
     ("24-dock-activity", "dock-activity", ""),
     ("27-dock-memory", "dock-memory", ""),
     ("28-usage", "usage", "usageSettings"),
+    ("29-sent-context", "sent-context", ""),
     ("25-system", "conversation", "system"),
     ("26-code-run", "work-run", ""),
 ]
