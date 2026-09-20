@@ -53,6 +53,7 @@ def _persist_current_draft(self) -> None:
 
 def _restore_workspace_session(self) -> None:
     """Restore passive UI state only; never resume a model/tool run."""
+    self._recover_interrupted_runs()
     task_id = str(self.store.get_setting(self.LAST_TASK_KEY, "") or "")
     if task_id and self.store.get_conversation(task_id):
         self._recover_interrupted_plan(task_id)
@@ -140,6 +141,47 @@ def _recover_interrupted_plan(self, task_id: str) -> None:
             interrupted = True
     if interrupted:
         self.store.set_setting(self._plan_key(task_id), plan)
+
+
+def _journal_active_run(self, task_id: str, active: bool) -> None:
+    """Persist the IDs of runs that would need recovery after a hard crash."""
+    task_id = str(task_id or "")
+    if not task_id:
+        return
+    raw = self.store.get_setting(self.ACTIVE_RUNS_KEY, [])
+    current = []
+    seen = set()
+    for item in raw if isinstance(raw, list) else []:
+        value = str(item or "")
+        if value and value not in seen:
+            current.append(value)
+            seen.add(value)
+    if active and task_id not in seen:
+        current.append(task_id)
+    elif not active:
+        current = [value for value in current if value != task_id]
+    self.store.set_setting(self.ACTIVE_RUNS_KEY, current[:64])
+
+
+def _recover_interrupted_runs(self) -> None:
+    """Repair every run left journaled by an unclean process exit.
+
+    Tool execution is never resumed automatically. We only move persisted plan
+    steps from in_progress back to pending, then clear the journal.
+    """
+    raw = self.store.get_setting(self.ACTIVE_RUNS_KEY, [])
+    task_ids = []
+    seen = set()
+    for item in raw if isinstance(raw, list) else []:
+        task_id = str(item or "")
+        if task_id and task_id not in seen:
+            task_ids.append(task_id)
+            seen.add(task_id)
+    for task_id in task_ids:
+        if self.store.get_conversation(task_id):
+            self._recover_interrupted_plan(task_id)
+    if task_ids or raw:
+        self.store.set_setting(self.ACTIVE_RUNS_KEY, [])
 
 
 def _persist_task_mode(self, task_id: str | None = None) -> None:
