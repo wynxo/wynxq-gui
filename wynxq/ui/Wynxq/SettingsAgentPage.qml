@@ -162,7 +162,7 @@ Column {
 
     SettingsGroup {
         title: "Memory"
-        description: "One Markdown file Wynxq reads at the start of every task, in Wynxq and Wynxi alike, so what you tell it once does not have to be told again. Read it, correct it and delete from it in the Memory panel — Ctrl+Shift+M."
+        description: "Saved Memory keeps durable facts and preferences. Reference chat history can also bring in relevant things you said in older conversations. Both stay local and can be turned off separately."
 
         Row {
             width: parent.width
@@ -185,6 +185,13 @@ Column {
                     wrapMode: Text.WordWrap
                 }
             }
+        }
+        Toggle {
+            width: parent.width
+            text: "Reference past chats"
+            description: "Bring in a few relevant things you said in older chats when they help with the current request. Old assistant replies are never treated as memory."
+            checked: !!(bridge && bridge.referenceChatHistory)
+            onSwitched: function(value) { if (bridge) bridge.setReferenceChatHistory(value); }
         }
         Row {
             width: parent.width
