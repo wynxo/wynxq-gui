@@ -213,8 +213,8 @@ Item {
             Layout.rightMargin: Theme.s3
             Layout.bottomMargin: Theme.s2
             text: root.memoryOn
-                ? "Stable preferences can be learned automatically. Secrets and temporary details are skipped."
-                : "Automatic learning is paused while Memory is off."
+                ? "Stable preferences can be learned automatically in Chat and Work. Secrets and temporary details are skipped."
+                : "Automatic learning is paused while Saved Memory is off."
             color: Theme.textMuted
             font.family: Theme.sansFamily; font.pixelSize: Theme.micro
             wrapMode: Text.WordWrap
