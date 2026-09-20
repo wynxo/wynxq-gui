@@ -116,6 +116,7 @@ def test_workspace_injects_endpoint_policy_without_engine_monkey_patch():
 
     assert workspace.OllamaClient is endpoint_policy.WorkspaceOllamaClient
     assert workspace.WorkspaceController.OLLAMA_CLIENT is None
+    assert workspace.WorkspaceController.PLANNING_ENGINE is None
     assert endpoint_policy.WorkspaceOllamaClient.endpoint_validator is endpoint_policy.validate_workspace_endpoint
 
 
