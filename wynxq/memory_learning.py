@@ -55,6 +55,14 @@ _GLOBAL_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
      "User dislikes {value}."),
     (re.compile(r"(?i)^\s*i\s+use\s+(.+?)[.!?]*\s*$"),
      "User uses {value}."),
+    (re.compile(r"(?i)^\s*i(?:'m|\s+am)\s+learning\s+(.+?)[.!?]*\s*$"),
+     "User is learning {value}."),
+    (re.compile(r"(?i)^\s*i\s+speak\s+(.+?)[.!?]*\s*$"),
+     "User speaks {value}."),
+    (re.compile(r"(?i)^\s*my\s+main\s+(?:os|operating system)\s+is\s+(.+?)[.!?]*\s*$"),
+     "User's main operating system is {value}."),
+    (re.compile(r"(?i)^\s*i\s+always\s+want\s+(?:you|wynxq)\s+to\s+(.+?)[.!?]*\s*$"),
+     "User prefers the assistant to always {value}."),
     # Russian high-confidence equivalents.
     (re.compile(r"(?i)^\s*(?:называй|зови)\s+меня\s+(.+?)[.!?]*\s*$"),
      "User prefers to be called {value}."),
@@ -66,6 +74,10 @@ _GLOBAL_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
      "User likes {value}."),
     (re.compile(r"(?i)^\s*я\s+использую\s+(.+?)[.!?]*\s*$"),
      "User uses {value}."),
+    (re.compile(r"(?i)^\s*я\s+изучаю\s+(.+?)[.!?]*\s*$"),
+     "User is learning {value}."),
+    (re.compile(r"(?i)^\s*я\s+говорю\s+(?:на\s+)?(.+?)[.!?]*\s*$"),
+     "User speaks {value}."),
     # German high-confidence equivalents.
     (re.compile(r"(?i)^\s*nenn\s+mich\s+(.+?)[.!?]*\s*$"),
      "User prefers to be called {value}."),
@@ -75,6 +87,10 @@ _GLOBAL_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
      "User prefers {value}."),
     (re.compile(r"(?i)^\s*ich\s+benutze\s+(.+?)[.!?]*\s*$"),
      "User uses {value}."),
+    (re.compile(r"(?i)^\s*ich\s+lerne\s+(.+?)[.!?]*\s*$"),
+     "User is learning {value}."),
+    (re.compile(r"(?i)^\s*ich\s+spreche\s+(.+?)[.!?]*\s*$"),
+     "User speaks {value}."),
 )
 
 _PROJECT_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
