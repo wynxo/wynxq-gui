@@ -142,13 +142,26 @@ def test_workspace_project_memory_does_not_leak_into_another_repo(tmp_path, monk
     bridge.shutdown()
 
 
-def test_chat_does_not_automatically_write_memories(tmp_path, monkeypatch):
+def test_chat_automatically_learns_high_confidence_memories(tmp_path, monkeypatch):
     bridge = controller(tmp_path)
     bridge._online = True
     bridge._model_capabilities = ["completion", "tools"]
-    monkeypatch.setattr(bridge, "_start_run", lambda history: None)
+    monkeypatch.setattr(bridge, "_start_run", lambda history, **kwargs: None)
     bridge.send("My preferred name is Morgan")
     assert bridge.taskMode == "chat"
+    assert bridge.memory.notes() == ["User's preferred name is Morgan."]
+    bridge.shutdown()
+
+
+def test_chat_can_forget_a_normalized_saved_memory_without_tools(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    bridge._online = True
+    bridge._model_capabilities = ["completion"]
+    monkeypatch.setattr(bridge, "_start_run", lambda history, **kwargs: None)
+
+    bridge.send("I use Debian")
+    assert bridge.memory.notes() == ["User uses Debian."]
+
+    bridge.send("Forget that I use Debian")
     assert bridge.memory.notes() == []
-    assert not bridge.memory.exists()
     bridge.shutdown()
