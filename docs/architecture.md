@@ -22,7 +22,10 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
  │                                                   ← run policy/helpers, Qt-free
  ├─ engine.py                                        ← bounded agent coordinator, Qt-free
  │    └─ ollama.py                                   ← HTTP/model transport, Qt-free
- └─ storage / context / commands / desktop / project services
+ ├─ storage.py                                       ← stable SQLite facade
+ │    ├─ storage_conversation_ops.py                 ← history persistence
+ │    └─ storage_usage_ops.py                        ← exact usage accounting
+ └─ context / commands / desktop / project services
 ```
 
 ## Boundaries
@@ -46,6 +49,11 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
 - `ollama.py` owns Ollama HTTP, model management, streaming, and endpoint validation.
   Endpoint policy is injectable through the client class instead of monkey-patching
   engine globals.
+- `storage.py` owns SQLite lifecycle, file permissions, schema/migrations, settings,
+  locking, and the stable Store API. Conversation/message persistence lives in
+  `storage_conversation_ops.py`; exact token accounting lives in
+  `storage_usage_ops.py`. The slices depend only on the facade's private DB/lock
+  contract and never import `storage.py` back.
 - `dock.py` owns QML-facing workspace state/properties. Files, Terminal, Git,
   Context/Activity, Browser/Preview, and layout operations live in separate slices.
 - `SettingsSheet.qml` is only the settings navigation/shell. Each settings domain
@@ -55,7 +63,8 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
   `desktop_x11.py`, portal control in `desktop_portal.py`, and emergency-stop
   bindings in `desktop_stop.py`.
 - `endpoint_policy.py`, `workspace_checkpoint.py`, `planning.py`, `ollama.py`,
-  `agent_prompt.py`, `engine_support.py`, and `tool_execution.py` must remain Qt-free.
+  `agent_prompt.py`, `engine_support.py`, `tool_execution.py`,
+  `storage_conversation_ops.py`, and `storage_usage_ops.py` must remain Qt-free.
 
 ## Compatibility strategy
 
