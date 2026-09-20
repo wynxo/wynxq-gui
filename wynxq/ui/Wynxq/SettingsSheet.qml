@@ -55,6 +55,15 @@ Sheet {
         }
     }
     function show(index) { page = index; open(); }
+    function showAgentMemory() {
+        page = agentPage;
+        open();
+        Qt.callLater(function() {
+            var flick = settingsScroll.contentItem;
+            if (flick)
+                flick.contentY = Math.max(0, flick.contentHeight - flick.height);
+        });
+    }
 
     function formatUsageCount(value) {
         var count = Math.max(0, Math.round(Number(value) || 0));
@@ -191,6 +200,7 @@ Sheet {
         }
 
         ScrollView {
+            id: settingsScroll
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
