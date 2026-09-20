@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 from datetime import datetime, timedelta
 import json
+import logging
 import os
 from pathlib import Path
 import sqlite3
@@ -16,6 +17,9 @@ import threading
 import time
 import uuid
 from typing import Any
+
+
+_LOG = logging.getLogger(__name__)
 
 
 class Store:
@@ -30,10 +34,13 @@ class Store:
         os.close(fd)
         os.chmod(self.path, 0o600)
         self._lock = threading.RLock()
-        self._db = sqlite3.connect(self.path, check_same_thread=False)
+        self._closed = False
+        self._db = sqlite3.connect(self.path, check_same_thread=False, timeout=5.0)
         self._db.row_factory = sqlite3.Row
         self._db.execute("PRAGMA foreign_keys = ON")
         self._db.execute("PRAGMA journal_mode = WAL")
+        self._db.execute("PRAGMA synchronous = NORMAL")
+        self._db.execute("PRAGMA busy_timeout = 5000")
         self._db.executescript("""
             CREATE TABLE IF NOT EXISTS conversations (
                 id TEXT PRIMARY KEY,
@@ -179,10 +186,31 @@ class Store:
         with self._lock, self._db:
             self._db.execute("DELETE FROM conversations WHERE id=?", (conversation_id,))
 
+    @staticmethod
+    def _decode_message_payload(payload: str, *, conversation_id: str = "") -> dict | None:
+        """Decode one persisted message without letting one damaged row brick history."""
+        try:
+            message = json.loads(payload)
+        except (ValueError, TypeError):
+            _LOG.warning("Ignoring unreadable message payload in conversation %s", conversation_id)
+            return None
+        if not isinstance(message, dict):
+            _LOG.warning("Ignoring non-object message payload in conversation %s", conversation_id)
+            return None
+        return message
+
     def get_messages(self, conversation_id: str) -> list[dict]:
         with self._lock:
-            rows = self._db.execute("SELECT payload FROM messages WHERE conversation_id=? ORDER BY position", (conversation_id,))
-            return [json.loads(row[0]) for row in rows]
+            rows = list(self._db.execute(
+                "SELECT payload FROM messages WHERE conversation_id=? ORDER BY position",
+                (conversation_id,),
+            ))
+        messages = []
+        for row in rows:
+            message = self._decode_message_payload(row[0], conversation_id=conversation_id)
+            if message is not None:
+                messages.append(message)
+        return messages
 
     def set_messages(self, conversation_id: str, messages: list[dict], model: str | None = None,
                      endpoint: str | None = None) -> None:
@@ -417,7 +445,13 @@ class Store:
     def get_setting(self, key: str, default: Any = None) -> Any:
         with self._lock:
             row = self._db.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
-        return json.loads(row[0]) if row else default
+        if not row:
+            return default
+        try:
+            return json.loads(row[0])
+        except (ValueError, TypeError):
+            _LOG.warning("Ignoring unreadable setting %s", key)
+            return default
 
     def set_setting(self, key: str, value: Any) -> None:
         encoded = json.dumps(value, ensure_ascii=False, allow_nan=False)
@@ -426,4 +460,11 @@ class Store:
 
     def close(self) -> None:
         with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+            try:
+                self._db.execute("PRAGMA wal_checkpoint(PASSIVE)")
+            except sqlite3.Error:
+                pass
             self._db.close()
