@@ -57,6 +57,7 @@ class WorkspaceController(Controller):
     checkpointChanged = Signal()
     VALID_TASK_MODES = {"chat", "work"}
     LAST_TASK_KEY = "workspace:last_task"
+    ACTIVE_RUNS_KEY = "workspace:active_runs"
     DRAFT_KEY_PREFIX = "workspace:draft:"
 
     def __init__(self, *args, **kwargs):
@@ -99,6 +100,8 @@ class WorkspaceController(Controller):
     _normalise_plan = _session_ops._normalise_plan
     _saved_plan = _session_ops._saved_plan
     _recover_interrupted_plan = _session_ops._recover_interrupted_plan
+    _journal_active_run = _session_ops._journal_active_run
+    _recover_interrupted_runs = _session_ops._recover_interrupted_runs
     _persist_task_mode = _session_ops._persist_task_mode
     _persist_plan = _session_ops._persist_plan
     _set_plan = _session_ops._set_plan
