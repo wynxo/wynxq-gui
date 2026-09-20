@@ -302,3 +302,25 @@ def test_a_broken_memory_write_is_reported_rather_than_thrown(tmp_path):
     bridge.saveMemory("x" * 200_000)
     assert toasts and "limited to" in toasts[-1]
     bridge.shutdown()
+
+
+
+def test_reference_chat_history_setting_is_separate_and_persistent(tmp_path):
+    path = tmp_path / "history.sqlite3"
+    bridge = Controller(
+        store=Store(path), desktop=IdleDesktop(), autoconnect=False,
+        memory=Memory(tmp_path / "memory.md"),
+    )
+    assert bridge.referenceChatHistory is True
+    bridge.setReferenceChatHistory(False)
+    assert bridge.referenceChatHistory is False
+    bridge.shutdown()
+
+    again = Controller(
+        store=Store(path), desktop=IdleDesktop(), autoconnect=False,
+        memory=Memory(tmp_path / "memory.md"),
+    )
+    assert again.referenceChatHistory is False
+    again.setReferenceChatHistory(True)
+    assert again.referenceChatHistory is True
+    again.shutdown()
