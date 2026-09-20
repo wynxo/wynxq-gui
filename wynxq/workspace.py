@@ -45,10 +45,14 @@ from . import workspace_run_ops as _run_ops
 
 class WorkspaceController(Controller):
     OLLAMA_CLIENT = None
+    PLANNING_ENGINE = None
 
     def _ollama_client(self, endpoint):
         client_type = self.OLLAMA_CLIENT or OllamaClient
         return client_type(endpoint)
+
+    def _planning_engine_class(self):
+        return self.PLANNING_ENGINE or PlanningAgentEngine
     modeChanged = Signal()
     endpointChanged = Signal()
     planChanged = Signal()
