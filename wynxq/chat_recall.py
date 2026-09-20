@@ -76,7 +76,7 @@ def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
     ranked = []
     for recency, item in enumerate(conversations):
         ident = str(item.get("id", ""))
-        title = str(item.get("title", "") or "Previous chat")
+        title = " ".join(str(item.get("title", "") or "Previous chat").split())[:200]
         title_terms = _terms(title)
         candidates = []
         for reverse_index, message in enumerate(reversed(store.get_messages(ident))):
