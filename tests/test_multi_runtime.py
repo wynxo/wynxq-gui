@@ -193,8 +193,11 @@ def test_endpoint_profiles_migrate_the_existing_server_as_main(tmp_path):
     finally:
         bridge.shutdown()
 
-def test_background_running_task_cannot_be_duplicated(tmp_path, monkeypatch):
-    bridge = controller(tmp_path)
+def test_background_running_task_cannot_be_duplicated(tmp_path):
+    bridge = ProductController(
+        store=Store(tmp_path / "history.sqlite3"),
+        desktop=IdleDesktop(), autoconnect=False,
+    )
     first = bridge.store.create_conversation("Running", bridge.model, bridge.endpoint)
     second = bridge.store.create_conversation("Idle", bridge.model, bridge.endpoint)
     bridge.openTask(second["id"])
