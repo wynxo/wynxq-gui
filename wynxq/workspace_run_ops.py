@@ -140,7 +140,7 @@ def _start_run(self, history):
     mode = self._task_mode
     project = self._working_directory
     state = self._launch_run(
-        history, PlanningAgentEngine,
+        history, self._planning_engine_class(),
         tools_allowed=mode == "work",
         desktop_enabled=mode == "work" and self.desktopEnabled,
         project=project,
