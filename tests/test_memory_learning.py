@@ -30,6 +30,17 @@ def test_learns_common_russian_and_german_phrasings():
     assert one("nenn mich wynxq")["note"] == "User prefers to be called wynxq."
 
 
+def test_learns_other_clear_durable_profile_facts_without_overreaching():
+    assert one("I'm learning Rust")["note"] == "User is learning Rust."
+    assert one("I speak Russian and German")["note"] == "User speaks Russian and German."
+    assert one("My main OS is Debian")["note"] == "User's main operating system is Debian."
+    assert one("I always want you to keep answers compact")["note"] == (
+        "User prefers the assistant to always keep answers compact."
+    )
+    assert learnable_memories("I speak with my teacher") == []
+    assert learnable_memories("ich spreche mit meinem Lehrer") == []
+
+
 def test_repo_convention_is_project_scoped():
     item = one("This repo uses pytest", "/srv/wynxq")
     assert item["scope"] == PROJECT
