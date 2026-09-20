@@ -16,6 +16,7 @@ from PySide6.QtCore import QObject, Property, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QGuiApplication
 
 from . import context as ctx
+from . import chat_recall
 from . import markdown as md
 from . import notify
 from . import system as system_info
@@ -92,6 +93,12 @@ def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
         self._ollama_client(state["endpoint"]), run_desktop, self._memory_for_run(),
         browser_open=browser_open,
     )
+    if self._reference_chat_history:
+        engine.history_recall = (
+            lambda query, ident=task_id: chat_recall.prompt(
+                self.store, query, exclude_id=ident
+            )
+        )
     enabled = self.desktopEnabled if desktop_enabled is None else bool(desktop_enabled)
     think = self._think
     num_ctx, temperature = self._num_ctx, self._temperature
