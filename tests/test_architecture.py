@@ -109,6 +109,19 @@ def test_dock_facade_binds_focused_behavior_modules():
     assert dock.DockController.navigate is dock_browser_ops.navigate
 
 
+def test_storage_facade_binds_focused_persistence_modules():
+    from wynxq import storage, storage_conversation_ops, storage_usage_ops
+
+    assert storage.Store.create_conversation is storage_conversation_ops.create_conversation
+    assert storage.Store.get_messages is storage_conversation_ops.get_messages
+    assert storage.Store.set_messages is storage_conversation_ops.set_messages
+    assert storage.Store.record_token_usage is storage_usage_ops.record_token_usage
+    assert storage.Store.token_usage_summary is storage_usage_ops.token_usage_summary
+    assert storage.Store.conversation_token_usage is storage_usage_ops.conversation_token_usage
+    assert storage.Store._preview is storage_conversation_ops._preview
+    assert storage.Store._usage_boundaries is storage_usage_ops._usage_boundaries
+
+
 def test_engine_reexports_ollama_transport():
     from wynxq import ollama
 
@@ -137,6 +150,7 @@ def test_coordinator_modules_have_hard_size_budgets():
         "wynxq/engine.py": 400,
         "wynxq/dock.py": 550,
         "wynxq/desktop_backends.py": 40,
+        "wynxq/storage.py": 200,
     }
     for relative, maximum in budgets.items():
         count = len((root / relative).read_text(encoding="utf-8").splitlines())
@@ -165,6 +179,21 @@ def test_behavior_slices_stay_focused():
             assert "from .workspace import" not in text
 
 
+def test_storage_slices_stay_focused():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    budgets = {
+        "wynxq/storage_conversation_ops.py": 250,
+        "wynxq/storage_usage_ops.py": 250,
+    }
+    for relative, maximum in budgets.items():
+        text = (root / relative).read_text(encoding="utf-8")
+        count = len(text.splitlines())
+        assert count <= maximum, f"{relative} grew to {count} lines (budget {maximum})"
+        assert "from .storage import" not in text
+
+
 def test_policy_and_transport_layers_are_qt_free():
     from pathlib import Path
 
@@ -177,6 +206,8 @@ def test_policy_and_transport_layers_are_qt_free():
         "wynxq/agent_prompt.py",
         "wynxq/engine_support.py",
         "wynxq/tool_execution.py",
+        "wynxq/storage_conversation_ops.py",
+        "wynxq/storage_usage_ops.py",
     ]
     for relative in pure_layers:
         text = (root / relative).read_text(encoding="utf-8")
