@@ -103,6 +103,18 @@ def validate_analysis(data, source, existing, project):
     if not isinstance(data, dict) or not isinstance(data.get("changes"), list) or not isinstance(data.get("queries"), list):
         raise ValueError("Invalid memory analysis response")
     known = {row["id"]: row for row in existing}
+
+    # A single saved fact may be updated at most once per model response. If the
+    # model proposes two competing rewrites/deletions for the same ID, fail
+    # closed for that fact instead of letting response order choose a winner.
+    seen_replacements, conflicted_replacements = set(), set()
+    for item in data["changes"]:
+        if not isinstance(item, dict) or not isinstance(item.get("replaces"), list):
+            continue
+        ids = {ident for ident in item["replaces"] if isinstance(ident, str)}
+        conflicted_replacements.update(ids & seen_replacements)
+        seen_replacements.update(ids)
+
     changes = []
     for item in data["changes"]:
         if not isinstance(item, dict):
@@ -114,6 +126,8 @@ def validate_analysis(data, source, existing, project):
                 or not isinstance(replaces, list) or any(not isinstance(i, str) for i in replaces)):
             raise ValueError("Invalid memory change fields")
         if scope == PROJECT and not project:
+            continue
+        if any(ident in conflicted_replacements for ident in replaces):
             continue
         if not normalize(evidence) or normalize(evidence) not in normalize(source):
             continue

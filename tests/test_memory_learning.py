@@ -284,3 +284,21 @@ def test_history_edited_during_selection_is_not_recalled(tmp_path):
     _, recalled = run(svc, 'Where am I travelling?')
     assert not recalled
     svc.store.close()
+
+
+def test_conflicting_model_edits_to_the_same_saved_fact_fail_closed():
+    old = "User works from a standing desk."
+    ident = note_id("global", old)
+    existing = [{"id": ident, "scope": "global", "note": old}]
+    source = "I changed my desk setup today."
+    data = {
+        "queries": [],
+        "changes": [
+            decision("User now works from a sitting desk.", source, replaces=[ident]),
+            decision("User now works from a treadmill desk.", source, replaces=[ident]),
+        ],
+    }
+
+    changes, _ = validate_analysis(data, source, existing, "")
+
+    assert changes == []

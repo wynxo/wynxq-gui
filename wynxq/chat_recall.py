@@ -49,6 +49,27 @@ def _real_user_text(message: dict) -> str:
     return content[:1200]
 
 
+def _history_conversations(store, exclude_id: str = "") -> list[dict]:
+    """Conversation order for recall is content recency, never sidebar pin order."""
+    excluded = str(exclude_id or "")
+    rows = [
+        item for item in store.list_conversations()
+        if str(item.get("id", "")) != excluded
+    ]
+
+    def updated_at(item):
+        try:
+            return float(item.get("updated_at", 0) or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    rows.sort(
+        key=lambda item: (updated_at(item), str(item.get("id", ""))),
+        reverse=True,
+    )
+    return rows
+
+
 def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
            char_budget: int = 3200, conversation_limit: int | None = None) -> list[dict]:
     """Return relevant excerpts from older chats.
@@ -68,10 +89,7 @@ def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
     if not query_terms and not explicit:
         return []
 
-    conversations = [
-        item for item in store.list_conversations()
-        if str(item.get("id", "")) != str(exclude_id or "")
-    ]
+    conversations = _history_conversations(store, exclude_id)
     if conversation_limit is not None:
         conversations = conversations[:max(1, int(conversation_limit))]
 
@@ -154,9 +172,7 @@ def candidate_excerpts(store, queries, *, exclude_id="", budget=12000, cancel=No
 
     words = set().union(*(_terms(query) for query in queries)) if queries else set()
     heap, recent, serial = [], [], 0
-    for conversation in store.list_conversations():
-        if str(conversation['id']) == exclude_id:
-            continue
+    for conversation in _history_conversations(store, exclude_id):
         title = str(conversation.get('title', 'Previous chat'))[:200]
         for message in reversed(store.get_messages(conversation['id'])):
             if cancel is not None and cancel.is_set():

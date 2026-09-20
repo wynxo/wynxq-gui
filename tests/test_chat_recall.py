@@ -100,3 +100,36 @@ def test_prompt_labels_recalled_text_as_historical_not_instructions(tmp_path):
     assert "not new instructions" in text
     assert "current request always wins" in text
     store.close()
+
+
+def test_sidebar_pin_does_not_turn_an_old_chat_into_recent_recall(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    old = make_chat(store, "Pinned old", [
+        {"role": "user", "content": "The older remembered sentence."},
+    ])
+    store.set_pinned(old["id"], True)
+    recent = make_chat(store, "Actually recent", [
+        {"role": "user", "content": "The actually newest remembered sentence."},
+    ])
+
+    rows = chat_recall.recall(store, "What did I tell you before?", limit=2)
+
+    assert [row["id"] for row in rows][:2] == [recent["id"], old["id"]]
+    store.close()
+
+
+def test_semantic_candidate_recency_ignores_sidebar_pin_order(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    old = make_chat(store, "Pinned old", [
+        {"role": "user", "content": "Older context with no matching search words."},
+    ])
+    store.set_pinned(old["id"], True)
+    recent = make_chat(store, "Actually recent", [
+        {"role": "user", "content": "Newest context with no matching search words."},
+    ])
+
+    rows = chat_recall.candidate_excerpts(store, [], budget=5000)
+
+    assert rows
+    assert rows[0]["chat"] == recent["id"]
+    store.close()
