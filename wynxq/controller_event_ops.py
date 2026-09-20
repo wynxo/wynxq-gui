@@ -194,11 +194,13 @@ def _run_done(self, history, task_id=None):
     job = state.get("job")
     stopped = bool(job and job.cancel.is_set())
     elapsed = time.monotonic() - float(state.get("run_started", 0.0) or 0.0)
+    preserve_desktop = bool(state.pop("_preserve_desktop_for_followup", False))
     state["busy"] = False
     state["job"] = None
     state["session_auto"] = False
     state["computer_control_active"] = False
-    self._release_desktop_control(task_id)
+    if not preserve_desktop:
+        self._release_desktop_control(task_id)
     state["permission"] = None
     state["messages"].mark_idle()
     pending_followup = bool(

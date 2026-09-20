@@ -360,3 +360,52 @@ def test_queued_chat_followup_keeps_tools_disabled(tmp_path, monkeypatch):
     assert calls[1]["tools_allowed"] is False
     assert calls[1]["messages"][-1] == {"role": "user", "content": "second"}
     bridge.shutdown()
+
+
+def test_queued_followup_handoff_does_not_release_same_task_desktop(tmp_path, monkeypatch):
+    class OwnershipDesktop(IdleDesktop):
+        def __init__(self):
+            super().__init__(True)
+            self.end_calls = []
+
+        def end_control(self, owner=""):
+            self.end_calls.append(str(owner))
+            return self.status()
+
+    desktop = OwnershipDesktop()
+    bridge = WorkspaceController(
+        store=Store(tmp_path / "history.sqlite3"),
+        desktop=desktop, autoconnect=False,
+    )
+    bridge._online = True
+    bridge._model_capabilities = ["completion", "tools"]
+
+    class Spy:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def run(self, messages, *args, **kwargs):
+            return list(messages)
+
+    class FakeJob:
+        def __init__(self):
+            self.cancel = threading.Event()
+
+    def job(fn, result=None, failure=None, event=None):
+        fake = FakeJob()
+        fn(fake.cancel, lambda payload: None)
+        return fake
+
+    monkeypatch.setattr("wynxq.workspace.PlanningAgentEngine", Spy)
+    monkeypatch.setattr("wynxq.workspace.OllamaClient", lambda endpoint: None)
+    monkeypatch.setattr(bridge, "_job", job)
+
+    bridge.send("first")
+    task_id = bridge.taskId
+    bridge.send("/queue second")
+    state = bridge._run_sessions[task_id]
+    bridge._run_done(list(state["history"]), task_id)
+
+    assert desktop.end_calls == []
+    assert bridge._run_sessions[task_id]["busy"] is True
+    bridge.shutdown()

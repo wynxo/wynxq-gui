@@ -242,6 +242,10 @@ def _run_done(self, history, task_id=None):
         if resume_after_settle:
             state["steering_messages"] = []
             state["queued_messages"] = []
+            # The continuation is the same task and may already own a desktop
+            # portal session. Do not schedule an old-run release that can race
+            # the new run and revoke its shared input ownership.
+            state["_preserve_desktop_for_followup"] = True
 
         cleaned = self._strip_plan_history(history)
         Controller._run_done(self, cleaned, task_id)
@@ -259,7 +263,11 @@ def _run_done(self, history, task_id=None):
             if settled is state and not settled.get("busy"):
                 settled["steering_messages"] = steering
                 settled["queued_messages"] = queued
-                self._resume_pending_followup(task_id, cleaned)
+                if not self._resume_pending_followup(task_id, cleaned):
+                    # The base finalizer intentionally kept ownership alive for
+                    # the handoff. If the continuation cannot start, release it
+                    # now rather than leaking an active control session.
+                    self._release_desktop_control(task_id)
         return
     Controller._run_done(self, self._strip_plan_history(history), task_id)
     self._journal_active_run(task_id, False)
