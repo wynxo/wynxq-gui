@@ -178,3 +178,45 @@ def test_a_payload_that_is_not_an_object_does_not_break_the_preview(tmp_path):
         store._db.execute("INSERT INTO messages VALUES (?,?,?)", (task["id"], 0, '"just a string"'))
     assert store.list_conversations()[0]["preview"] == ""
     store.close()
+
+def test_corrupt_rows_do_not_brick_history_or_settings(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    task = store.create_conversation("Recovery")
+    store.set_messages(task["id"], [{"role": "user", "content": "keep me"}])
+    with store._lock, store._db:
+        store._db.execute(
+            "INSERT OR REPLACE INTO messages VALUES (?,?,?)",
+            (task["id"], 1, "{broken-json"),
+        )
+        store._db.execute(
+            "INSERT OR REPLACE INTO messages VALUES (?,?,?)",
+            (task["id"], 2, '"not an object"'),
+        )
+        store._db.execute(
+            "INSERT OR REPLACE INTO messages VALUES (?,?,?)",
+            (task["id"], 3, '{"role":"assistant","content":"still readable"}'),
+        )
+        store._db.execute(
+            "INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            ("broken-setting", "{not-json"),
+        )
+
+    assert store.get_messages(task["id"]) == [
+        {"role": "user", "content": "keep me"},
+        {"role": "assistant", "content": "still readable"},
+    ]
+    assert store.get_setting("broken-setting", {"safe": True}) == {"safe": True}
+    # Recovery is read-only: the damaged bytes remain available for manual repair.
+    with store._lock:
+        raw = store._db.execute(
+            "SELECT value FROM settings WHERE key='broken-setting'"
+        ).fetchone()[0]
+    assert raw == "{not-json"
+    store.close()
+
+
+def test_store_close_is_idempotent(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    store.close()
+    store.close()
+
