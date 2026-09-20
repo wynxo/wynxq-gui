@@ -128,6 +128,38 @@ def _note(patterns, sentence: str) -> str:
     return ""
 
 
+_FORGET = re.compile(
+    r"(?i)^\s*(?:please\s+)?(?:forget|remove\s+from\s+memory|stop\s+remembering)"
+    r"(?:\s+that)?\s*[:,-]?\s*(.+?)\s*[.!?]*\s*$|"
+    r"^\s*(?:забудь|удали\s+из\s+памяти)(?:,?\s+что)?\s*[:,-]?\s*(.+?)\s*[.!?]*\s*$|"
+    r"^\s*(?:vergiss|aus\s+dem\s+gedächtnis\s+löschen)(?:\s+dass)?"
+    r"\s*[:,-]?\s*(.+?)\s*[.!?]*\s*$"
+)
+
+
+def forget_memory_queries(text: str) -> list[str]:
+    """Extract explicit requests to forget durable memory.
+
+    Chat mode has no tools by design, so forgetting cannot depend on a model
+    deciding to call a tool. Only direct imperative phrasing is accepted.
+    """
+    raw = str(text or "").strip()
+    if not raw or len(raw) > _MAX_INPUT:
+        return []
+    queries = []
+    for line in (item.strip() for item in raw.splitlines() if item.strip()):
+        match = _FORGET.match(line)
+        if not match:
+            continue
+        value = _clean_value(next((group for group in match.groups() if group), ""))
+        if not value or value.casefold() in {
+            "that", "this", "it", "everything", "all", "это", "всё", "все", "das", "dies",
+        }:
+            continue
+        queries.append(value)
+    return queries[:4]
+
+
 def learnable_memories(text: str, project: str = "") -> list[dict]:
     """Return high-confidence durable notes found in one user message.
 
