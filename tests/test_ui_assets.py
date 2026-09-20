@@ -191,11 +191,11 @@ def test_attachments_have_one_canonical_view():
 def test_screen_control_is_turned_on_in_one_place():
     """The switch lives in Agent settings. The header and composer only report
     that it is on; the palette routes to the same slot."""
-    assert components_using("bridge.toggleDesktop(") == {"SettingsSheet.qml", "Main.qml"}
+    assert components_using("bridge.toggleDesktop(") == {"SettingsAgentPage.qml", "Main.qml"}
 
 
 def test_the_runtime_preset_is_not_scattered():
-    assert components_using("bridge.applyRuntimePreset(") == {"ModelPicker.qml", "SettingsSheet.qml"}
+    assert components_using("bridge.applyRuntimePreset(") == {"ModelPicker.qml", "SettingsModelPage.qml"}
 
 
 def test_the_workspace_dock_is_a_tool_column_not_a_status_column():
@@ -428,7 +428,7 @@ def test_model_picker_pairs_server_and_model_per_chat():
 
 
 def test_settings_manages_named_ollama_servers_without_reintroducing_global_only_runtime():
-    settings = (MODULE / "SettingsSheet.qml").read_text(encoding="utf-8")
+    settings = (MODULE / "SettingsGeneralPage.qml").read_text(encoding="utf-8")
     assert 'title: "Ollama servers"' in settings
     assert "bridge.endpointProfiles" in settings
     assert "bridge.addEndpointProfile" in settings
