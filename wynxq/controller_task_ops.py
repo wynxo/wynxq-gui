@@ -369,7 +369,10 @@ def _maybe_generate_task_title(self, task_id: str, history: list[dict], state: d
 
 @Slot(str)
 def duplicateTaskById(self, task_id):
-    if self._busy:
+    task_id = str(task_id or "")
+    session = self._run_sessions.get(task_id)
+    if self._busy or (session and session.get("busy")):
+        self.toast.emit("Stop that chat before duplicating it.")
         return
     source = self.store.get_conversation(task_id)
     if not source:
