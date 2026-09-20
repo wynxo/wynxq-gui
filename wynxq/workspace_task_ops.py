@@ -253,5 +253,6 @@ def shutdown(self):
         self._draft_persist_timer.stop()
     self._persist_current_draft()
     self._set_last_task(self._task_id)
+    self.store.set_setting(self.ACTIVE_RUNS_KEY, [])
     self._workspace_shutdown = True
     Controller.shutdown(self, )
