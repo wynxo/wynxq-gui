@@ -7,8 +7,10 @@ token persistence, and value formatting from the main Controller.
 from __future__ import annotations
 
 import threading
+import time
+from contextlib import contextmanager
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QObject, Property, QThread, QTimer, Signal, Slot
 
 from .desktop_common import SessionTokens
 
@@ -63,6 +65,51 @@ class Job(QThread):
             self.failed.emit(str(exc) or type(exc).__name__)
 
 
+class CaptureVisibility(QObject):
+    """A GUI-thread acknowledgement before the worker captures the desktop."""
+    requested = Signal(object)
+    changed = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._requests = set()
+        self.requested.connect(self._apply)
+
+    @Property(bool, notify=changed)
+    def hidden(self):
+        return bool(self._requests)
+
+    @Slot(object)
+    def _apply(self, request):
+        token, hide, ready = request
+        if hide:
+            self._requests.add(token)
+        else:
+            self._requests.discard(token)
+        self.changed.emit()
+        # Wait for Qt and the compositor to present the transparent HUD.
+        if ready is not None:
+            QTimer.singleShot(120, ready.set)
+
+    @contextmanager
+    def capture(self, cancel=None):
+        from .desktop_common import DesktopCancelled, DesktopError
+        token, ready = object(), threading.Event()
+        self.requested.emit((token, True, ready))
+        try:
+            deadline = time.monotonic() + 2.0
+            while not ready.wait(0.02):
+                if cancel is not None and cancel.is_set():
+                    raise DesktopCancelled("Desktop capture stopped")
+                if time.monotonic() >= deadline:
+                    raise DesktopError("The desktop overlay did not clear for capture. Try again.")
+            if cancel is not None and cancel.is_set():
+                raise DesktopCancelled("Desktop capture stopped")
+            yield
+        finally:
+            self.requested.emit((token, False, None))
+
+
 class _RunDesktop:
     """Foreground-gated view of the shared desktop for one conversation run."""
     _NONVISUAL_DESKTOP = {"open_app", "list_apps", "wait"}
@@ -84,6 +131,11 @@ class _RunDesktop:
                     "Screen interaction is foreground-only. Open this task to continue visual control."}
         if name not in self._NONVISUAL_DESKTOP and hasattr(self.owner.desktop, "begin_control"):
             self.owner.desktop.begin_control(self.task_id)
+        if name == "screenshot":
+            with self.owner._capture_visibility.capture(cancel):
+                if self.task_id != self.owner._task_id:
+                    return {"ok": False, "error": "Screen capture paused: the task is in the background."}
+                return self.owner.desktop.execute(name, arguments, cancel)
         return self.owner.desktop.execute(name, arguments, cancel)
 
 

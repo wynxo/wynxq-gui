@@ -1228,3 +1228,27 @@ def test_encoded_clipboard_image_becomes_an_attachment_without_native_clipboard(
     assert bridge.attachments[0]["kind"] == ctx.IMAGE
     assert bridge.attachments[0]["image"]
     bridge.shutdown()
+
+
+def test_control_panel_channels_reset_between_model_responses(tmp_path):
+    bridge = controller(tmp_path)
+    bridge._task_id = "hud-test"
+    bridge._run_sessions[bridge._task_id] = {
+        "messages": bridge.messages, "history": [], "busy": True,
+        "computer_control_active": True,
+    }
+    try:
+        bridge._on_event({"type": "thinking", "text": "Old reasoning"})
+        bridge._on_event({"type": "token", "text": "Old answer"})
+        bridge._on_event({"type": "message_end", "message": {
+            "role": "assistant", "thinking": "Old reasoning", "content": "Old answer"}})
+        bridge._on_event({"type": "thinking", "text": "New reasoning"})
+        assert bridge.computerControlThought == "New reasoning"
+        assert bridge.computerControlReply == ""
+        bridge._on_event({"type": "token", "text": "Partial"})
+        bridge._on_event({"type": "message_end", "message": {
+            "role": "assistant", "thinking": "", "content": "Final normalized answer"}})
+        assert bridge.computerControlThought == ""
+        assert bridge.computerControlReply == "Final normalized answer"
+    finally:
+        bridge.shutdown()

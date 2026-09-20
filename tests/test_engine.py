@@ -246,15 +246,17 @@ def test_screenshot_is_captured_only_when_the_model_requests_it():
 
 def test_gui_action_automatically_refreshes_visual_state_for_next_turn():
     client = FakeClient([
+        response(calls=[("screenshot", {})]),
         response(calls=[("click", {"x": 20, "y": 30, "button": "right"})]),
         response("The menu opened."),
     ])
     _, events, desktop = run(client)
     assert desktop.calls == [
+        ("screenshot", {}),
         ("click", {"x": 20, "y": 30, "button": "right"}),
         ("screenshot", {}),
     ]
-    assert any(m.get("images") == ["fakepng"] for m in client.requests[1]["messages"])
+    assert any(m.get("images") == ["fakepng"] for m in client.requests[2]["messages"])
     assert any(e.get("type") == "control_active" for e in events)
     assert any(e.get("type") == "screen_observed" and e.get("action") == "click"
                for e in events)
@@ -523,3 +525,51 @@ def test_ui_attachment_metadata_never_reaches_ollama_and_nonvision_images_are_sk
     assert not any(item.get("images") for item in sent)
     assert not any("_wynxq_attachments" in item for item in sent)
     assert history[0]["_wynxq_attachments"][0]["title"] == "shot.png"
+
+
+def test_visual_input_waits_for_a_screen_the_model_has_seen():
+    client = FakeClient([
+        response(calls=[("screenshot", {}), ("click", {"x": 10, "y": 20})]),
+        response(calls=[("click", {"x": 30, "y": 40}), ("click", {"x": 90, "y": 80})]),
+        response("Done"),
+    ])
+    _, events, desktop = run(client)
+    assert desktop.calls == [("screenshot", {}), ("click", {"x": 30, "y": 40}), ("screenshot", {})]
+    deferred = [e for e in events if e["type"] == "tool_end" and
+                "deferred" in e.get("result", {}).get("error", "")]
+    assert len(deferred) == 2
+    # All tool replies precede the new observation, preserving tool-call adjacency.
+    roles = [m["role"] for m in client.requests[1]["messages"]]
+    assert roles[-3:] == ["tool", "tool", "user"]
+
+
+def test_failed_auto_capture_invalidates_old_evidence():
+    class BrokenCapture(FakeDesktop):
+        count = 0
+        def execute(self, name, args, cancel):
+            if name == "screenshot":
+                self.count += 1
+                if self.count > 1:
+                    self.calls.append((name, args))
+                    return {"ok": False, "error": "Capture failed"}
+            return super().execute(name, args, cancel)
+
+    client = FakeClient([
+        response(calls=[("screenshot", {})]),
+        response(calls=[("click", {"x": 10, "y": 20})]),
+        response(calls=[("click", {"x": 90, "y": 80})]),
+        response("Cannot verify the screen"),
+    ])
+    _, events, desktop = run(client, BrokenCapture())
+    assert len([name for name, _ in desktop.calls if name == "click"]) == 1
+    assert not any(m.get("images") for m in client.requests[2]["messages"])
+    assert not any(e["type"] == "screen_observed" for e in events)
+
+
+def test_model_receives_only_latest_screen_but_keeps_user_attachments():
+    from wynxq.engine_support import append_screen, model_history
+    history = [{"role": "user", "content": "reference", "images": ["reference"]}]
+    for image in ("old", "new"):
+        append_screen(history, {"ok": True, "image": image, "width": 800, "height": 600})
+    payload = model_history(history, {"vision"})
+    assert [m["images"] for m in payload] == [["reference"], ["new"]]

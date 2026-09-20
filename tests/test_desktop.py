@@ -78,6 +78,17 @@ class DesktopTests(unittest.TestCase):
         self.assertTrue(base64.b64decode(result["image"]).startswith(b"\x89PNG\r\n\x1a\n"))
         self.assertEqual(self.desktop._size, (640, 480))
 
+    def test_failed_capture_invalidates_pointer_coordinates(self):
+        self.enabled()
+        self.desktop._pointer = (10, 20)
+        self.backend.screenshot = unittest.mock.Mock(side_effect=DesktopError("capture failed"))
+        with self.assertRaisesRegex(DesktopError, "capture failed"):
+            self.desktop.execute("screenshot", {}, self.cancel)
+        self.assertIsNone(self.desktop._size)
+        self.assertIsNone(self.desktop._pointer)
+        with self.assertRaisesRegex(DesktopError, "screenshot"):
+            self.desktop.execute("click", {"x": 10, "y": 20}, self.cancel)
+
     def test_input_rejects_unknown_and_outside_coordinates(self):
         self.enabled()
         for args in ({"x": -1, "y": 2}, {"x": 640, "y": 2},

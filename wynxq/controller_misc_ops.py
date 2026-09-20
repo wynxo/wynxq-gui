@@ -187,6 +187,7 @@ def canClose(self):
 
 
 def shutdown(self):
+    self._overlay_visible = False
     self.dock.shutdown()
     self._release_all_permission_waits()
     for job in list(self._jobs):

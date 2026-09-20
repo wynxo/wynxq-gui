@@ -127,7 +127,13 @@ class ToolExecutor:
                     and not _stopped(self.cancel)):
                 try:
                     self._event("control_active", action="screenshot")
+                    # Let the compositor paint the input result before capturing it.
+                    delay = 0.6 if name == "open_app" else 0.2
+                    if self.cancel.wait(delay):
+                        raise Cancelled("Stopped")
                     observed = self.desktop.execute("screenshot", {}, self.cancel)
+                    if not observed.get("ok", True) or not observed.get("image"):
+                        raise RuntimeError(observed.get("error") or "Screenshot returned no image")
                     self.append_screen(observed)
                     result = {
                         **result,

@@ -337,6 +337,21 @@ order. Capturing the screen *for context* uses the Screenshot portal alone and
 never asks for input control. Per-window capture is X11-only; Wayland
 compositors do not expose it.
 
+The computer-use HUD groups the current thought, Markdown answer and actual stop
+shortcut at the bottom right, with a purple border around the controlled screen.
+On Plasma Wayland, a process-scoped KWin script keeps the HUD above ordinary app
+windows and repositions it when its size or the work area changes. The script is
+unloaded when control ends. Other compositors enforce their own positioning and
+stacking policies; lock screens and privileged system surfaces remain compositor-owned.
+
+Desktop observations temporarily clear the HUD pixels, wait for the next paint,
+and retain full-resolution PNG input. The model receives only the latest desktop
+observation (user image attachments are preserved). Each visual input requires an
+observation from a preceding model response; later inputs in the same batch are
+deferred until it can read the updated screen. A failed capture invalidates older
+screen evidence. This improves grounding but does not guarantee a model will
+correctly recognize every target.
+
 Two portal features are used where the desktop offers them, and skipped in
 silence where it does not:
 

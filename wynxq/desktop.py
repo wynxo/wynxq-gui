@@ -245,11 +245,17 @@ class DesktopController:
                 return {"ok": True, "action": name}
             self._permission(cancel)
             if name == "screenshot":
-                picture = self._backend.screenshot(cancel)
+                previous_size = self._size
+                self._size = None
+                try:
+                    picture = self._backend.screenshot(cancel)
+                except Exception:
+                    self._pointer = None
+                    raise
                 self._permission(cancel)
                 # A different coordinate space invalidates the remembered
                 # pointer; motion must never be drawn from a stale point.
-                if self._size != picture.size:
+                if previous_size != picture.size:
                     self._pointer = None
                 self._size = picture.size
                 return _png_result(picture, self._backend.name)

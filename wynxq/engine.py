@@ -83,8 +83,10 @@ class AgentEngine:
         def event(kind: str, **fields):
             emit({"type": kind, **fields})
 
+        pending_screens = []
+
         def remember_screen(result: dict) -> None:
-            append_screen(history, result)
+            pending_screens.append(result)
 
         try:
             if _stopped(cancel):
@@ -260,6 +262,12 @@ class AgentEngine:
                 if not calls:
                     return history
 
+                # Coordinates must be based on an observation the model has actually
+                # received, not one captured halfway through this batch of calls.
+                saw_screen = any(m.get("images") and str(m.get("content", "")).startswith(
+                    "Current desktop screenshot (") for m in payload["messages"])
+                screen_changed = False
+                visual_input = available_schemas - _NONVISUAL - {"screenshot"}
                 for index, call in enumerate(calls):
                     function = call.get("function", {}) if isinstance(call, dict) else {}
                     name = function.get("name", "")
@@ -280,7 +288,15 @@ class AgentEngine:
                             })
                         raise Cancelled("Stopped")
 
-                    if steps >= max_steps:
+                    if visual and name in visual_input and (not saw_screen or screen_changed):
+                        result = {
+                            "ok": False,
+                            "error": "Visual action deferred: read a fresh screenshot in a new response "
+                                     "before choosing coordinates or keyboard input. Call screenshot if needed.",
+                        }
+                        event("tool_start", name=name, args=args)
+                        event("tool_end", name=name, result=result)
+                    elif steps >= max_steps:
                         result = {
                             "ok": False,
                             "error": "Action limit reached. Ask the user to continue.",
@@ -315,6 +331,13 @@ class AgentEngine:
                                 })
                             raise
 
+                    if name == "screenshot" or name in _AUTO_OBSERVE:
+                        screen_changed = True
+                    if result.get("screen_observation_error") or (
+                            name == "screenshot" and (not result.get("ok", True) or not result.get("image"))):
+                        # Do not let a failed new capture leave old coordinates usable.
+                        history[:] = fresh_history(history)
+                        pending_screens.clear()
                     summary = {
                         key: value for key, value in result.items()
                         if key != "image"
@@ -326,6 +349,10 @@ class AgentEngine:
                     })
                     if name == "screenshot":
                         remember_screen(result)
+
+                for observation in pending_screens:
+                    append_screen(history, observation)
+                pending_screens.clear()
 
                 if steps >= max_steps:
                     text = (

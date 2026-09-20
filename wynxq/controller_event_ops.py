@@ -62,6 +62,8 @@ def _on_event(self, event, task_id=None):
         if not state.get("turn_had_message"):
             messages.append_message("assistant", streaming=True)
             state["turn_had_message"] = True
+            state["overlay_thought"] = ""
+            state["overlay_reply"] = ""
         streamed = str(event.get("text", "") or "")
         if kind == "thinking":
             if not state.get("think_started"):
@@ -76,6 +78,10 @@ def _on_event(self, event, task_id=None):
             state["overlay_reply"] = (str(state.get("overlay_reply", "")) + streamed)[-4000:]
             state["status"] = "Writing"
     elif kind == "message_end":
+        final_message = event.get("message")
+        if isinstance(final_message, dict):
+            state["overlay_thought"] = str(final_message.get("thinking") or "")[-4000:]
+            state["overlay_reply"] = str(final_message.get("content") or "")[-4000:]
         messages.finish_stream(float(state.get("think_seconds", 0.0) or 0.0),
                                event.get("message"))
         state["turn_had_message"] = False
@@ -339,10 +345,24 @@ def promoteComputerControlOverlay(self):
     self._overlay_promotion_active = True
 
     def settled(_result=None):
+        cancelled = bool(self._overlay_promotion_job and self._overlay_promotion_job.cancel.is_set())
         self._overlay_promotion_active = False
+        self._overlay_promotion_job = None
+        if cancelled and self._overlay_visible:
+            self.promoteComputerControlOverlay()
 
-    self._job(lambda cancel, emit: kwin.promote_control_windows(cancel),
-              settled, lambda _message: settled())
+    self._overlay_promotion_job = self._job(
+        lambda cancel, emit: kwin.promote_control_windows(cancel),
+        settled, lambda _message: settled())
+
+
+@Slot(bool)
+def setComputerControlOverlayVisible(self, visible):
+    self._overlay_visible = bool(visible)
+    if visible:
+        self.promoteComputerControlOverlay()
+    elif self._overlay_promotion_job:
+        self._overlay_promotion_job.cancel.set()
 
 
 @Slot()

@@ -38,7 +38,7 @@ from .conversation import (
     GROUP_ORDER, STARTERS, TOOL_PRESENTATION, Messages, derive_title, group_for,
 )
 from .controller_support import (
-    Job, _RunDesktop, _StoredTokens, _blank_metrics, _bounded_float,
+    CaptureVisibility, Job, _RunDesktop, _StoredTokens, _blank_metrics, _bounded_float,
     _bounded_int, _human_bytes,
 )
 from . import controller_server_ops as _server_ops
@@ -220,6 +220,9 @@ class Controller(QObject):
         self._session_auto = False
         self._capture_busy = False
         self._overlay_promotion_active = False
+        self._overlay_promotion_job = None
+        self._overlay_visible = False
+        self._capture_visibility = CaptureVisibility(self)
         self._region: dict = {}
         self._code_palette = dict(md.DEFAULT_PALETTE)
         self._html_palette = dict(md.HTML_PALETTE)
@@ -369,6 +372,7 @@ class Controller(QObject):
     _release_desktop_control = _event_ops._release_desktop_control
     stop = _event_ops.stop
     promoteComputerControlOverlay = _event_ops.promoteComputerControlOverlay
+    setComputerControlOverlayVisible = _event_ops.setComputerControlOverlayVisible
     toggleDesktop = _event_ops.toggleDesktop
     _desktop_done = _event_ops._desktop_done
     _desktop_failed = _event_ops._desktop_failed
@@ -569,6 +573,8 @@ class Controller(QObject):
     def desktopStopShortcut(self): return self._desktop_status.get("stopShortcut", "")
     @Property(str, notify=changed)
     def desktopStopDetail(self): return self._desktop_status.get("stopDetail", "")
+    @Property(QObject, constant=True)
+    def captureVisibility(self): return self._capture_visibility
     @Property(bool, notify=changed)
     def computerControlActive(self):
         state = self._run_sessions.get(self._task_id)

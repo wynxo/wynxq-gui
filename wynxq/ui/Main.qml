@@ -523,6 +523,7 @@ ApplicationWindow {
         delegate: ComputerControlOverlay {
             required property var modelData
             targetScreen: modelData
+            contentItem.opacity: bridge && bridge.captureVisibility.hidden ? 0 : 1
             controlVisible: !!(bridge && bridge.computerControlActive)
             stopShortcut: bridge ? bridge.computerControlStopShortcut : "Esc"
             stopDetail: bridge ? bridge.computerControlStopDetail : "Press Esc to stop instantly"
@@ -531,6 +532,10 @@ ApplicationWindow {
 
     ComputerControlPanel {
         id: computerControlPanel
+        onVisibleChanged: if (bridge) bridge.setComputerControlOverlayVisible(visible)
+        Component.onCompleted: if (bridge) bridge.setComputerControlOverlayVisible(visible)
+        stopShortcut: bridge ? bridge.computerControlStopShortcut : "Esc"
+        contentItem.opacity: bridge && bridge.captureVisibility.hidden ? 0 : 1
         targetScreen: window.screen || (Application.screens.length ? Application.screens[0] : null)
         controlVisible: !!(bridge && bridge.computerControlActive)
         statusText: bridge ? bridge.computerControlStatus : "Working…"
@@ -540,13 +545,6 @@ ApplicationWindow {
 
     // Snapshot QA can grab the real separate HUD window directly.
     property var computerControlPanelWindow: computerControlPanel
-
-    Timer {
-        interval: 180
-        repeat: false
-        running: computerControlPanel.visible
-        onTriggered: if (bridge) bridge.promoteComputerControlOverlay()
-    }
 
     ModelManager { id: models }
     SettingsSheet {
