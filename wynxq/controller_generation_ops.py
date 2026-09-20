@@ -124,8 +124,40 @@ def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
     return state
 
 
-def _start_run(self, history):
-    self._launch_run(history, AgentEngine)
+def _start_run(self, history, *, extras=None):
+    self._launch_run(history, AgentEngine, extras=extras)
+
+
+def _resume_pending_followup(self, task_id: str, history=None, *, finishing=False) -> bool:
+    """Resume steering/queue work only when its conversation owns the foreground."""
+    task_id = str(task_id or "")
+    state = self._run_sessions.get(task_id)
+    if (not state or task_id != self._task_id or state.get("stop_requested")
+            or (state.get("busy") and not finishing)):
+        return False
+
+    steering = list(state.get("steering_messages") or [])
+    queued = list(state.get("queued_messages") or [])
+    if not steering and not queued:
+        return False
+
+    continued = list(state.get("history") if history is None else history)
+    if steering:
+        for message in steering:
+            continued.append({"role": "user", "content": message})
+        remaining = queued
+    else:
+        next_message, remaining = queued[0], queued[1:]
+        continued.append({"role": "user", "content": next_message})
+        state["messages"].append_message("user", next_message)
+
+    self._history = continued
+    self.store.set_messages(task_id, continued, state["model"], state["endpoint"])
+    # Route through the virtual run hook so WorkspaceController preserves
+    # Chat/Work tool boundaries, planning, usage and checkpoints on restart.
+    self._start_run(continued, extras={"queued_messages": remaining})
+    self.scrollToEnd.emit()
+    return True
 
 
 @staticmethod

@@ -320,3 +320,43 @@ def test_the_controller_puts_a_chat_task_into_chat_only_mode(tmp_path, monkeypat
     assert bridge.taskMode == "work"
     assert captured["tools_allowed"] is True
     bridge.shutdown()
+
+
+def test_queued_chat_followup_keeps_tools_disabled(tmp_path, monkeypatch):
+    bridge = controller(tmp_path, connected=True)
+    bridge._online = True
+    bridge._model_capabilities = ["completion", "tools"]
+    calls = []
+
+    class Spy:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def run(self, messages, *args, **kwargs):
+            calls.append({"messages": list(messages), **kwargs})
+            return list(messages)
+
+    class FakeJob:
+        def __init__(self):
+            self.cancel = threading.Event()
+
+    def job(fn, result=None, failure=None, event=None):
+        fake = FakeJob()
+        fn(fake.cancel, lambda payload: None)
+        return fake
+
+    monkeypatch.setattr("wynxq.workspace.PlanningAgentEngine", Spy)
+    monkeypatch.setattr("wynxq.workspace.OllamaClient", lambda endpoint: None)
+    monkeypatch.setattr(bridge, "_job", job)
+
+    bridge.send("first")
+    task_id = bridge.taskId
+    bridge.send("/queue second")
+    state = bridge._run_sessions[task_id]
+    bridge._run_done(list(state["history"]), task_id)
+
+    assert len(calls) == 2
+    assert calls[0]["tools_allowed"] is False
+    assert calls[1]["tools_allowed"] is False
+    assert calls[1]["messages"][-1] == {"role": "user", "content": "second"}
+    bridge.shutdown()

@@ -125,7 +125,7 @@ def _settle_plan_for_run(self, task_id: str, state: dict, outcome: str) -> None:
             self._set_plan(plan, persist=False)
 
 
-def _start_run(self, history):
+def _start_run(self, history, *, extras=None):
     self._begin_workspace_checkpoint()
     checkpoint = self._workspace_checkpoint
     self._refresh_project_instructions()
@@ -139,19 +139,22 @@ def _start_run(self, history):
 
     mode = self._task_mode
     project = self._working_directory
+    run_extras = {
+        "usage": usage,
+        "conversation_tokens": self._read_conversation_tokens(self._task_id),
+        "context_omitted_turns": 0,
+        "plan_steps": [dict(step) for step in self._plan_steps],
+        "checkpoint": checkpoint,
+        "task_mode": mode,
+    }
+    if extras:
+        run_extras.update(extras)
     state = self._launch_run(
         history, self._planning_engine_class(),
         tools_allowed=mode == "work",
         desktop_enabled=mode == "work" and self.desktopEnabled,
         project=project,
-        extras={
-            "usage": usage,
-            "conversation_tokens": self._read_conversation_tokens(self._task_id),
-            "context_omitted_turns": 0,
-            "plan_steps": [dict(step) for step in self._plan_steps],
-            "checkpoint": checkpoint,
-            "task_mode": mode,
-        },
+        extras=run_extras,
     )
     self._workspace_checkpoint = state.get("checkpoint")
     self._journal_active_run(self._task_id, True)
@@ -225,6 +228,21 @@ def _run_done(self, history, task_id=None):
             state["conversation_tokens"] = int(state.get("conversation_tokens", 0))
             state["conversation_tokens"] += max(0, int(metrics.get("tokens", 0) or 0))
             state["conversation_tokens"] += max(0, int(metrics.get("prompt_tokens", 0) or 0))
+
+        # Settle the old workspace turn completely before launching a steering
+        # or queued continuation. Otherwise old usage/checkpoint cleanup can
+        # overwrite the freshly started run's state and active-run journal.
+        steering = list(state.get("steering_messages") or [])
+        queued = list(state.get("queued_messages") or [])
+        resume_after_settle = bool(
+            task_id == self._task_id
+            and not state.get("stop_requested")
+            and (steering or queued)
+        )
+        if resume_after_settle:
+            state["steering_messages"] = []
+            state["queued_messages"] = []
+
         cleaned = self._strip_plan_history(history)
         Controller._run_done(self, cleaned, task_id)
         self._journal_active_run(task_id, False)
@@ -235,10 +253,16 @@ def _run_done(self, history, task_id=None):
             self._conversation_tokens = int(state.get(
                 "conversation_tokens", self._read_conversation_tokens(task_id)))
             self.usageChanged.emit()
+
+        if resume_after_settle:
+            settled = self._run_sessions.get(task_id)
+            if settled is state and not settled.get("busy"):
+                settled["steering_messages"] = steering
+                settled["queued_messages"] = queued
+                self._resume_pending_followup(task_id, cleaned)
         return
     Controller._run_done(self, self._strip_plan_history(history), task_id)
     self._journal_active_run(task_id, False)
-
 
 def _run_failed(self, message, task_id=None):
     task_id = str(task_id or self._task_id or "")

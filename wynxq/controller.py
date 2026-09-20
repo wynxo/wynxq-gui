@@ -348,6 +348,7 @@ class Controller(QObject):
     # generation/permissions/desktop operations
     _launch_run = _generation_ops._launch_run
     _start_run = _generation_ops._start_run
+    _resume_pending_followup = _generation_ops._resume_pending_followup
     _queued_text = _generation_ops._queued_text
     _send_while_busy = _generation_ops._send_while_busy
     send = _generation_ops.send

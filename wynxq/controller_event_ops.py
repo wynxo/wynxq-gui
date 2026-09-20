@@ -175,29 +175,8 @@ def _run_done(self, history, task_id=None):
     state = self._run_sessions.get(task_id)
     if state is not None:
         stopped_by_user = bool(state.get("stop_requested"))
-        steering = [] if stopped_by_user else list(state.get("steering_messages") or [])
-        queued = [] if stopped_by_user else list(state.get("queued_messages") or [])
-        if steering and task_id == self._task_id:
-            continued = list(history)
-            for message in steering:
-                continued.append({"role": "user", "content": message})
-            self._history = continued
-            self.store.set_messages(task_id, continued, state["model"], state["endpoint"])
-            # Keep queued follow-ups across the steering restart. Desktop
-            # ownership intentionally stays with this task; the resumed run
-            # will reuse it and the eventual final run releases it.
-            self._launch_run(continued, AgentEngine, extras={"queued_messages": queued})
-            self.scrollToEnd.emit()
-            return
-        if queued and task_id == self._task_id:
-            continued = list(history)
-            next_message, remaining = queued[0], queued[1:]
-            continued.append({"role": "user", "content": next_message})
-            state["messages"].append_message("user", next_message)
-            self._history = continued
-            self.store.set_messages(task_id, continued, state["model"], state["endpoint"])
-            self._launch_run(continued, AgentEngine, extras={"queued_messages": remaining})
-            self.scrollToEnd.emit()
+        if not stopped_by_user and self._resume_pending_followup(
+                task_id, history, finishing=True):
             return
     if state is None:
         # Compatibility for direct unit calls that predate task sessions.
@@ -222,8 +201,19 @@ def _run_done(self, history, task_id=None):
     self._release_desktop_control(task_id)
     state["permission"] = None
     state["messages"].mark_idle()
-    state["status"] = "Stopped" if stopped else (
-        "Needs attention" if state.get("error") else "Ready when you are")
+    pending_followup = bool(
+        not state.get("stop_requested")
+        and (state.get("steering_messages") or state.get("queued_messages"))
+    )
+    state["status"] = (
+        "Reopen to continue steering"
+        if pending_followup and state.get("steering_messages")
+        else "Queued · reopen to continue"
+        if pending_followup
+        else "Stopped" if stopped
+        else "Needs attention" if state.get("error")
+        else "Ready when you are"
+    )
     try:
         self.store.set_messages(
             task_id, state["history"], state["model"], state["endpoint"])

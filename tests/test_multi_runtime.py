@@ -217,3 +217,62 @@ def test_background_running_task_cannot_be_duplicated(tmp_path):
     bridge._run_sessions.pop(first["id"], None)
     bridge.shutdown()
 
+
+
+def test_background_steering_survives_switch_and_resumes_on_reopen(tmp_path, monkeypatch):
+    calls = []
+
+    class Spy:
+        def __init__(self, client, desktop, memory=None, browser_open=None):
+            self.endpoint = client.endpoint
+
+        def run(self, messages, model, desktop_enabled, cancel, emit, **kwargs):
+            calls.append({
+                "messages": list(messages),
+                "model": model,
+                "tools_allowed": kwargs.get("tools_allowed"),
+            })
+            return list(messages)
+
+    class FakeClient:
+        def __init__(self, endpoint):
+            self.endpoint = endpoint
+
+    class FakeJob:
+        def __init__(self):
+            self.cancel = threading.Event()
+
+    def job(fn, result=None, failure=None, event=None):
+        fake = FakeJob()
+        fn(fake.cancel, lambda payload: None)
+        return fake
+
+    bridge = ProductController(
+        store=Store(tmp_path / "history.sqlite3"),
+        desktop=IdleDesktop(), autoconnect=False,
+    )
+    bridge.PLANNING_ENGINE = Spy
+    bridge.OLLAMA_CLIENT = FakeClient
+    monkeypatch.setattr(bridge, "_job", job)
+    bridge._online = True
+
+    bridge.send("first")
+    first = bridge.taskId
+    bridge.send("steer this")
+    first_state = bridge._run_sessions[first]
+    assert first_state["job"].cancel.is_set()
+
+    second = bridge.store.create_conversation("Second", bridge.model, bridge.endpoint)
+    bridge.openTask(second["id"])
+    bridge._run_done(list(first_state["history"]), first)
+
+    paused = bridge._run_sessions[first]
+    assert paused["steering_messages"] == ["steer this"]
+    assert paused["status"] == "Reopen to continue steering"
+    assert len(calls) == 1
+
+    bridge.openTask(first)
+    assert len(calls) == 2
+    assert calls[-1]["messages"][-1] == {"role": "user", "content": "steer this"}
+    assert calls[-1]["tools_allowed"] is False
+    bridge.shutdown()

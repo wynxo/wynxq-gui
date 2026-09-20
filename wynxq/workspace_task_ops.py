@@ -103,6 +103,8 @@ def openTask(self, task_id):
     self.contextStateChanged.emit()
     self.checkpointChanged.emit()
     self._emit_mode()
+    # Restore the saved mode before resuming a paused steering/queue turn.
+    self._resume_pending_followup(task_id)
 
 
 def _learn_user_memory(self, text: str) -> int:
