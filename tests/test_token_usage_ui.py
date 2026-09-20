@@ -38,7 +38,11 @@ def test_settings_owns_exact_period_usage():
     assert "cached input is already part of input and is never counted twice" in page
 
 
-def test_composer_does_not_send_while_ime_is_composing():
+def test_composer_does_not_send_while_real_ime_preedit_exists():
     composer = (MODULE / "Composer.qml").read_text(encoding="utf-8")
-    assert composer.count("input.inputMethodComposing") >= 2
-    assert composer.index("input.inputMethodComposing") < composer.index("root.send(); event.accepted = true;")
+    guard = "input.preeditText.length > 0"
+    assert guard in composer
+    assert composer.index(guard) < composer.index("root.send(); event.accepted = true;")
+    # Qt can leave inputMethodComposing true after real preedit has ended on
+    # some Linux IME stacks; using it here would regress normal Enter-to-send.
+    assert "input.inputMethodComposing" not in composer
