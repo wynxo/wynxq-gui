@@ -43,6 +43,14 @@ def call(name, **arguments):
     return {"function": {"name": name, "arguments": arguments}}
 
 
+def grounded(*script):
+    """Give the model a screenshot in one response before visual input."""
+    return [
+        {"message": {"tool_calls": [call("screenshot")]}, "done": True},
+        *script,
+    ]
+
+
 def run(script, mode, confirm, capabilities=("completion", "tools", "vision")):
     desktop = FakeDesktop()
     events = []
@@ -101,8 +109,10 @@ def test_declining_an_action_stops_it_and_tells_the_model_why():
         return False
 
     history, events, desktop = run(
-        [{"message": {"tool_calls": [call("type_text", text="rm -rf")]}, "done": True},
-         {"message": {"content": "Understood, I will not type that."}, "done": True}],
+        grounded(
+            {"message": {"tool_calls": [call("type_text", text="rm -rf")]}, "done": True},
+            {"message": {"content": "Understood, I will not type that."}, "done": True},
+        ),
         SAFE, confirm)
 
     assert seen == [("type_text", "sensitive")]
@@ -116,8 +126,10 @@ def test_declining_an_action_stops_it_and_tells_the_model_why():
 
 def test_approved_actions_run_and_report_a_duration():
     history, events, desktop = run(
-        [{"message": {"tool_calls": [call("type_text", text="hello")]}, "done": True},
-         {"message": {"content": "typed"}, "done": True}],
+        grounded(
+            {"message": {"tool_calls": [call("type_text", text="hello")]}, "done": True},
+            {"message": {"content": "typed"}, "done": True},
+        ),
         SAFE, lambda name, args, risk: True)
     assert ("type_text", {"text": "hello"}) in desktop.calls
     ends = [e for e in events if e["type"] == "tool_end"]
@@ -137,8 +149,10 @@ def test_low_risk_actions_never_reach_the_confirmation_callback():
 def test_auto_mode_runs_a_sensitive_action_without_a_callback():
     asked = []
     _, _, desktop = run(
-        [{"message": {"tool_calls": [call("press_key", keys=["ctrl", "s"])]}, "done": True},
-         {"message": {"content": "saved"}, "done": True}],
+        grounded(
+            {"message": {"tool_calls": [call("press_key", keys=["ctrl", "s"])]}, "done": True},
+            {"message": {"content": "saved"}, "done": True},
+        ),
         AUTO, lambda name, args, risk: asked.append(name) or True)
     assert asked == []
     assert ("press_key", {"keys": ["ctrl", "s"]}) in desktop.calls
@@ -146,13 +160,16 @@ def test_auto_mode_runs_a_sensitive_action_without_a_callback():
 
 def test_tool_start_announces_that_a_prompt_is_coming():
     _, events, _ = run(
-        [{"message": {"tool_calls": [call("type_text", text="x")]}, "done": True},
-         {"message": {"content": "ok"}, "done": True}],
+        grounded(
+            {"message": {"tool_calls": [call("type_text", text="x")]}, "done": True},
+            {"message": {"content": "ok"}, "done": True},
+        ),
         ASK, lambda name, args, risk: True)
-    starts = {event["name"]: event for event in events if event["type"] == "tool_start"}
-    assert starts["type_text"]["confirming"] is True
-    assert "screenshot" not in starts
-    assert starts["type_text"]["summary"] == "Type “x”"
+    starts = [event for event in events if event["type"] == "tool_start"]
+    typed = next(event for event in starts if event["name"] == "type_text")
+    assert typed["confirming"] is True
+    assert typed["summary"] == "Type “x”"
+    assert typed["risk"] == "sensitive"
 
 
 def test_permission_mode_is_described_to_the_model():
@@ -172,8 +189,10 @@ def test_permission_mode_is_described_to_the_model():
 
 def test_an_unknown_mode_falls_back_to_the_safest_available_behaviour():
     asked = []
-    run([{"message": {"tool_calls": [call("click", x=4, y=5)]}, "done": True},
-         {"message": {"content": "ok"}, "done": True}],
+    run(grounded(
+            {"message": {"tool_calls": [call("click", x=4, y=5)]}, "done": True},
+            {"message": {"content": "ok"}, "done": True},
+        ),
         "nonsense", lambda name, args, risk: asked.append(name) or True)
     # A mode nobody recognises resolves to the default the controller ships,
     # not to the one that asks for nothing. The controller only ever passes a
@@ -197,13 +216,11 @@ def test_active_run_re_reads_a_callable_permission_mode_before_each_action():
 
     desktop = ModeChangingDesktop()
     events = []
-    AgentEngine(Client([
-        {"message": {"tool_calls": [
-            call("open_app", app="firefox"),
-            call("click", x=10, y=20),
-        ]}, "done": True},
+    AgentEngine(Client(grounded(
+        {"message": {"tool_calls": [call("open_app", app="firefox")]}, "done": True},
+        {"message": {"tool_calls": [call("click", x=10, y=20)]}, "done": True},
         {"message": {"content": "done"}, "done": True},
-    ]), desktop).run(
+    )), desktop).run(
         [{"role": "user", "content": "go"}], "local:test", True, threading.Event(),
         events.append, permission_mode=lambda: state["mode"],
         confirm=lambda name, args, risk: asked.append((name, risk)) or True)

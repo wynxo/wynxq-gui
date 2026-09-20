@@ -525,8 +525,8 @@ ApplicationWindow {
             targetScreen: modelData
             contentItem.opacity: bridge && bridge.captureVisibility.hidden ? 0 : 1
             controlVisible: !!(bridge && bridge.computerControlActive)
-            stopShortcut: bridge ? bridge.computerControlStopShortcut : "Esc"
-            stopDetail: bridge ? bridge.computerControlStopDetail : "Press Esc to stop instantly"
+            stopShortcut: bridge ? bridge.computerControlStopShortcut : ""
+            stopDetail: bridge ? bridge.computerControlStopDetail : "Stop from Wynxq"
         }
     }
 
@@ -534,7 +534,8 @@ ApplicationWindow {
         id: computerControlPanel
         onVisibleChanged: if (bridge) bridge.setComputerControlOverlayVisible(visible)
         Component.onCompleted: if (bridge) bridge.setComputerControlOverlayVisible(visible)
-        stopShortcut: bridge ? bridge.computerControlStopShortcut : "Esc"
+        stopShortcut: bridge ? bridge.computerControlStopShortcut : ""
+        stopDetail: bridge ? bridge.computerControlStopDetail : "Stop from Wynxq"
         contentItem.opacity: bridge && bridge.captureVisibility.hidden ? 0 : 1
         targetScreen: window.screen || (Application.screens.length ? Application.screens[0] : null)
         controlVisible: !!(bridge && bridge.computerControlActive)

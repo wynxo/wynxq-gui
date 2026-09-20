@@ -1252,3 +1252,23 @@ def test_control_panel_channels_reset_between_model_responses(tmp_path):
         assert bridge.computerControlReply == "Final normalized answer"
     finally:
         bridge.shutdown()
+
+
+def test_control_overlay_never_invents_a_global_stop_shortcut(tmp_path):
+    bridge = controller(tmp_path)
+    try:
+        bridge._desktop_status = {
+            "stopShortcut": "",
+            "stopDetail": "No global stop shortcut: portal declined the request",
+        }
+        assert bridge.computerControlStopShortcut == ""
+        assert "portal declined" in bridge.computerControlStopDetail
+
+        bridge._desktop_status = {
+            "stopShortcut": "Meta+Shift+X",
+            "stopDetail": "Emergency stop: Meta+Shift+X",
+        }
+        assert bridge.computerControlStopShortcut == "Meta+Shift+X"
+        assert bridge.computerControlStopDetail == "Emergency stop: Meta+Shift+X"
+    finally:
+        bridge.shutdown()

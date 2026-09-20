@@ -268,6 +268,21 @@ class AgentEngine:
                     "Current desktop screenshot (") for m in payload["messages"])
                 screen_changed = False
                 visual_input = available_schemas - _NONVISUAL - {"screenshot"}
+
+                def report_blocked(name: str, args: dict, result: dict) -> dict:
+                    """Emit the same activity contract as an executable tool call."""
+                    event(
+                        "tool_start",
+                        name=name,
+                        args=args,
+                        risk=action_risk(name, args),
+                        summary=action_summary(name, args),
+                        confirming=False,
+                        blocked=True,
+                    )
+                    event("tool_end", name=name, ms=0, result=result, blocked=True)
+                    return result
+
                 for index, call in enumerate(calls):
                     function = call.get("function", {}) if isinstance(call, dict) else {}
                     name = function.get("name", "")
@@ -294,15 +309,13 @@ class AgentEngine:
                             "error": "Visual action deferred: read a fresh screenshot in a new response "
                                      "before choosing coordinates or keyboard input. Call screenshot if needed.",
                         }
-                        event("tool_start", name=name, args=args)
-                        event("tool_end", name=name, result=result)
+                        result = report_blocked(name, args, result)
                     elif steps >= max_steps:
                         result = {
                             "ok": False,
                             "error": "Action limit reached. Ask the user to continue.",
                         }
-                        event("tool_start", name=name, args=args)
-                        event("tool_end", name=name, result=result)
+                        result = report_blocked(name, args, result)
                     else:
                         steps += 1
                         try:

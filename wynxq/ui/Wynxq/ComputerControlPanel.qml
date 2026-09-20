@@ -13,8 +13,12 @@ Window {
 
     required property var targetScreen
     property bool controlVisible: false
-    property string stopShortcut: "Esc"
+    property string stopShortcut: ""
+    property string stopDetail: ""
     property string statusText: "Working…"
+    readonly property string stopInstruction: stopShortcut
+        ? ("Wynxq · " + stopShortcut + " to stop")
+        : (stopDetail || "Stop from Wynxq")
     property string thoughtText: ""
     property string replyText: ""
 
@@ -140,11 +144,15 @@ Window {
                 color: Theme.accent
             }
             Text {
-                text: "Wynxq · " + (root.stopShortcut || "Esc") + " to stop"
+                width: Math.max(1, parent.width - 13)
+                text: root.stopInstruction
                 color: Theme.textMuted
                 font.family: Theme.sansFamily
                 font.pixelSize: Theme.micro
                 textFormat: Text.PlainText
+                wrapMode: Text.Wrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
             }
         }
     }

@@ -101,3 +101,14 @@ def test_cancelled_capture_restores_hud_without_taking_image():
     APP.processEvents()
     assert results == ["cancelled"]
     assert not visibility.hidden
+
+
+def test_control_panel_stop_copy_uses_reported_shortcut_status():
+    from pathlib import Path
+    panel = (Path(__file__).parents[1] / "wynxq" / "ui" / "Wynxq" / "ComputerControlPanel.qml").read_text()
+    # The panel must not manufacture an Esc fallback when the compositor
+    # reports no global shortcut. The runtime property is exercised by the
+    # HUD probe; this guards the safety-critical fallback copy.
+    assert 'stopShortcut: ""' in panel
+    assert 'stopDetail || "Stop from Wynxq"' in panel
+    assert 'stopShortcut || "Esc"' not in panel

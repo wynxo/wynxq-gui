@@ -581,10 +581,13 @@ class Controller(QObject):
         return bool(state and state.get("computer_control_active") and state.get("busy"))
     @Property(str, notify=changed)
     def computerControlStopShortcut(self):
-        return str(self._desktop_status.get("stopShortcut") or "Esc")
+        # Never invent a global key. Wayland may choose another trigger or
+        # decline the portal request entirely.
+        return str(self._desktop_status.get("stopShortcut") or "")
     @Property(str, notify=changed)
     def computerControlStopDetail(self):
-        return str(self._desktop_status.get("stopDetail") or "Press Esc to stop instantly")
+        return str(self._desktop_status.get("stopDetail") or
+                   "No global stop shortcut is available; stop from Wynxq.")
     @Property(str, notify=changed)
     def computerControlStatus(self):
         state = self._run_sessions.get(self._task_id)

@@ -9,11 +9,13 @@ from .desktop_common import _KEYSYMS
 class X11GlobalStop:
     """Temporary bare-Escape grab while Wynxq is actively controlling X11."""
 
-    trigger = "Esc"
-    detail = "Emergency stop: Esc"
+    trigger = ""
+    detail = ""
 
     def __init__(self, on_stop):
         self._on_stop = on_stop
+        self.trigger = ""
+        self.detail = ""
         self._display = None
         self._root = None
         self._keycode = 0
@@ -29,6 +31,8 @@ class X11GlobalStop:
             root.grab_key(code, X.AnyModifier, False, X.GrabModeAsync, X.GrabModeAsync)
             connection.sync()
             self._display, self._root, self._keycode = connection, root, code
+            self.trigger = "Esc"
+            self.detail = "Emergency stop: Esc"
             self._thread = threading.Thread(
                 target=self._watch, name="wynxq-x11-emergency-stop", daemon=True)
             self._thread.start()

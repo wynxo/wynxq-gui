@@ -538,6 +538,10 @@ def test_visual_input_waits_for_a_screen_the_model_has_seen():
     deferred = [e for e in events if e["type"] == "tool_end" and
                 "deferred" in e.get("result", {}).get("error", "")]
     assert len(deferred) == 2
+    blocked_starts = [e for e in events if e["type"] == "tool_start" and e.get("blocked")]
+    assert len(blocked_starts) == 2
+    assert all(e["confirming"] is False and e["summary"] and e["risk"] for e in blocked_starts)
+    assert all(e["ms"] == 0 and e.get("blocked") for e in deferred)
     # All tool replies precede the new observation, preserving tool-call adjacency.
     roles = [m["role"] for m in client.requests[1]["messages"]]
     assert roles[-3:] == ["tool", "tool", "user"]
