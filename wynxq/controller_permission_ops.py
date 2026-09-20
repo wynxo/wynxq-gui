@@ -155,6 +155,21 @@ def setMemoryEnabled(self, enabled):
                     if enabled else "Memory is off. The file is kept, but nothing reads it.")
 
 
+@Slot(bool)
+def setReferenceChatHistory(self, enabled):
+    enabled = bool(enabled)
+    if enabled == self._reference_chat_history:
+        return
+    self._reference_chat_history = enabled
+    self.store.set_setting("reference_chat_history", enabled)
+    self.memoryChanged.emit()
+    self.changed.emit()
+    self.toast.emit(
+        "Past chats can be referenced when relevant."
+        if enabled else "Past-chat reference is off."
+    )
+
+
 @Slot(str)
 def saveMemory(self, text):
     """Save the memory file as edited in Wynxq, replacing what was there."""
