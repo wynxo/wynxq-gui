@@ -192,3 +192,25 @@ def test_endpoint_profiles_migrate_the_existing_server_as_main(tmp_path):
         assert {item["name"] for item in bridge.endpointProfiles} >= {"Main", "Second"}
     finally:
         bridge.shutdown()
+
+def test_background_running_task_cannot_be_duplicated(tmp_path, monkeypatch):
+    bridge = controller(tmp_path)
+    first = bridge.store.create_conversation("Running", bridge.model, bridge.endpoint)
+    second = bridge.store.create_conversation("Idle", bridge.model, bridge.endpoint)
+    bridge.openTask(second["id"])
+    bridge._run_sessions[first["id"]] = {
+        "busy": True,
+        "status": "Thinking",
+        "messages": bridge._new_message_model(),
+        "history": [{"role": "user", "content": "unfinished"}],
+    }
+
+    before = {item["id"] for item in bridge.store.list_conversations()}
+    bridge.duplicateTaskById(first["id"])
+    after = {item["id"] for item in bridge.store.list_conversations()}
+
+    assert after == before
+    assert bridge.taskId == second["id"]
+    bridge._run_sessions.pop(first["id"], None)
+    bridge.shutdown()
+
