@@ -79,6 +79,51 @@ def test_first_send_persists_chat_mode_and_reopen_restores_it(tmp_path, monkeypa
     bridge.shutdown()
 
 
+def test_restart_recovers_all_journaled_background_plans(tmp_path):
+    store = Store(tmp_path / "history.sqlite3")
+    first = store.create_conversation("Foreground work", "qwen3:8b")
+    second = store.create_conversation("Background work", "qwen3:8b")
+    for task in (first, second):
+        store.set_setting(
+            f"task_plan:{task['id']}",
+            [
+                {"id": "inspect", "title": "Inspect", "status": "completed"},
+                {"id": "edit", "title": "Edit files", "status": "in_progress"},
+            ],
+        )
+        store.set_setting(f"task_mode:{task['id']}", "work")
+    store.set_setting("workspace:last_task", first["id"])
+    store.set_setting(
+        "workspace:active_runs",
+        [first["id"], second["id"], second["id"], "missing-task"],
+    )
+
+    bridge = WorkspaceController(store=store, desktop=IdleDesktop(), autoconnect=False)
+    try:
+        assert bridge.store.get_setting("workspace:active_runs") == []
+        for task in (first, second):
+            plan = bridge.store.get_setting(f"task_plan:{task['id']}")
+            assert [step["status"] for step in plan] == ["completed", "pending"]
+        assert bridge.taskId == first["id"]
+    finally:
+        bridge.shutdown()
+
+
+def test_active_run_journal_tracks_multiple_tasks_without_duplicates(tmp_path):
+    bridge = controller(tmp_path)
+    first = bridge.store.create_conversation("One", "qwen3:8b")
+    second = bridge.store.create_conversation("Two", "qwen3:8b")
+
+    bridge._journal_active_run(first["id"], True)
+    bridge._journal_active_run(second["id"], True)
+    bridge._journal_active_run(first["id"], True)
+    assert bridge.store.get_setting(bridge.ACTIVE_RUNS_KEY) == [first["id"], second["id"]]
+
+    bridge._journal_active_run(first["id"], False)
+    assert bridge.store.get_setting(bridge.ACTIVE_RUNS_KEY) == [second["id"]]
+    bridge.shutdown()
+
+
 def test_reopening_legacy_coding_task_migrates_to_work(tmp_path):
     bridge = controller(tmp_path)
     task = bridge.store.create_conversation("Fix the parser", "qwen3:8b")
