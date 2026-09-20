@@ -29,7 +29,7 @@ from .agent_tools import (
 from .agent_prompt import _CHAT_SYSTEM, _SYSTEM, build_system_prompt
 from .engine_support import (
     _ThinkingTextRouter, _normalise_assistant_channels, append_screen,
-    fresh_history, latest_user_query, model_history,
+    background_context, fresh_history, model_history,
 )
 from .memory import GLOBAL as MEMORY_GLOBAL
 from .ollama import (
@@ -122,16 +122,9 @@ class AgentEngine:
                 | memory_tools
             )
 
-            query = latest_user_query(history)
-            remembered = ""
-            if self.memory is not None:
-                remembered = self.memory.prompt(project, query)
-            recalled = ""
-            if callable(self.history_recall):
-                try:
-                    recalled = str(self.history_recall(query) or "")
-                except Exception:
-                    LOG.exception("Past-chat recall failed; continuing without it")
+            remembered, recalled = background_context(
+                self.memory, history, project, self.history_recall
+            )
 
             system = build_system_prompt(
                 tools_allowed=tools_allowed,
