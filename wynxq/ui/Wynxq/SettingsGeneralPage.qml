@@ -7,6 +7,11 @@ Column {
     required property var bridge
     required property var hostSheet
 
+    function prepare() {
+        endpointNameField.text = "";
+        endpointField.text = "";
+    }
+
     spacing: Theme.s6
     SettingsGroup {
         title: "Ollama servers"
