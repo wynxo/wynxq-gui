@@ -7,6 +7,10 @@ Column {
     required property var bridge
     required property var hostSheet
 
+    function prepare() {
+        accentField.text = bridge ? bridge.accentColor : "";
+    }
+
     spacing: Theme.s6
     SettingsGroup {
         title: "Accent"
