@@ -144,3 +144,19 @@ def latest_user_query(history: list[dict]) -> str:
         if item.get("role") == "user"
         and not str(item.get("content", "")).startswith(_SCREEN_PREFIX)
     ), "")
+
+
+
+def background_context(memory, history: list[dict], project: str = "", history_recall=None):
+    """Resolve saved memory and read-only past-chat recall for one turn."""
+    query = latest_user_query(history)
+    remembered = memory.prompt(project, query) if memory is not None else ""
+    recalled = ""
+    if callable(history_recall):
+        try:
+            recalled = str(history_recall(query) or "")
+        except Exception:
+            # Recall is optional context. A history/index problem must never
+            # prevent the current conversation from answering.
+            recalled = ""
+    return remembered, recalled
