@@ -86,7 +86,7 @@ _PERMISSION_GATE = {
 def build_system_prompt(*, tools_allowed: bool, tools_enabled: bool, visual: bool,
                         permission_mode: str, browser_available: bool,
                         memory_tools_enabled: bool, project: str = "",
-                        remembered: str = "") -> str:
+                        remembered: str = "", recalled: str = "") -> str:
     """Build the run prompt from resolved capabilities and product policy."""
     if tools_enabled:
         system = _SYSTEM + f"\nLocal tools are enabled. {_PERMISSION_GATE[permission_mode]}"
@@ -125,4 +125,6 @@ def build_system_prompt(*, tools_allowed: bool, tools_enabled: bool, visual: boo
         )
     if remembered:
         system += "\n\n" + remembered
+    if recalled:
+        system += "\n\n" + recalled
     return system
