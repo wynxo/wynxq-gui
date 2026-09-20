@@ -42,7 +42,8 @@ def test_composer_does_not_send_while_real_ime_preedit_exists():
     composer = (MODULE / "Composer.qml").read_text(encoding="utf-8")
     guard = "input.preeditText.length > 0"
     assert guard in composer
-    assert composer.index(guard) < composer.index("root.send(); event.accepted = true;")
+    assert composer.index(guard) < composer.index("else root.send();")
+    assert composer.index("else root.send();") < composer.index("event.accepted = true;")
     # Qt can leave inputMethodComposing true after real preedit has ended on
     # some Linux IME stacks; using it here would regress normal Enter-to-send.
     assert "input.inputMethodComposing" not in composer
