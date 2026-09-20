@@ -7,6 +7,13 @@ Column {
     required property var bridge
     required property var hostSheet
 
+    function prepare() {
+        ctxField.text = bridge ? bridge.numCtx : "";
+        tempField.text = bridge ? bridge.temperature : "";
+        keepField.text = bridge ? bridge.keepAlive : "";
+        stepsField.text = bridge ? bridge.maxSteps : "";
+    }
+
     spacing: Theme.s6
     SettingsGroup {
         title: "Current chat model"
