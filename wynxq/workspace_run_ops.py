@@ -248,7 +248,6 @@ def _run_failed(self, message, task_id=None):
         if usage:
             usage.finalize(task_id, state.get("model", ""))
         Controller._run_failed(self, message, task_id)
-    self._journal_active_run(task_id, False)
         self._journal_active_run(task_id, False)
         self._finalize_checkpoint_for_run(task_id, state)
         self._settle_plan_for_run(task_id, state, "failed")
@@ -258,3 +257,4 @@ def _run_failed(self, message, task_id=None):
             self.usageChanged.emit()
         return
     Controller._run_failed(self, message, task_id)
+    self._journal_active_run(task_id, False)
