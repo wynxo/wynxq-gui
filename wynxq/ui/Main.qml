@@ -668,6 +668,7 @@ ApplicationWindow {
         else if (previewOverlay === "settings") settings.show(settings.generalPage);
         else if (previewOverlay === "modelSettings") settings.show(settings.modelPage);
         else if (previewOverlay === "agentSettings") settings.show(settings.agentPage);
+        else if (previewOverlay === "agentMemorySettings") settings.showAgentMemory();
         else if (previewOverlay === "appearanceSettings") settings.show(settings.appearancePage);
         else if (previewOverlay === "usageSettings") settings.show(settings.usagePage);
         else if (previewOverlay === "advancedSettings") settings.show(settings.advancedPage);
