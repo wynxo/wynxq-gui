@@ -190,6 +190,10 @@ def main():
                 floating = root.property("quickBarWindow")
                 if floating is not None:
                     window = floating
+            elif args.ui_preview == "computer-control":
+                floating = root.property("computerControlPanelWindow")
+                if floating is not None:
+                    window = floating
             if not window.grabWindow().save(args.screenshot):
                 print("Could not save screenshot", file=sys.stderr)
                 app.exit(1)
