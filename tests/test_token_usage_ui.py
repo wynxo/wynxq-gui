@@ -26,15 +26,16 @@ def test_composer_usage_is_informational_not_a_dashboard_or_button():
 
 
 def test_settings_owns_exact_period_usage():
-    qml = (MODULE / "SettingsSheet.qml").read_text(encoding="utf-8")
-    assert "readonly property int usagePage" in qml
-    assert 'label: "Usage", icon: "bolt"' in qml
-    assert "bridge.refreshTokenUsage()" in qml
-    assert "bridge.tokenUsage" in qml
-    assert "bridge.conversationTokens" in qml
+    shell = (MODULE / "SettingsSheet.qml").read_text(encoding="utf-8")
+    page = (MODULE / "SettingsUsagePage.qml").read_text(encoding="utf-8")
+    assert "readonly property int usagePage" in shell
+    assert 'label: "Usage", icon: "bolt"' in shell
+    assert "bridge.refreshTokenUsage()" in shell
+    assert "bridge.tokenUsage" in shell
+    assert "bridge.conversationTokens" in page
     for label in ("TODAY", "THIS WEEK", "THIS MONTH", "ALL TIME"):
-        assert label in qml
-    assert "cached input is already part of input and is never counted twice" in qml
+        assert label in page
+    assert "cached input is already part of input and is never counted twice" in page
 
 
 def test_composer_does_not_send_while_ime_is_composing():
