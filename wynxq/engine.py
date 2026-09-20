@@ -47,6 +47,9 @@ class AgentEngine:
                  browser_open: Callable[[str], dict] | None = None):
         self.client, self.desktop, self.memory = client, desktop, memory
         self.browser_open = browser_open
+        # Optional read-only cross-chat recall provider, installed by the GUI
+        # controller. It runs on the worker thread inside run(), never on Qt.
+        self.history_recall = None
 
     def run(self, messages: list[dict], model: str, desktop_enabled: bool, cancel,
             emit: Callable[[dict], None], think: bool = False, max_steps: int = 20,
@@ -119,9 +122,16 @@ class AgentEngine:
                 | memory_tools
             )
 
+            query = latest_user_query(history)
             remembered = ""
             if self.memory is not None:
-                remembered = self.memory.prompt(project, latest_user_query(history))
+                remembered = self.memory.prompt(project, query)
+            recalled = ""
+            if callable(self.history_recall):
+                try:
+                    recalled = str(self.history_recall(query) or "")
+                except Exception:
+                    LOG.exception("Past-chat recall failed; continuing without it")
 
             system = build_system_prompt(
                 tools_allowed=tools_allowed,
@@ -132,6 +142,7 @@ class AgentEngine:
                 memory_tools_enabled=bool(memory_tools),
                 project=project,
                 remembered=remembered,
+                recalled=recalled,
             )
 
             if not tools_allowed:
