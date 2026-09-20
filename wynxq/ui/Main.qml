@@ -536,10 +536,6 @@ ApplicationWindow {
         statusText: bridge ? bridge.computerControlStatus : "Working…"
         thoughtText: bridge ? bridge.computerControlThought : ""
         replyText: bridge ? bridge.computerControlReply : ""
-        queuedCount: bridge ? bridge.computerControlQueuedCount : 0
-        stopShortcut: bridge ? bridge.computerControlStopShortcut : "Esc"
-        onSubmitted: function(text) { if (bridge) bridge.send(text); }
-        onStopRequested: if (bridge) bridge.stop()
     }
 
     Timer {
