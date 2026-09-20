@@ -479,5 +479,5 @@ def test_computer_control_panel_is_passive_and_bottom_right():
     assert "signal submitted" not in panel
     assert "signal stopRequested" not in panel
     assert "queuedCount" not in panel
-    assert "onSubmitted:" not in main
-    assert "onStopRequested:" not in main
+    assert "onAccepted:" not in panel
+    assert "onClicked:" not in panel
