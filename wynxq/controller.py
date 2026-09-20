@@ -156,6 +156,7 @@ class Controller(QObject):
         database = getattr(self.store, "path", None)
         self.memory = memory or Memory(Path(database).parent / "memory.md" if database else None)
         self._memory_enabled = bool(setting("memory_enabled", True))
+        self._reference_chat_history = bool(setting("reference_chat_history", True))
         self._favorites = [str(m) for m in (setting("favorite_models", []) or []) if str(m)]
         self._recent_models = [str(m) for m in (setting("recent_models", []) or []) if str(m)]
         self._working_directory = str(setting("working_directory", "") or "")
@@ -359,6 +360,7 @@ class Controller(QObject):
     setPermissionMode = _permission_ops.setPermissionMode
     _memory_for_run = _permission_ops._memory_for_run
     setMemoryEnabled = _permission_ops.setMemoryEnabled
+    setReferenceChatHistory = _permission_ops.setReferenceChatHistory
     saveMemory = _permission_ops.saveMemory
     rememberNote = _permission_ops.rememberNote
     clearMemory = _permission_ops.clearMemory
@@ -641,6 +643,8 @@ class Controller(QObject):
     # -------------------------------------------------------------- memory
     @Property(bool, notify=memoryChanged)
     def memoryEnabled(self): return self._memory_enabled
+    @Property(bool, notify=memoryChanged)
+    def referenceChatHistory(self): return self._reference_chat_history
     @Property(str, notify=memoryChanged)
     def memoryPath(self): return str(self.memory.path)
     @Property(str, notify=memoryChanged)
