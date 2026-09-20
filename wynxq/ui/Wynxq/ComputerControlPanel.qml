@@ -1,11 +1,14 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 
 /*!
-    Compact independent desktop-control HUD. It stays interactive so the user
-    can steer a live run without bringing the main Wynxq window forward.
+    Passive live-status HUD for computer use.
+
+    The global control banner already owns the emergency-stop affordance. This
+    panel therefore does one job only: show the current thought and reply in a
+    quiet bottom-right card without stealing focus, clicks, or keyboard input
+    from the application Wynxq is operating.
 */
 Window {
     id: root
@@ -15,195 +18,133 @@ Window {
     property string statusText: "Working…"
     property string thoughtText: ""
     property string replyText: ""
-    property int queuedCount: 0
-    property string stopShortcut: "Esc"
 
-    signal submitted(string text)
-    signal stopRequested()
-
-    readonly property color purple: "#a78bfa"
+    readonly property real edgeMargin: 20
+    readonly property var workArea: targetScreen && targetScreen.availableGeometry
+                                    ? targetScreen.availableGeometry : null
+    readonly property real screenX: workArea ? workArea.x
+        : (targetScreen && targetScreen.virtualX !== undefined ? targetScreen.virtualX : 0)
+    readonly property real screenY: workArea ? workArea.y
+        : (targetScreen && targetScreen.virtualY !== undefined ? targetScreen.virtualY : 0)
+    readonly property real screenWidth: workArea ? workArea.width
+        : (targetScreen && targetScreen.width !== undefined ? targetScreen.width : 390)
+    readonly property real screenHeight: workArea ? workArea.height
+        : (targetScreen && targetScreen.height !== undefined ? targetScreen.height : 260)
 
     transientParent: null
     modality: Qt.NonModal
     screen: targetScreen
-    width: Math.min(390, Math.max(320, (targetScreen ? targetScreen.width : 390) - 32))
-    height: 292
-    x: targetScreen ? targetScreen.virtualX + targetScreen.width - width - 22 : 0
-    y: targetScreen ? targetScreen.virtualY + targetScreen.height - height - 22 : 0
+
+    width: Math.min(360, Math.max(280, screenWidth - edgeMargin * 2))
+    height: Math.min(246, Math.max(118, content.implicitHeight + 28))
+    x: Math.round(screenX + screenWidth - width - edgeMargin)
+    y: Math.round(screenY + screenHeight - height - edgeMargin)
+
     visible: controlVisible && !!targetScreen
     color: "transparent"
-    title: "Wynxq control panel"
-    flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
+    title: "Wynxq live computer activity"
+    flags: Qt.FramelessWindowHint
+         | Qt.WindowStaysOnTopHint
+         | Qt.Tool
+         | Qt.WindowTransparentForInput
+         | Qt.WindowDoesNotAcceptFocus
 
     Rectangle {
         anchors.fill: parent
-        radius: 20
-        color: Qt.rgba(0.055, 0.047, 0.075, 0.86)
+        radius: 18
+        color: Qt.rgba(0.055, 0.047, 0.075, 0.84)
         border.width: 1
-        border.color: Qt.rgba(0.68, 0.56, 0.98, 0.58)
+        border.color: Qt.rgba(0.68, 0.56, 0.98, 0.46)
+    }
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 14
-            spacing: 9
+    ColumnLayout {
+        id: content
+        anchors.fill: parent
+        anchors.margins: 14
+        spacing: 8
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 9
-
-                Rectangle {
-                    width: 9; height: 9; radius: 5
-                    color: root.purple
-                    SequentialAnimation on opacity {
-                        running: root.controlVisible && !Theme.reducedMotion
-                        loops: Animation.Infinite
-                        NumberAnimation { from: 0.42; to: 1.0; duration: 560 }
-                        NumberAnimation { from: 1.0; to: 0.42; duration: 560 }
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 1
-                    Text {
-                        Layout.fillWidth: true
-                        text: "Wynxq is using your computer"
-                        color: Theme.textPrimary
-                        font.family: Theme.sansFamily
-                        font.pixelSize: Theme.label
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        text: root.statusText
-                        color: root.purple
-                        font.family: Theme.sansFamily
-                        font.pixelSize: Theme.caption
-                        elide: Text.ElideRight
-                    }
-                }
-
-                Rectangle {
-                    visible: root.queuedCount > 0
-                    radius: 9
-                    color: Qt.rgba(0.66, 0.55, 0.98, 0.14)
-                    border.width: 1
-                    border.color: Qt.rgba(0.66, 0.55, 0.98, 0.32)
-                    implicitWidth: queueLabel.implicitWidth + 12
-                    implicitHeight: 24
-                    Text {
-                        id: queueLabel
-                        anchors.centerIn: parent
-                        text: root.queuedCount + " queued"
-                        color: root.purple
-                        font.family: Theme.sansFamily
-                        font.pixelSize: Theme.micro
-                        font.weight: Font.Medium
-                    }
-                }
-            }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
 
             Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: Qt.rgba(1, 1, 1, 0.08)
-            }
+                width: 8
+                height: 8
+                radius: 4
+                color: Theme.accent
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: 4
-
-                Text {
-                    text: root.thoughtText ? "Thinking" : "Live"
-                    color: Theme.textMuted
-                    font.family: Theme.sansFamily
-                    font.pixelSize: Theme.micro
-                    font.weight: Font.DemiBold
-                }
-
-                Text {
-                    Layout.fillWidth: true
-                    Layout.maximumHeight: 74
-                    text: root.thoughtText || root.statusText
-                    color: Theme.textSecondary
-                    font.family: Theme.sansFamily
-                    font.pixelSize: Theme.caption
-                    wrapMode: Text.Wrap
-                    elide: Text.ElideRight
-                    maximumLineCount: 4
-                }
-
-                Text {
-                    visible: root.replyText.length > 0
-                    text: "Reply"
-                    color: Theme.textMuted
-                    font.family: Theme.sansFamily
-                    font.pixelSize: Theme.micro
-                    font.weight: Font.DemiBold
-                }
-
-                Text {
-                    visible: root.replyText.length > 0
-                    Layout.fillWidth: true
-                    Layout.maximumHeight: 52
-                    text: root.replyText
-                    color: Theme.textPrimary
-                    font.family: Theme.sansFamily
-                    font.pixelSize: Theme.caption
-                    wrapMode: Text.Wrap
-                    elide: Text.ElideRight
-                    maximumLineCount: 3
+                SequentialAnimation on opacity {
+                    running: root.controlVisible && !Theme.reducedMotion
+                    loops: Animation.Infinite
+                    NumberAnimation { from: 0.42; to: 1.0; duration: 560; easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 1.0; to: 0.42; duration: 560; easing.type: Easing.InOutSine }
                 }
             }
 
-            RowLayout {
+            Text {
                 Layout.fillWidth: true
-                spacing: 7
+                text: root.statusText || "Working…"
+                color: Theme.textSecondary
+                font.family: Theme.sansFamily
+                font.pixelSize: Theme.caption
+                font.weight: Font.Medium
+                elide: Text.ElideRight
+            }
+        }
 
-                TextField {
-                    id: steering
-                    Layout.fillWidth: true
-                    placeholderText: "Steer now · /queue message for later"
-                    color: Theme.textPrimary
-                    placeholderTextColor: Theme.textMuted
-                    font.family: Theme.sansFamily
-                    font.pixelSize: Theme.caption
-                    selectByMouse: true
-                    background: Rectangle {
-                        radius: 11
-                        color: Qt.rgba(1, 1, 1, steering.activeFocus ? 0.10 : 0.065)
-                        border.width: 1
-                        border.color: steering.activeFocus
-                            ? Qt.rgba(0.68, 0.56, 0.98, 0.60)
-                            : Qt.rgba(1, 1, 1, 0.10)
-                    }
-                    onAccepted: {
-                        var value = text.trim();
-                        if (!value) return;
-                        root.submitted(value);
-                        text = "";
-                    }
-                }
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 3
 
-                Button {
-                    text: "Send"
-                    enabled: steering.text.trim().length > 0
-                    onClicked: {
-                        var value = steering.text.trim();
-                        if (!value) return;
-                        root.submitted(value);
-                        steering.text = "";
-                    }
-                }
+            Text {
+                text: "Thinking"
+                color: Theme.textMuted
+                font.family: Theme.sansFamily
+                font.pixelSize: Theme.micro
+                font.weight: Font.DemiBold
+            }
 
-                Button {
-                    text: root.stopShortcut || "Stop"
-                    onClicked: root.stopRequested()
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Stop desktop control instantly"
-                }
+            Text {
+                Layout.fillWidth: true
+                text: root.thoughtText || root.statusText || "Working…"
+                color: Theme.textSecondary
+                font.family: Theme.sansFamily
+                font.pixelSize: Theme.caption
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+                maximumLineCount: 4
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            visible: root.replyText.length > 0
+            color: Qt.rgba(1, 1, 1, 0.08)
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            visible: root.replyText.length > 0
+            spacing: 3
+
+            Text {
+                text: "Answer"
+                color: Theme.textMuted
+                font.family: Theme.sansFamily
+                font.pixelSize: Theme.micro
+                font.weight: Font.DemiBold
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: root.replyText
+                color: Theme.textPrimary
+                font.family: Theme.sansFamily
+                font.pixelSize: Theme.caption
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+                maximumLineCount: 4
             }
         }
     }
