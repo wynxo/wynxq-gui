@@ -373,6 +373,9 @@ class DemoController(WorkspaceController):
         if self.scene == "thinking":
             self._seed_thinking_scene()
             return
+        if self.scene == "computer-control":
+            self._seed_computer_control_scene()
+            return
         if self.scene == "work-run":
             self._seed_code_run()
             return
@@ -459,6 +462,27 @@ class DemoController(WorkspaceController):
             "endpoint": self._endpoint,
         }
         self._refresh_tasks()
+        self.changed.emit()
+
+    def _seed_computer_control_scene(self):
+        """Live computer-control HUD state for real-window screenshot QA."""
+        self._task_mode, self._task_mode_locked = "work", True
+        self._busy = True
+        self._status = "Thinking…"
+        self._run_sessions[self._task_id] = {
+            "busy": True,
+            "status": "Thinking…",
+            "computer_control_active": True,
+            "overlay_thought": (
+                "KCalc is open. I can use keyboard input for the calculation "
+                "instead of guessing button positions."
+            ),
+            "overlay_reply": (
+                "I can see KCalc is ready. I’ll enter the calculation with the "
+                "keyboard and verify the result."
+            ),
+            "queued_messages": [],
+        }
         self.changed.emit()
 
     def _seed_code_run(self):
@@ -625,6 +649,7 @@ SCENES = [
     ("29-sent-context", "sent-context", ""),
     ("30-collapsed-shell", "collapsed-shell", ""),
     ("31-thinking", "thinking", ""),
+    ("32-computer-control", "computer-control", ""),
     ("25-system", "conversation", "system"),
     ("26-code-run", "work-run", ""),
 ]
