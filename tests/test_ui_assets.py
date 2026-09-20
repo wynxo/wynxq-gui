@@ -460,3 +460,24 @@ def test_computer_control_overlay_is_visible_clickthrough_and_escape_stops_first
     assert "Application.screens" in main
     assert "bridge.computerControlActive" in main
     assert "if (bridge && bridge.computerControlActive) bridge.stop()" in main
+
+
+def test_computer_control_panel_is_passive_and_bottom_right():
+    panel = (MODULE / "ComputerControlPanel.qml").read_text(encoding="utf-8")
+    main = (MODULE.parent / "Main.qml").read_text(encoding="utf-8")
+
+    assert "WindowTransparentForInput" in panel
+    assert "WindowDoesNotAcceptFocus" in panel
+    assert "targetScreen.availableGeometry" in panel
+    assert "screenX + screenWidth - width - edgeMargin" in panel
+    assert "screenY + screenHeight - height - edgeMargin" in panel
+    assert 'text: "Thinking"' in panel
+    assert 'text: "Answer"' in panel
+
+    assert "TextField" not in panel
+    assert 'text: "Send"' not in panel
+    assert "signal submitted" not in panel
+    assert "signal stopRequested" not in panel
+    assert "queuedCount" not in panel
+    assert "onSubmitted:" not in main
+    assert "onStopRequested:" not in main
