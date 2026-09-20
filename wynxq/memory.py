@@ -31,15 +31,10 @@ PROJECT_PREFIX = "Project: "
 
 TITLE = "# Wynxq memory"
 INTRO = ("Notes Wynxq keeps between tasks. Edit or delete anything here; it is "
-         "your file. Everything under *About you* is read in every task, and a "
+         "your file. Relevant notes under *About you* can be recalled in any task, and a "
          "*Project* section is read only while you are working in that folder.")
 
-# Ceilings that keep memory a memory rather than a log. A note is a sentence,
-# a section is a page, and the whole file has to fit in a prompt beside the
-# conversation it is meant to help.
-MAX_NOTE = 500
-MAX_NOTES_PER_SECTION = 200
-MAX_BYTES = 128_000
+# Storage grows with available disk space; only prompt retrieval is bounded.
 PROMPT_BUDGET = 6000
 
 _BULLET = re.compile(r"^\s*[-*+]\s+(.*)$")
@@ -53,7 +48,7 @@ def default_path() -> Path:
 
 
 def _clean_note(note) -> str:
-    """One line, no bullet marker, no Markdown heading, bounded.
+    """One line, no bullet marker, no Markdown heading; preserve all text.
 
     Only a marker followed by a space is stripped, so a note that genuinely
     starts with one — "#1 priority is the parser" — keeps it.
@@ -61,7 +56,7 @@ def _clean_note(note) -> str:
     text = " ".join(str(note or "").split())
     while text[:2] in {"- ", "* ", "+ ", "# "} or text in {"-", "*", "+", "#"}:
         text = text[2:].lstrip()
-    return text[:MAX_NOTE].strip()
+    return text.strip()
 
 
 def _key(text: str) -> str:
@@ -184,6 +179,18 @@ class Memory:
                 "path": str(self.path),
                 "exists": self.exists()}
 
+    @staticmethod
+    def _excerpt(note: str, query: str) -> str:
+        """Retrieve a query-centered excerpt while leaving the stored note intact."""
+        limit = max(1, min(1200, PROMPT_BUDGET - 3))
+        if len(note) <= limit:
+            return note
+        words = re.findall(r"\w{3,}", query.casefold())
+        positions = [note.casefold().find(word) for word in words]
+        positions = [position for position in positions if position >= 0]
+        start = max(0, min(positions, default=0) - limit // 3)
+        return note[start:start + max(1, limit - 1)] + "…"
+
     def prompt(self, project: str = "", query: str = "") -> str:
         """Build the bounded long-term-memory block for one model turn.
 
@@ -202,7 +209,7 @@ class Memory:
         total_chars = 0
         for title in wanted:
             section = document.section(title)
-            notes = list(section.notes) if section else []
+            notes = [self._excerpt(note, query) for note in section.notes] if section else []
             if notes:
                 sections.append((title, notes))
                 total_chars += sum(len(note) + 3 for note in notes)
@@ -231,7 +238,7 @@ class Memory:
             query_terms = terms(query)
             identity_prefixes = (
                 "user prefers to be called ", "user's preferred name is ",
-                "user's name is ",
+                "user's name is ", "user's age is ", "user's birthday is ",
             )
             candidates = []
             for section_order, (title, notes) in enumerate(sections):
@@ -284,8 +291,6 @@ class Memory:
     # ------------------------------------------------------------ writing
     def _save(self, text: str) -> None:
         data = str(text)
-        if len(data.encode("utf-8")) > MAX_BYTES:
-            raise ValueError(f"Memory is limited to {MAX_BYTES // 1000} KB. Remove some notes first.")
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         temporary = self.path.with_name(self.path.name + ".tmp")
         descriptor = os.open(temporary, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
@@ -310,7 +315,8 @@ class Memory:
         with self._lock:
             self._save(Document().render())
 
-    def remember(self, note, scope: str = GLOBAL, project: str = "") -> dict:
+    def remember(self, note, scope: str = GLOBAL, project: str = "",
+                 *, replace_prefixes: tuple[str, ...] = ()) -> dict:
         """Append one note, ignoring an exact repeat of something already known."""
         text = _clean_note(note)
         if not text:
@@ -322,23 +328,44 @@ class Memory:
             section = document.section(title, create=True)
             if _key(text) in {_key(existing) for existing in section.notes}:
                 return {"ok": True, "stored": False, "reason": "Already remembered", "note": text, "section": title}
+            if replace_prefixes:
+                prefixes = tuple(prefix.casefold() for prefix in replace_prefixes)
+                section.lines = [line for line in section.lines
+                                 if not ((match := _BULLET.match(line))
+                                         and match.group(1).casefold().startswith(prefixes))]
             index = max((i for i, line in enumerate(section.lines) if _BULLET.match(line)), default=-1)
             section.lines.insert(index + 1, f"- {text}")
-            trimmed = self._trim(section)
             self._save(document.render())
-        return {"ok": True, "stored": True, "note": text, "section": title,
-                **({"dropped_oldest": trimmed} if trimmed else {})}
+        return {"ok": True, "stored": True, "note": text, "section": title}
 
-    @staticmethod
-    def _trim(section: _Section) -> int:
-        """Keep a section to its ceiling by dropping its oldest notes."""
-        bullets = [i for i, line in enumerate(section.lines) if _BULLET.match(line)]
-        excess = len(bullets) - MAX_NOTES_PER_SECTION
-        if excess <= 0:
-            return 0
-        for index in sorted(bullets[:excess], reverse=True):
-            section.lines.pop(index)
-        return excess
+    def apply_changes(self, changes: list[dict], project: str, expected: str) -> int:
+        """Apply validated model edits atomically, refusing a stale snapshot.
+
+        No substring deletion, arbitrary scopes, or partial updates. A manual
+        edit/clear or a concurrent chat wins over a stale model completion.
+        """
+        with self._lock:
+            if self.read() != expected:
+                raise ValueError("Memory changed during analysis; stale edits were discarded")
+            document = Document.parse(expected)
+            changed = 0
+            for change in changes:
+                scope = change["scope"]
+                if scope not in SCOPES or (scope == PROJECT and not project):
+                    continue
+                section = document.section(section_title(scope, project), create=True)
+                remove = {_key(note) for note in change["remove"]}
+                before = list(section.lines)
+                section.lines = [line for line in section.lines
+                                 if not ((match := _BULLET.match(line))
+                                         and _key(match.group(1)) in remove)]
+                text = _clean_note(change["note"])
+                if text and _key(text) not in {_key(note) for note in section.notes}:
+                    section.lines.append("- " + text)
+                changed += int(before != section.lines)
+            if changed:
+                self._save(document.render())
+            return changed
 
     def forget(self, query, scope: str = "", project: str = "") -> dict:
         """Drop every note containing ``query``; the model's undo for a bad memory."""

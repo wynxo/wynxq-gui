@@ -138,11 +138,28 @@ request needs the machine. Work handles project files, commands, and desktop
 control. The mode is chosen once per task and stays chosen.
 
 **Memory**
-One Markdown file, read at the start of every task. Tell Wynxq something once —
-how you deploy, what the test command is, that you would rather have the command
-first and the explanation after — and it is there in the next task, and the one
-after that, in Chat and Work alike. The model saves and drops notes itself
-through two tools; you can do the same by hand.
+Wynxq uses your selected Ollama model to extract useful facts, preferences, ongoing
+work and decisions from what you say, in Chat and Work alike. It is not a list of
+recognized phrases: the model interprets your message, proposes new notes or exact
+revisions, and each proposed edit must cite your own words. Questions and assistant
+claims are not automatically saved as facts. Corrections and forgetting are interpreted
+by the same model. You can always inspect, edit, or delete notes in the Memory panel.
+
+Before answering, the model also plans searches of your saved conversations and selects
+relevant excerpts by meaning. Search covers the full saved chat archive; a bounded
+shortlist combines search matches with recent context. This does not guarantee perfect
+recall of every detail. Saved facts and history recall can be disabled independently.
+Deleting a saved note does not delete the original conversation; delete that chat or
+disable history reference if you also want its messages excluded from recall.
+
+Memory preparation runs on the inference worker and can be stopped. It adds local
+model inference time before the answer; it requires no tools or separate embedding
+model. If structured inference fails, the app reports it and continues answering.
+Extraction and relevance quality depend on the selected model.
+
+Stored notes have no application-imposed count or file-size cap and are not silently
+evicted. Available disk space still applies. Model requests use bounded excerpts and
+selections, never an unbounded dump of memory or conversation history.
 
 It is deliberately a file you own, not a table you cannot see: `memory.md` lives
 beside the history database and the Memory panel (`Ctrl+Shift+M`) is that file,

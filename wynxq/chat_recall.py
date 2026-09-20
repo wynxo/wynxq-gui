@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 
 
+
 _WORD = re.compile(r"\w{3,}", re.UNICODE)
 _CUE = re.compile(
     r"(?i)\b(?:remember|earlier|previous|last time|before|we (?:talked|discussed)|"
@@ -29,10 +30,10 @@ _STOP = {
 
 
 def _terms(value: str) -> set[str]:
-    return {
-        word for word in _WORD.findall(str(value or "").casefold())
-        if word not in _STOP
-    }
+    text = str(value or "").casefold()
+    terms = {word for word in _WORD.findall(text) if word not in _STOP}
+    return terms
+
 
 
 def _real_user_text(message: dict) -> str:
@@ -49,7 +50,7 @@ def _real_user_text(message: dict) -> str:
 
 
 def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
-           char_budget: int = 3200, conversation_limit: int = 80) -> list[dict]:
+           char_budget: int = 3200, conversation_limit: int | None = None) -> list[dict]:
     """Return relevant excerpts from older chats.
 
     Ordinary prompts need lexical overlap. Explicit recall wording can fall
@@ -58,7 +59,6 @@ def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
     """
     limit = max(0, min(int(limit), 8))
     char_budget = max(0, min(int(char_budget), 12_000))
-    conversation_limit = max(1, min(int(conversation_limit), 200))
     if not limit or not char_budget:
         return []
 
@@ -71,7 +71,9 @@ def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
     conversations = [
         item for item in store.list_conversations()
         if str(item.get("id", "")) != str(exclude_id or "")
-    ][:conversation_limit]
+    ]
+    if conversation_limit is not None:
+        conversations = conversations[:max(1, int(conversation_limit))]
 
     ranked = []
     for recency, item in enumerate(conversations):
@@ -80,8 +82,6 @@ def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
         title_terms = _terms(title)
         candidates = []
         for reverse_index, message in enumerate(reversed(store.get_messages(ident))):
-            if reverse_index >= 24:
-                break
             content = _real_user_text(message)
             if not content:
                 continue
@@ -139,3 +139,58 @@ def prompt(store, query: str, *, exclude_id: str = "") -> str:
         "always wins. Do not claim to remember anything beyond the excerpts shown.\n\n"
         + "\n\n".join(blocks)
     )
+
+
+def candidate_excerpts(store, queries, *, exclude_id="", budget=12000, cancel=None):
+    """Search every saved chat; mix lexical candidates with recent context.
+
+    The model supplies alternative search phrasing, then judges these candidates
+    semantically. Only the inference shortlist is bounded, never stored history
+    or the searchable age of a chat. Stream candidates through a bounded heap.
+    """
+    import hashlib
+    import heapq
+    from .ollama import Cancelled
+
+    words = set().union(*(_terms(query) for query in queries)) if queries else set()
+    heap, recent, serial = [], [], 0
+    for conversation in store.list_conversations():
+        if str(conversation['id']) == exclude_id:
+            continue
+        title = str(conversation.get('title', 'Previous chat'))[:200]
+        for message in reversed(store.get_messages(conversation['id'])):
+            if cancel is not None and cancel.is_set():
+                raise Cancelled('Stopped')
+            if (message.get('role') != 'user' or message.get('_wynxq_attachments')
+                    or str(message.get('content', '')).startswith(('Current desktop screenshot (', 'Attached '))):
+                continue
+            content = str(message.get('content', '') or '').strip()
+            for start in range(0, len(content), 1000):
+                excerpt = content[start:start + 1200]
+                key = str(conversation['id']) + '\0' + excerpt
+                row = {
+                    'id': hashlib.sha256(key.encode()).hexdigest()[:20],
+                    'chat': str(conversation['id']), 'title': title,
+                    'updated_at': conversation.get('updated_at', 0), 'text': excerpt,
+                }
+                score = len(words & _terms(excerpt)) * 10 + len(words & _terms(title)) * 2
+                # Recency breaks ties, without overriding relevant older records.
+                item = (score, -serial, row)
+                serial += 1
+                if len(recent) < 6:
+                    recent.append(row)
+                if len(heap) < 48:
+                    heapq.heappush(heap, item)
+                elif item[:2] > heap[0][:2]:
+                    heapq.heapreplace(heap, item)
+    ranked = [item[2] for item in sorted(heap, key=lambda item: item[:2], reverse=True)]
+    # Reserve a little capacity for recent context even without keyword overlap.
+    result, seen, used = [], set(), 0
+    for row in recent[:2] + ranked + recent[2:]:
+        cost = len(row['text']) + len(row['title']) + 160
+        if row['id'] in seen or used + cost > budget:
+            continue
+        result.append(row)
+        seen.add(row['id'])
+        used += cost
+    return result

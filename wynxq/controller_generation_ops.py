@@ -16,7 +16,7 @@ from PySide6.QtCore import QObject, Property, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QGuiApplication
 
 from . import context as ctx
-from . import chat_recall
+from .memory_service import MemoryService
 from . import markdown as md
 from . import notify
 from . import system as system_info
@@ -93,12 +93,17 @@ def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
         self._ollama_client(state["endpoint"]), run_desktop, self._memory_for_run(),
         browser_open=browser_open,
     )
-    if self._reference_chat_history:
-        engine.history_recall = (
-            lambda query, ident=task_id: chat_recall.prompt(
-                self.store, query, exclude_id=ident
-            )
-        )
+    memory_service = MemoryService(
+        self._ollama_client(state["endpoint"]), self.memory, self.store, task_id,
+        memory_enabled=lambda: self._memory_enabled,
+        history_enabled=lambda: self._reference_chat_history,
+    )
+    # Capture the original dialogue before PlanningAgentEngine adds workspace
+    # context or compacts it. This callback runs on the model worker, not Qt.
+    original_history = [dict(message) for message in history]
+    engine.prepare_memory = lambda _history, model, project, cancel, emit, num_ctx: (
+        memory_service.prepare(original_history, model, project, cancel, emit, num_ctx)
+    )
     enabled = self.desktopEnabled if desktop_enabled is None else bool(desktop_enabled)
     think = self._think
     num_ctx, temperature = self._num_ctx, self._temperature

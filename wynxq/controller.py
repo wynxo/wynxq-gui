@@ -661,7 +661,7 @@ class Controller(QObject):
             return "Nothing remembered yet. Tell Wynxq something worth keeping, or write it here."
         return (f"{notes} note{'' if notes == 1 else 's'} across "
                 f"{stats['sections']} section{'' if stats['sections'] == 1 else 's'}, "
-                f"read into every task.")
+                f"available across chats.")
 
     @Property(str, notify=changed)
     def taskTitle(self): return self._task_title

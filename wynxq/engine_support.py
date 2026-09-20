@@ -160,3 +160,19 @@ def background_context(memory, history: list[dict], project: str = "", history_r
             # prevent the current conversation from answering.
             recalled = ""
     return remembered, recalled
+
+
+def prepare_background(engine, history, model, project, cancel, emit, num_ctx):
+    """Run optional memory inference without turning its failure into a chat failure."""
+    if not callable(engine.prepare_memory):
+        return background_context(engine.memory, history, project, engine.history_recall)
+    from .ollama import Cancelled
+    try:
+        return engine.prepare_memory(history, model, project, cancel, emit, num_ctx)
+    except Cancelled:
+        raise
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Memory preparation failed")
+        emit({"type": "memory_warning", "text": "Automatic memory is unavailable this turn; answering continues."})
+        return "", ""

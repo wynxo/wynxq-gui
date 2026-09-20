@@ -6,7 +6,7 @@ from PySide6.QtCore import QCoreApplication
 
 from wynxq.controller import Controller
 from wynxq.engine import AgentEngine
-from wynxq.memory import GLOBAL_SECTION, MAX_NOTES_PER_SECTION, Memory, default_path
+from wynxq.memory import GLOBAL_SECTION, Memory, default_path
 from wynxq.storage import Store
 
 APP = QCoreApplication.instance() or QCoreApplication([])
@@ -56,11 +56,11 @@ def test_the_same_note_twice_is_stored_once(memory):
     assert memory.notes() == ["Calls the cat Mango"]
 
 
-def test_a_note_is_reduced_to_one_bounded_line(memory):
+def test_a_note_is_reduced_to_one_line_without_truncation(memory):
     memory.remember("- # \n  keeps\tits words\n  across lines  ")
     assert memory.notes() == ["keeps its words across lines"]
     memory.remember("x" * 900)
-    assert len(memory.notes()[-1]) == 500
+    assert len(memory.notes()[-1]) == 900
 
 
 def test_a_note_that_really_starts_with_a_marker_keeps_it(memory):
@@ -94,14 +94,12 @@ def test_hand_written_prose_survives_a_note_the_model_adds(memory):
     assert "- A new note" in text
 
 
-def test_a_section_is_capped_by_dropping_its_oldest_notes(memory):
-    for index in range(MAX_NOTES_PER_SECTION + 5):
+def test_old_notes_survive_beyond_the_former_section_cap(memory):
+    for index in range(205):
         memory.remember(f"note {index}")
-    notes = memory.notes()
-    assert len(notes) == MAX_NOTES_PER_SECTION
-    assert "note 0" not in notes
-    assert "note 4" not in notes
-    assert notes[-1] == f"note {MAX_NOTES_PER_SECTION + 4}"
+    assert len(memory.notes()) == 205
+    assert memory.notes()[0] == "note 0"
+    assert memory.notes()[-1] == "note 204"
 
 
 def test_the_file_is_private_to_the_user(memory):
@@ -109,11 +107,13 @@ def test_the_file_is_private_to_the_user(memory):
     assert oct(memory.path.stat().st_mode)[-3:] == "600"
 
 
-def test_an_oversized_write_is_refused_before_it_replaces_the_file(memory):
+def test_memory_grows_beyond_the_former_file_cap(memory):
+    text = "## About you\n- " + "x" * 200_000 + "\n"
+    memory.write(text)
     memory.remember("worth keeping")
-    with pytest.raises(ValueError):
-        memory.write("x" * 200_000)
-    assert memory.notes() == ["worth keeping"]
+    reopened = Memory(memory.path)
+    assert reopened.notes() == ["x" * 200_000, "worth keeping"]
+    assert len(reopened.prompt()) < 7000
 
 
 def test_clearing_leaves_a_readable_empty_file_not_a_missing_one(memory):
@@ -295,12 +295,15 @@ def test_memory_is_the_same_file_in_chat_and_work(tmp_path):
     bridge.shutdown()
 
 
-def test_a_broken_memory_write_is_reported_rather_than_thrown(tmp_path):
+def test_a_broken_memory_write_is_reported_rather_than_thrown(tmp_path, monkeypatch):
     bridge = controller(tmp_path)
     toasts = []
     bridge.toast.connect(toasts.append)
-    bridge.saveMemory("x" * 200_000)
-    assert toasts and "limited to" in toasts[-1]
+    def fail(text):
+        raise OSError("Disk full")
+    monkeypatch.setattr(bridge.memory, "write", fail)
+    bridge.saveMemory("a note")
+    assert toasts and "Disk full" in toasts[-1]
     bridge.shutdown()
 
 
@@ -324,3 +327,13 @@ def test_reference_chat_history_setting_is_separate_and_persistent(tmp_path):
     again.setReferenceChatHistory(True)
     assert again.referenceChatHistory is True
     again.shutdown()
+
+
+def test_failed_identity_update_preserves_previous_fact(memory, monkeypatch):
+    memory.remember("User's age is 15 years old.")
+    def fail(text):
+        raise OSError("Disk full")
+    monkeypatch.setattr(memory, "_save", fail)
+    with pytest.raises(OSError):
+        memory.remember("User's age is 16 years old.", replace_prefixes=("User's age is ",))
+    assert memory.notes() == ["User's age is 15 years old."]

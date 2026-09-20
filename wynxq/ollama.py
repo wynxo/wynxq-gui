@@ -178,6 +178,35 @@ class OllamaClient:
             raise OllamaError("Ollama returned an invalid title response")
         return self._clean_generated_title(message.get("content", ""))
 
+    def memory_json(self, model: str, system: str, data: dict, schema: dict,
+                    *, cancel=None, num_ctx=16384) -> dict:
+        """Tool-free structured inference using the already selected local model.
+
+        Use the cancellable streaming transport: stopping a run also stops its
+        memory request, including while Ollama is loading the model.
+        """
+        if _cloud_name(model):
+            raise OllamaError("Cloud models are disabled in Wynxq GUI.")
+        payload = {
+            "model": model, "stream": True, "think": False, "format": schema,
+            "messages": [{"role": "system", "content": system},
+                         {"role": "user", "content": json.dumps(data, ensure_ascii=False)}],
+            "options": {"temperature": 0, "num_predict": min(2048, max(256, num_ctx // 4)), "num_ctx": num_ctx},
+        }
+        pieces = []
+        for chunk in self.stream_chat(payload, cancel):
+            message = chunk.get("message") or {}
+            pieces.append(str(message.get("content") or ""))
+        if _stopped(cancel):
+            raise Cancelled("Stopped")
+        try:
+            result = json.loads("".join(pieces))
+        except (TypeError, ValueError) as exc:
+            raise OllamaError("The model returned invalid memory JSON") from exc
+        if not isinstance(result, dict):
+            raise OllamaError("The model returned invalid memory JSON")
+        return result
+
     def models(self) -> list[dict]:
         models = self._json("GET", "/api/tags").get("models", [])
         return [m for m in models if isinstance(m, dict) and isinstance(m.get("name"), str)

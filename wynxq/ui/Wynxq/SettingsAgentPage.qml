@@ -162,34 +162,19 @@ Column {
 
     SettingsGroup {
         title: "Memory"
-        description: "Saved Memory keeps durable facts and preferences. Reference chat history can also bring in relevant things you said in older conversations. Both are stored locally and can be turned off separately; context used for an answer is sent to the selected Ollama server."
+        description: "Your selected model automatically learns useful facts, preferences and ongoing work from conversations. It can update saved notes and select relevant context from older chats. Both are stored locally and can be turned off separately; context used for an answer is sent to the selected Ollama server."
 
-        Row {
+        Toggle {
             width: parent.width
-            spacing: Theme.s3
-            Toggle {
-                anchors.verticalCenter: parent.verticalCenter
-                checked: !!(bridge && bridge.memoryEnabled)
-                Accessible.name: "Remember things between tasks"
-                onSwitched: function(value) { if (bridge) bridge.setMemoryEnabled(value); }
-            }
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 1
-                SettingsFieldLabel { text: "Remember things between tasks" }
-                Text {
-                    text: bridge ? bridge.memorySummary : ""
-                    color: Theme.textMuted
-                    font.family: Theme.sansFamily; font.pixelSize: Theme.caption
-                    width: hostSheet.width - 420
-                    wrapMode: Text.WordWrap
-                }
-            }
+            text: "Remember things between tasks"
+            description: bridge ? bridge.memorySummary : ""
+            checked: !!(bridge && bridge.memoryEnabled)
+            onSwitched: function(value) { if (bridge) bridge.setMemoryEnabled(value); }
         }
         Toggle {
             width: parent.width
             text: "Reference past chats"
-            description: "Bring in a few relevant things you said in older chats when they help with the current request. Old assistant replies are never treated as memory."
+            description: "Let the model search older chats and select useful context by meaning. Recall depends on the model and adds processing time. Old assistant replies are never treated as facts."
             checked: !!(bridge && bridge.referenceChatHistory)
             onSwitched: function(value) { if (bridge) bridge.setReferenceChatHistory(value); }
         }

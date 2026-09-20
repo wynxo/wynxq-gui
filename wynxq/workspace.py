@@ -24,7 +24,6 @@ from PySide6.QtCore import Property, QTimer, Signal, Slot
 from . import context as ctx
 from . import project_instructions
 from .controller import Controller, _blank_metrics
-from .memory_learning import learnable_memories
 from .usage import TokenUsageTracker
 from .endpoint_policy import (
     WorkspaceOllamaClient, endpoint_scope, validate_workspace_endpoint,
@@ -129,7 +128,6 @@ class WorkspaceController(Controller):
     newTask = _task_ops.newTask
     _grouped_tasks = _task_ops._grouped_tasks
     openTask = _task_ops.openTask
-    _learn_user_memory = _task_ops._learn_user_memory
     send = _task_ops.send
     deleteTask = _task_ops.deleteTask
     clearTask = _task_ops.clearTask

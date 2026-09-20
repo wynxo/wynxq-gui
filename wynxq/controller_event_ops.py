@@ -87,6 +87,10 @@ def _on_event(self, event, task_id=None):
         state["turn_had_message"] = False
         state["think_started"] = 0.0
         state["think_seconds"] = 0.0
+    elif kind == "memory_changed":
+        self.memoryChanged.emit()
+    elif kind == "memory_warning":
+        self.toast.emit(str(event.get("text", "Automatic memory is unavailable this turn.")))
     elif kind == "status":
         state["status"] = event.get("text", "Working")
     elif kind == "session":

@@ -15,7 +15,6 @@ from PySide6.QtCore import QTimer, Slot
 from . import context as ctx
 from . import project_instructions
 from .controller import Controller, _blank_metrics
-from .memory_learning import learnable_memories
 from .usage import TokenUsageTracker
 from .endpoint_policy import endpoint_scope, validate_workspace_endpoint
 from .planning import PLAN_STATES, PlanningAgentEngine, _install_plan_tool

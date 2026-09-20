@@ -15,7 +15,6 @@ from PySide6.QtCore import QTimer, Slot
 from . import context as ctx
 from . import project_instructions
 from .controller import Controller, _blank_metrics
-from .memory_learning import forget_memory_queries, learnable_memories
 from .usage import TokenUsageTracker
 from .endpoint_policy import endpoint_scope, validate_workspace_endpoint
 from .planning import PLAN_STATES, PlanningAgentEngine, _install_plan_tool
@@ -107,75 +106,10 @@ def openTask(self, task_id):
     self._resume_pending_followup(task_id)
 
 
-def _learn_user_memory(self, text: str) -> int:
-    """Quietly persist high-confidence durable facts from an accepted message.
-
-    This path is deliberately independent of model tool calling. A small or
-    tool-less local model should still remember a preferred name or a stable
-    repo convention. The Markdown memory file remains the source of truth,
-    and its normal dedupe/size/privacy rules still apply.
-    """
-    if not self._memory_enabled:
-        return 0
-    changed = 0
-
-    # Explicit forget requests are handled deterministically so Chat mode can
-    # forget without gaining executable memory tools.
-    for query in forget_memory_queries(text):
-        try:
-            result = self.memory.forget(query)
-            removed = int(result.get("forgotten", 0) or 0)
-            if not removed:
-                # "forget that I use Debian" should match the normalized note
-                # "User uses Debian." when that is what auto-learning stored.
-                for candidate in learnable_memories(query, self._working_directory):
-                    result = self.memory.forget(
-                        candidate["note"], candidate["scope"], self._working_directory)
-                    removed += int(result.get("forgotten", 0) or 0)
-        except (OSError, ValueError):
-            continue
-        changed += removed
-
-    stored = 0
-    identity_prefixes = ("User prefers to be called ", "User's preferred name is ")
-    for candidate in learnable_memories(text, self._working_directory):
-        try:
-            note = candidate["note"]
-            # A preferred name is a single-valued identity slot, not a list
-            # of likes. Replace an older name instead of injecting two
-            # contradictory names into every future task.
-            if candidate["scope"] == "global" and note.startswith(identity_prefixes):
-                existing = self.memory.notes("global")
-                same = any(item.casefold() == note.casefold() for item in existing)
-                if not same:
-                    self.memory.forget("User prefers to be called", "global")
-                    self.memory.forget("User's preferred name is", "global")
-            result = self.memory.remember(
-                note, candidate["scope"], self._working_directory)
-        except (OSError, ValueError):
-            continue
-        stored += int(bool(result.get("stored")))
-    if stored or changed:
-        self.memoryChanged.emit()
-    return stored + changed
-
-
 @Slot(str)
 def send(self, text):
     previous_task = self._task_id
     before_messages = len(self._history)
-    # Learn only messages the base controller would actually accept. Never
-    # turn an offline draft, an empty submit or a click while busy into
-    # durable profile data. Learning happens before the run starts so the
-    # same turn can benefit from the freshly updated memory if useful.
-    accepted_text = str(text).strip()
-    accepted = bool(accepted_text and not self._connecting and self._online)
-    if accepted:
-        queued = Controller._queued_text(accepted_text)
-        memory_text = accepted_text if queued is None else queued
-        if memory_text:
-            self._learn_user_memory(memory_text)
-
     was_new = not self._task_id
     if was_new and not self._task_mode_locked:
         self._task_mode = "chat"

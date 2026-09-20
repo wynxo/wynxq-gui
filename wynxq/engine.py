@@ -29,7 +29,7 @@ from .agent_tools import (
 from .agent_prompt import _CHAT_SYSTEM, _SYSTEM, build_system_prompt
 from .engine_support import (
     _ThinkingTextRouter, _normalise_assistant_channels, append_screen,
-    background_context, fresh_history, model_history,
+    prepare_background, fresh_history, model_history,
 )
 from .memory import GLOBAL as MEMORY_GLOBAL
 from .ollama import (
@@ -47,6 +47,7 @@ class AgentEngine:
                  browser_open: Callable[[str], dict] | None = None):
         self.client, self.desktop, self.memory = client, desktop, memory
         self.browser_open = browser_open
+        self.prepare_memory = None
         self.history_recall = None  # Optional read-only provider installed by the GUI.
 
     def run(self, messages: list[dict], model: str, desktop_enabled: bool, cancel,
@@ -120,8 +121,8 @@ class AgentEngine:
                 | memory_tools
             )
 
-            remembered, recalled = background_context(
-                self.memory, history, project, self.history_recall)
+            remembered, recalled = prepare_background(
+                self, history, model, project, cancel, emit, num_ctx)
 
             system = build_system_prompt(
                 tools_allowed=tools_allowed,
