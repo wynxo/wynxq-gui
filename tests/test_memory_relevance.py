@@ -98,3 +98,40 @@ def test_engine_uses_the_latest_user_request_as_the_memory_relevance_query():
     )
 
     assert memory.seen == ("", "Why is my CMake Ninja build failing?")
+
+
+
+def test_engine_injects_read_only_past_chat_recall_with_latest_query():
+    class Client:
+        def __init__(self):
+            self.requests = []
+
+        def capabilities(self, model):
+            return ["completion"]
+
+        def stream_chat(self, payload, cancel):
+            self.requests.append(payload)
+            yield {"message": {"content": "done"}, "done": True}
+
+    client = Client()
+    engine = AgentEngine(client, None, None)
+    seen = []
+    engine.history_recall = lambda query: (
+        seen.append(query)
+        or "Relevant past-chat context. Historical user excerpt: uses KDE Plasma."
+    )
+
+    engine.run(
+        [
+            {"role": "user", "content": "old question"},
+            {"role": "assistant", "content": "old answer"},
+            {"role": "user", "content": "What did I say about KDE before?"},
+        ],
+        "local:test", False, threading.Event(), lambda event: None,
+        tools_allowed=False,
+    )
+
+    assert seen == ["What did I say about KDE before?"]
+    system = client.requests[0]["messages"][0]["content"]
+    assert "Relevant past-chat context" in system
+    assert "uses KDE Plasma" in system
