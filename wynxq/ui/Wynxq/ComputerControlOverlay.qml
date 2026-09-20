@@ -23,11 +23,18 @@ Window {
     // the main Wynxq window, so it remains mapped over the app being driven.
     transientParent: null
     modality: Qt.NonModal
+    readonly property var screenGeometry: targetScreen && targetScreen.geometry
+                                          ? targetScreen.geometry : null
+
     screen: targetScreen
-    x: targetScreen ? targetScreen.virtualX : 0
-    y: targetScreen ? targetScreen.virtualY : 0
-    width: targetScreen ? targetScreen.width : 1
-    height: targetScreen ? targetScreen.height : 1
+    x: screenGeometry ? screenGeometry.x
+        : (targetScreen && targetScreen.virtualX !== undefined ? targetScreen.virtualX : 0)
+    y: screenGeometry ? screenGeometry.y
+        : (targetScreen && targetScreen.virtualY !== undefined ? targetScreen.virtualY : 0)
+    width: screenGeometry ? screenGeometry.width
+        : (targetScreen && targetScreen.width !== undefined ? targetScreen.width : 1)
+    height: screenGeometry ? screenGeometry.height
+        : (targetScreen && targetScreen.height !== undefined ? targetScreen.height : 1)
     visible: controlVisible
     color: "transparent"
     title: "Wynxq computer control"
