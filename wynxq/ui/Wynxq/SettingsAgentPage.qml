@@ -162,7 +162,7 @@ Column {
 
     SettingsGroup {
         title: "Memory"
-        description: "Saved Memory keeps durable facts and preferences. Reference chat history can also bring in relevant things you said in older conversations. Both stay local and can be turned off separately."
+        description: "Saved Memory keeps durable facts and preferences. Reference chat history can also bring in relevant things you said in older conversations. Both are stored locally and can be turned off separately; context used for an answer is sent to the selected Ollama server."
 
         Row {
             width: parent.width
@@ -209,9 +209,10 @@ Column {
         }
         Text {
             width: parent.width
-            text: "Notes are kept in " + (bridge ? bridge.memoryPath : "memory.md")
-                 + ", readable only by you. Wynxq is told never to save secrets or credentials there;"
-                 + " anything you would rather it forgot can be deleted in the panel."
+            text: "Notes are stored in " + (bridge ? bridge.memoryPath : "memory.md")
+                 + " on this computer. Wynxq is told never to save secrets or credentials there;"
+                 + " anything you would rather it forgot can be deleted in the panel. When relevant,"
+                 + " saved memory and recalled chat excerpts are included in requests to the selected Ollama server."
             color: Theme.textMuted
             font.family: Theme.sansFamily; font.pixelSize: Theme.caption
             wrapMode: Text.WordWrap; lineHeight: 1.45
