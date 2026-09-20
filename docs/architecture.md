@@ -13,6 +13,7 @@ QML
 WorkspaceController / Controller / DockController   ← Qt-facing facades
  │                    │
  │                    ├─ controller_*_ops.py        ← conversation/app behavior slices
+ │                    ├─ workspace_*_ops.py         ← task/session/run product behavior
  │                    └─ dock_*_ops.py              ← workspace-panel behavior slices
  │
  ├─ planning.py / endpoint_policy.py / workspace_checkpoint.py
@@ -27,8 +28,10 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
 - `controller.py` is the public QML bridge. It owns Qt signals, exposed properties,
   construction, and shared state. Operational methods are bound from focused
   `controller_*_ops.py` modules so the public API stays stable without a god-file.
-- `workspace.py` adds Chat/Work product state. Filesystem checkpointing, planning,
-  and endpoint validation live outside it.
+- `workspace.py` is the stable Chat/Work Qt facade. Session/draft/plan persistence,
+  usage/project policy, task lifecycle, and run orchestration live in focused
+  `workspace_*_ops.py` slices. Filesystem checkpointing, planning, and endpoint
+  validation remain separate pure-policy modules.
 - `engine.py` owns the bounded tool loop only. It does not own HTTP transport or Qt.
 - `ollama.py` owns Ollama HTTP, model management, streaming, and endpoint validation.
   Endpoint policy is injectable through the client class instead of monkey-patching
@@ -38,6 +41,9 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
 - `SettingsSheet.qml` is only the settings navigation/shell. Each settings domain
   lives in a focused `Settings*Page.qml` component so unrelated settings do not
   share one giant declarative file.
+- `desktop_backends.py` is a compatibility facade only. X11 lives in
+  `desktop_x11.py`, portal control in `desktop_portal.py`, and emergency-stop
+  bindings in `desktop_stop.py`.
 - `endpoint_policy.py`, `workspace_checkpoint.py`, `planning.py`, and `ollama.py`
   must remain Qt-free.
 
@@ -71,6 +77,9 @@ usually does not belong in a Qt controller.
 - Dock shell IO uses the socket notifier; Git/file work uses dock workers.
 - Per-task agent runs keep their own session state so switching conversations does
   not redirect an in-flight run into another task.
+- Active task IDs are journaled while runs are live. A hard restart never resumes
+  tools automatically; it only repairs every persisted in-progress plan step back
+  to pending and clears the stale journal.
 
 ## Safety ownership
 
