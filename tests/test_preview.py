@@ -55,6 +55,17 @@ def test_desktop_scene_shows_a_pending_approval_and_a_timeline():
         bridge.shutdown()
 
 
+def test_computer_control_scene_exposes_live_hud_state():
+    bridge = DemoController("computer-control")
+    try:
+        assert bridge.taskMode == "work"
+        assert bridge.computerControlActive is True
+        assert "KCalc" in bridge.computerControlThought
+        assert "KCalc" in bridge.computerControlReply
+    finally:
+        bridge.shutdown()
+
+
 def test_empty_and_welcome_scenes():
     empty = DemoController("empty")
     try:
