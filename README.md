@@ -455,7 +455,8 @@ Layout:
 | `wynxq/controller_*_ops.py` | Focused Controller behavior: server/model, tasks, context, generation, permissions, events, presentation |
 | `wynxq/dock.py` | Stable workspace-dock facade and QML-facing state |
 | `wynxq/dock_*_ops.py` | Focused dock behavior: layout, files, terminal, Git, context/activity, browser/preview |
-| `wynxq/workspace.py` | Chat/Work product state and orchestration |
+| `wynxq/workspace.py` | Stable Chat/Work Qt facade and exposed product state |
+| `wynxq/workspace_*_ops.py` | Session/plan, usage/project, task, and run lifecycle behavior |
 | `wynxq/planning.py` | Planning-aware engine policy and bounded project context |
 | `wynxq/workspace_checkpoint.py` | Conflict-safe bounded Work-mode undo checkpoints |
 | `wynxq/endpoint_policy.py` | Product endpoint validation/classification and Workspace Ollama client policy |
@@ -468,7 +469,10 @@ Layout:
 | `wynxq/browser.py` | Embedded-browser policy: availability, URL rules, page context |
 | `wynxq/system.py` | Measured runtime state for the System panel |
 | `wynxq/commands.py` | Local Bash execution, bounded output, timeout and cancellation |
-| `wynxq/desktop.py` | Wayland portal and X11 backends |
+| `wynxq/desktop.py` | Desktop-control facade and serialized action orchestration |
+| `wynxq/desktop_x11.py` | X11/XTEST capture and input backend |
+| `wynxq/desktop_portal.py` | Wayland RemoteDesktop/ScreenCast/Screenshot portal backend |
+| `wynxq/desktop_stop.py` | Emergency-stop bindings for X11 and Wayland |
 | `wynxq/markdown.py` | Message segmentation, highlighting, Markdown rendering |
 | `wynxq/context.py` | Composer attachments |
 | `wynxq/storage.py` | SQLite history and settings |
