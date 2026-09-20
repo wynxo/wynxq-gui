@@ -35,8 +35,8 @@ Window {
     modality: Qt.NonModal
     screen: targetScreen
 
-    width: Math.min(360, Math.max(280, screenWidth - edgeMargin * 2))
-    height: Math.min(246, Math.max(118, content.implicitHeight + 28))
+    width: Math.min(330, Math.max(260, screenWidth - edgeMargin * 2))
+    height: Math.min(214, Math.max(92, content.implicitHeight + 28))
     x: Math.round(screenX + screenWidth - width - edgeMargin)
     y: Math.round(screenY + screenHeight - height - edgeMargin)
 
@@ -63,35 +63,6 @@ Window {
         anchors.margins: 14
         spacing: 8
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
-
-            Rectangle {
-                width: 8
-                height: 8
-                radius: 4
-                color: Theme.accent
-
-                SequentialAnimation on opacity {
-                    running: root.controlVisible && !Theme.reducedMotion
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 0.42; to: 1.0; duration: 560; easing.type: Easing.InOutSine }
-                    NumberAnimation { from: 1.0; to: 0.42; duration: 560; easing.type: Easing.InOutSine }
-                }
-            }
-
-            Text {
-                Layout.fillWidth: true
-                text: root.statusText || "Working…"
-                color: Theme.textSecondary
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.caption
-                font.weight: Font.Medium
-                elide: Text.ElideRight
-            }
-        }
-
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 3
@@ -112,7 +83,7 @@ Window {
                 font.pixelSize: Theme.caption
                 wrapMode: Text.Wrap
                 elide: Text.ElideRight
-                maximumLineCount: 4
+                maximumLineCount: 3
             }
         }
 
@@ -144,7 +115,7 @@ Window {
                 font.pixelSize: Theme.caption
                 wrapMode: Text.Wrap
                 elide: Text.ElideRight
-                maximumLineCount: 4
+                maximumLineCount: 3
             }
         }
     }
