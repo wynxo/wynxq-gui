@@ -50,6 +50,28 @@ def test_desktop_facade_reexports_shared_types_and_backends():
     assert desktop.X11GlobalStop is desktop_backends.X11GlobalStop
     assert desktop.GlobalStop is desktop_backends.GlobalStop
 
+
+def test_desktop_backend_facade_reexports_focused_platform_modules():
+    from wynxq import desktop_portal, desktop_stop, desktop_x11
+
+    assert desktop_backends._X11Backend is desktop_x11._X11Backend
+    assert desktop_backends._PortalBackend is desktop_portal._PortalBackend
+    assert desktop_backends.X11GlobalStop is desktop_stop.X11GlobalStop
+    assert desktop_backends.GlobalStop is desktop_stop.GlobalStop
+
+
+def test_workspace_facade_binds_focused_behavior_modules():
+    from wynxq import (
+        workspace, workspace_run_ops, workspace_session_ops,
+        workspace_task_ops, workspace_usage_ops,
+    )
+
+    assert workspace.WorkspaceController._restore_workspace_session is workspace_session_ops._restore_workspace_session
+    assert workspace.WorkspaceController._set_project is workspace_usage_ops._set_project
+    assert workspace.WorkspaceController.send is workspace_task_ops.send
+    assert workspace.WorkspaceController._start_run is workspace_run_ops._start_run
+    assert workspace.WorkspaceController._run_done is workspace_run_ops._run_done
+
 def test_controller_facade_binds_focused_behavior_modules():
     from wynxq import (
         controller_context_ops, controller_event_ops, controller_generation_ops,
@@ -103,9 +125,10 @@ def test_coordinator_modules_have_hard_size_budgets():
     root = Path(__file__).resolve().parents[1]
     budgets = {
         "wynxq/controller.py": 900,
-        "wynxq/workspace.py": 900,
+        "wynxq/workspace.py": 350,
         "wynxq/engine.py": 550,
         "wynxq/dock.py": 550,
+        "wynxq/desktop_backends.py": 40,
     }
     for relative, maximum in budgets.items():
         count = len((root / relative).read_text(encoding="utf-8").splitlines())
@@ -119,6 +142,7 @@ def test_behavior_slices_stay_focused():
     slices = [
         *root.glob("wynxq/controller_*_ops.py"),
         *root.glob("wynxq/dock_*_ops.py"),
+        *root.glob("wynxq/workspace_*_ops.py"),
     ]
     assert slices
     for path in slices:
@@ -129,6 +153,8 @@ def test_behavior_slices_stay_focused():
             assert "from .controller import" not in text
         if path.name.startswith("dock_"):
             assert "from .dock import" not in text
+        if path.name.startswith("workspace_"):
+            assert "from .workspace import" not in text
 
 
 def test_policy_and_transport_layers_are_qt_free():
@@ -166,4 +192,17 @@ def test_settings_shell_is_composed_from_focused_pages():
     for name in expected:
         count = len((root / name).read_text(encoding="utf-8").splitlines())
         assert count <= 260, f"{name} grew to {count} lines; split the page further"
+
+def test_platform_backend_modules_have_size_budgets():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    budgets = {
+        "wynxq/desktop_x11.py": 260,
+        "wynxq/desktop_stop.py": 220,
+        "wynxq/desktop_portal.py": 550,
+    }
+    for relative, maximum in budgets.items():
+        count = len((root / relative).read_text(encoding="utf-8").splitlines())
+        assert count <= maximum, f"{relative} grew to {count} lines (budget {maximum})"
 
