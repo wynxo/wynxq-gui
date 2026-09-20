@@ -87,12 +87,8 @@ Item {
     function send() {
         if (!canSend) return;
         root.submitted(input.text);
-        input.text = "";
-    }
-    function keyboardSend() {
-        if (!input.activeFocus || input.inputMethodComposing) return;
-        if (root.slashMatches.length) root.runSlash(root.slashIndex);
-        else root.send();
+        // clear() also resets any partial input-method state.
+        input.clear();
     }
 
     GlassSurface {
@@ -332,9 +328,16 @@ Item {
                     Keys.onPressed: function(event) {
                         // Consume plain Enter before TextArea can turn it into a newline.
                         // Shift+Enter is intentionally left to TextArea for multiline input.
-                        if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
-                                && !input.inputMethodComposing) {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                             if (event.modifiers & Qt.ShiftModifier) {
+                                event.accepted = false;
+                                return;
+                            }
+                            // Some Linux input-method stacks can report a
+                            // composing state beyond an actual preedit. Only
+                            // defer Enter while there is real partial IME text
+                            // that still needs to be committed.
+                            if (input.preeditText.length > 0) {
                                 event.accepted = false;
                                 return;
                             }
