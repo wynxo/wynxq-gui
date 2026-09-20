@@ -32,7 +32,7 @@ def _run(self, fn, done):
     worker.callback = done
     worker.done.connect(self._deliver)
     worker.failed.connect(self._deliver_failure)
-    worker.finished.connect(self._retire_worker)
+    worker.settled.connect(self._retire_worker)
     self._workers.add(worker)
     if self._active_worker is None:
         self._active_worker = worker
@@ -54,21 +54,20 @@ def _start_next_worker(self) -> None:
         return
 
 
-@Slot(object)
-def _deliver(self, payload):
-    callback = getattr(self.sender(), "callback", None)
+@Slot(object, object)
+def _deliver(self, worker, payload):
+    callback = getattr(worker, "callback", None)
     if callable(callback):
         callback(payload)
 
 
-@Slot(str)
-def _deliver_failure(self, message):
+@Slot(object, str)
+def _deliver_failure(self, worker, message):
     self.toast.emit(message)
 
 
-@Slot()
-def _retire_worker(self):
-    worker = self.sender()
+@Slot(object)
+def _retire_worker(self, worker):
     # QThread.finished() is emitted before thread-local cleanup is
     # guaranteed complete. Join here before another worker starts so Python
     # and native thread-local teardown cannot overlap the next task.
