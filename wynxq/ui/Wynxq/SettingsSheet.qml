@@ -83,13 +83,9 @@ Sheet {
         settingsQuery = "";
         settingsSearch.text = "";
         if (bridge) bridge.refreshTokenUsage();
-        endpointNameField.text = "";
-        endpointField.text = "";
-        accentField.text = bridge ? bridge.accentColor : "";
-        ctxField.text = bridge ? bridge.numCtx : "";
-        tempField.text = bridge ? bridge.temperature : "";
-        keepField.text = bridge ? bridge.keepAlive : "";
-        stepsField.text = bridge ? bridge.maxSteps : "";
+        generalSettingsPage.prepare();
+        modelSettingsPage.prepare();
+        appearanceSettingsPage.prepare();
     }
 
     RowLayout {
@@ -216,12 +212,14 @@ Sheet {
 
                     // ------------------------------------------------ GENERAL
                     SettingsGeneralPage {
+                        id: generalSettingsPage
                         bridge: sheet.appBridge
                         hostSheet: sheet
                     }
 
                     // ----------------------------------------- MODEL & RUNTIME
                     SettingsModelPage {
+                        id: modelSettingsPage
                         bridge: sheet.appBridge
                         hostSheet: sheet
                     }
@@ -247,6 +245,7 @@ Sheet {
 
                     // --------------------------------------------- APPEARANCE
                     SettingsAppearancePage {
+                        id: appearanceSettingsPage
                         bridge: sheet.appBridge
                         hostSheet: sheet
                     }
