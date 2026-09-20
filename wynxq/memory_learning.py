@@ -57,7 +57,7 @@ _GLOBAL_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
      "User uses {value}."),
     (re.compile(r"(?i)^\s*i(?:'m|\s+am)\s+learning\s+(.+?)[.!?]*\s*$"),
      "User is learning {value}."),
-    (re.compile(r"(?i)^\s*i\s+speak\s+(.+?)[.!?]*\s*$"),
+    (re.compile(r"(?i)^\s*i\s+speak\s+(?!with\b|to\b)(.+?)[.!?]*\s*$"),
      "User speaks {value}."),
     (re.compile(r"(?i)^\s*my\s+main\s+(?:os|operating system)\s+is\s+(.+?)[.!?]*\s*$"),
      "User's main operating system is {value}."),
@@ -76,7 +76,7 @@ _GLOBAL_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
      "User uses {value}."),
     (re.compile(r"(?i)^\s*я\s+изучаю\s+(.+?)[.!?]*\s*$"),
      "User is learning {value}."),
-    (re.compile(r"(?i)^\s*я\s+говорю\s+(?:на\s+)?(.+?)[.!?]*\s*$"),
+    (re.compile(r"(?i)^\s*я\s+говорю\s+на\s+(.+?)[.!?]*\s*$"),
      "User speaks {value}."),
     # German high-confidence equivalents.
     (re.compile(r"(?i)^\s*nenn\s+mich\s+(.+?)[.!?]*\s*$"),
@@ -89,7 +89,7 @@ _GLOBAL_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
      "User uses {value}."),
     (re.compile(r"(?i)^\s*ich\s+lerne\s+(.+?)[.!?]*\s*$"),
      "User is learning {value}."),
-    (re.compile(r"(?i)^\s*ich\s+spreche\s+(.+?)[.!?]*\s*$"),
+    (re.compile(r"(?i)^\s*ich\s+spreche\s+(?!mit\b)(.+?)[.!?]*\s*$"),
      "User speaks {value}."),
 )
 
