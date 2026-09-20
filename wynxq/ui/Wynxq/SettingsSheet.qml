@@ -58,11 +58,17 @@ Sheet {
     function showAgentMemory() {
         page = agentPage;
         open();
-        Qt.callLater(function() {
+        memoryScrollTimer.restart();
+    }
+    Timer {
+        id: memoryScrollTimer
+        interval: 160
+        repeat: false
+        onTriggered: {
             var flick = settingsScroll.contentItem;
             if (flick)
-                flick.contentY = Math.max(0, flick.contentHeight - flick.height);
-        });
+                flick.contentY = Math.max(0, flick.contentHeight - settingsScroll.availableHeight);
+        }
     }
 
     function formatUsageCount(value) {
