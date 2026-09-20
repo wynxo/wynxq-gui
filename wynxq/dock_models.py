@@ -21,9 +21,15 @@ _ORPHANED: set = set()
 
 
 class _Worker(QThread):
-    """One-shot background call. Git and directory walks use this."""
-    done = Signal(object)
-    failed = Signal(str)
+    """One-shot background call. Git and directory walks use this.
+
+    Signals carry the worker explicitly. Relying on QObject.sender() from
+    Python methods rebound onto another QObject subclass is fragile in PySide
+    and can strand the dock worker queue after the first task.
+    """
+    done = Signal(object, object)
+    failed = Signal(object, str)
+    settled = Signal(object)
 
     def __init__(self, fn, parent=None):
         super().__init__(parent)
@@ -31,9 +37,11 @@ class _Worker(QThread):
 
     def run(self):
         try:
-            self.done.emit(self._fn())
+            self.done.emit(self, self._fn())
         except Exception as exc:                      # pragma: no cover - defensive
-            self.failed.emit(str(exc))
+            self.failed.emit(self, str(exc))
+        finally:
+            self.settled.emit(self)
 
 
 # ---------------------------------------------------------------- file tree
