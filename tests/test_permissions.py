@@ -119,7 +119,10 @@ def test_declining_an_action_stops_it_and_tells_the_model_why():
     assert ("type_text", {"text": "rm -rf"}) not in desktop.calls
     declined = [e for e in events if e["type"] == "tool_end" and e.get("declined")]
     assert len(declined) == 1
-    result = json.loads(next(m for m in history if m.get("role") == "tool")["content"])
+    result = json.loads(next(
+        m for m in history
+        if m.get("role") == "tool" and m.get("tool_name") == "type_text"
+    )["content"])
     assert result["declined"] is True
     assert "Do not retry" in result["error"]
 
