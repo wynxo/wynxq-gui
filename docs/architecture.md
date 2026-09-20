@@ -18,7 +18,9 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
  │
  ├─ planning.py / endpoint_policy.py / workspace_checkpoint.py
  │                                                   ← product policy, Qt-free
- ├─ engine.py                                        ← agent/tool loop, Qt-free
+ ├─ agent_prompt.py / engine_support.py / tool_execution.py
+ │                                                   ← run policy/helpers, Qt-free
+ ├─ engine.py                                        ← bounded agent coordinator, Qt-free
  │    └─ ollama.py                                   ← HTTP/model transport, Qt-free
  └─ storage / context / commands / desktop / project services
 ```
@@ -32,7 +34,15 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
   usage/project policy, task lifecycle, and run orchestration live in focused
   `workspace_*_ops.py` slices. Filesystem checkpointing, planning, and endpoint
   validation remain separate pure-policy modules.
-- `engine.py` owns the bounded tool loop only. It does not own HTTP transport or Qt.
+- `engine.py` coordinates capabilities, tool exposure, model turns, cancellation, and
+  the bounded action budget. It does not own prompt policy, concrete tool execution,
+  transcript plumbing, HTTP transport, or Qt.
+- `agent_prompt.py` owns Chat/Work system-prompt construction from already-resolved
+  runtime capabilities.
+- `engine_support.py` owns model-bound transcript shaping, screenshot-context retention,
+  and reasoning-channel parsing.
+- `tool_execution.py` owns validation, approval checks, concrete tool dispatch, and the
+  evidence events produced by an executed action.
 - `ollama.py` owns Ollama HTTP, model management, streaming, and endpoint validation.
   Endpoint policy is injectable through the client class instead of monkey-patching
   engine globals.
@@ -44,8 +54,8 @@ WorkspaceController / Controller / DockController   ← Qt-facing facades
 - `desktop_backends.py` is a compatibility facade only. X11 lives in
   `desktop_x11.py`, portal control in `desktop_portal.py`, and emergency-stop
   bindings in `desktop_stop.py`.
-- `endpoint_policy.py`, `workspace_checkpoint.py`, `planning.py`, and `ollama.py`
-  must remain Qt-free.
+- `endpoint_policy.py`, `workspace_checkpoint.py`, `planning.py`, `ollama.py`,
+  `agent_prompt.py`, `engine_support.py`, and `tool_execution.py` must remain Qt-free.
 
 ## Compatibility strategy
 
@@ -72,8 +82,8 @@ usually does not belong in a Qt controller.
 
 - GUI state is mutated on the Qt thread.
 - Controller background work uses `Job` and returns through signals.
-- The engine and Ollama transport are Qt-free and receive cancellation/events as
-  normal Python objects/callbacks.
+- The engine, prompt policy, transcript helpers, tool executor, and Ollama transport
+  are Qt-free and receive cancellation/events as normal Python objects/callbacks.
 - Dock shell IO uses the socket notifier; Git/file work uses dock workers.
 - Per-task agent runs keep their own session state so switching conversations does
   not redirect an in-flight run into another task.
@@ -85,6 +95,7 @@ usually does not belong in a Qt controller.
 
 - Endpoint syntax/host policy: `ollama.py` + `endpoint_policy.py`.
 - Tool schema/risk policy: `agent_tools.py`.
+- Per-call validation, approval enforcement, and dispatch: `tool_execution.py`.
 - Permission UI/session decisions: controller permission operations.
 - Desktop backend authorization/input: `desktop.py` and backend modules.
 - Project path containment: project/file service modules.
