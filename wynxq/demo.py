@@ -646,7 +646,7 @@ SCENES = [
     ("24-dock-activity", "dock-activity", ""),
     ("27-dock-memory", "dock-memory", ""),
     ("28-usage", "usage", "usageSettings"),
-    ("35-memory-settings", "conversation", "agentSettings"),
+    ("35-memory-settings", "conversation", "agentMemorySettings"),
     ("29-sent-context", "sent-context", ""),
     ("30-collapsed-shell", "collapsed-shell", ""),
     ("31-thinking", "thinking", ""),
