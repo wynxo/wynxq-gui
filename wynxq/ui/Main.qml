@@ -538,6 +538,9 @@ ApplicationWindow {
         replyText: bridge ? bridge.computerControlReply : ""
     }
 
+    // Snapshot QA can grab the real separate HUD window directly.
+    property var computerControlPanelWindow: computerControlPanel
+
     Timer {
         interval: 180
         repeat: false
