@@ -154,6 +154,7 @@ def _start_run(self, history):
         },
     )
     self._workspace_checkpoint = state.get("checkpoint")
+    self._journal_active_run(self._task_id, True)
 
 
 def _on_event(self, event, task_id=None):
@@ -226,6 +227,7 @@ def _run_done(self, history, task_id=None):
             state["conversation_tokens"] += max(0, int(metrics.get("prompt_tokens", 0) or 0))
         cleaned = self._strip_plan_history(history)
         Controller._run_done(self, cleaned, task_id)
+        self._journal_active_run(task_id, False)
         self._finalize_checkpoint_for_run(task_id, state)
         self._settle_plan_for_run(task_id, state, outcome)
         if task_id == self._task_id:
@@ -235,6 +237,7 @@ def _run_done(self, history, task_id=None):
             self.usageChanged.emit()
         return
     Controller._run_done(self, self._strip_plan_history(history), task_id)
+    self._journal_active_run(task_id, False)
 
 
 def _run_failed(self, message, task_id=None):
@@ -245,6 +248,8 @@ def _run_failed(self, message, task_id=None):
         if usage:
             usage.finalize(task_id, state.get("model", ""))
         Controller._run_failed(self, message, task_id)
+    self._journal_active_run(task_id, False)
+        self._journal_active_run(task_id, False)
         self._finalize_checkpoint_for_run(task_id, state)
         self._settle_plan_for_run(task_id, state, "failed")
         if task_id == self._task_id:
