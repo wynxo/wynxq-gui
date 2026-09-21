@@ -143,9 +143,11 @@ Item {
             delegate: Loader {
                 required property var modelData
                 width: column.width
-                // Loader's implicit sizing can temporarily inherit the delegate
-                // viewport during rich-text relayout. Pin it to the loaded block.
-                height: item ? Math.ceil(item.implicitHeight) : 0
+                // For prose, use the rendered document height directly. Qt's
+                // TextEdit implicitHeight can lag a rich-text relayout; code
+                // cards already expose a stable implicitHeight.
+                height: item ? Math.ceil(modelData.kind === "code"
+                    ? item.implicitHeight : item.contentHeight) : 0
                 sourceComponent: modelData.kind === "code" ? codeBlock : proseBlock
                 onLoaded: {
                     item.blockText = modelData.text;
@@ -161,7 +163,8 @@ Item {
         Loader {
             width: column.width
             active: root.tail.length > 0
-            height: active && item ? Math.ceil(item.implicitHeight) : 0
+            height: active && item ? Math.ceil(root.tailKind === "code"
+                ? item.implicitHeight : item.contentHeight) : 0
             sourceComponent: root.tailKind === "code" ? codeBlock : proseBlock
             onLoaded: {
                 item.blockText = Qt.binding(function() { return root.tail; });
