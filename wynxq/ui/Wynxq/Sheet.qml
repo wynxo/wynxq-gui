@@ -35,13 +35,13 @@ Popup {
     background: GlassSurface {
         radius: Theme.r4
         tint: Theme.glassTintStrong
-        fillOpacity: 0.92
+        fillOpacity: 0.96
         glassEnabled: true
         backdropBlur: true
         blurAmount: 0.70
         elevated: true
         strongEdge: true
-        sheen: true
+        sheen: false
     }
 
     enter: Transition {
