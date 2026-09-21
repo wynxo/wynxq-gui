@@ -1,6 +1,8 @@
 """Cancellable per-turn memory preparation, executed on the inference worker."""
 from __future__ import annotations
 
+import re
+
 from . import chat_recall
 from .memory_learning import analyze, memory_candidates, validate_analysis, _SECRET
 from .ollama import Cancelled
@@ -17,6 +19,35 @@ _SELECT_SCHEMA = {
     "type": "object", "additionalProperties": False, "required": ["ids"],
     "properties": {"ids": {"type": "array", "items": {"type": "string"}, "maxItems": 12}},
 }
+
+# Automatic memory is intentionally broad for substantive messages, but tiny
+# conversational filler should not spend an extra model call or search history.
+# This is only a negative fast-path: it never decides what fact to save.
+_TRIVIAL_WORDS = {
+    "hi", "hii", "hiii", "hey", "heyy", "hello", "yo", "sup", "wassup", "howdy",
+    "ok", "okay", "k", "kk", "cool", "nice", "bet", "sure", "yep", "yeah", "nah",
+    "thanks", "thank", "thx", "ty", "bye", "bro", "vro", "lol", "lmao", "lmfao",
+    "привет", "дарова", "здарова", "здорово", "спасибо", "спс", "ок", "ладно",
+    "пон", "понял", "поняла", "круто", "пока", "ахах", "ахаха",
+    "hallo", "moin", "servus", "danke", "tschüss", "tschuess", "ciao",
+}
+_TRIVIAL_PHRASES = {
+    "thank you", "thanks bro", "thanks vro", "good morning", "good night",
+    "good evening", "whats up", "what s up", "all good", "sounds good",
+    "доброе утро", "добрый вечер", "спокойной ночи",
+    "guten morgen", "guten abend", "gute nacht", "vielen dank",
+}
+
+
+def _trivial_turn(value: str) -> bool:
+    text = " ".join(str(value or "").split()).casefold()
+    words = re.findall(r"[^\\W_]+", text, re.UNICODE)
+    if not words:
+        return True
+    phrase = " ".join(words)
+    if phrase in _TRIVIAL_PHRASES:
+        return True
+    return len(words) <= 4 and all(word in _TRIVIAL_WORDS for word in words)
 
 
 class MemoryService:
@@ -43,6 +74,8 @@ class MemoryService:
         source = str(users[-1].get('content', '') or '') if users else ''
         if not source.strip():
             return self.memory.prompt(project) if enabled else '', ''
+        if _trivial_turn(source):
+            return "", ""
         budget = max(600, min(20000, (num_ctx - 1800) * 2))
         chunk_size = max(200, budget // 3)
         dialogue = [{"role": message['role'], "content": str(message.get('content', ''))[:400]}
@@ -51,7 +84,8 @@ class MemoryService:
                     and not str(message.get('content', '')).startswith(
                         ('Current desktop screenshot (', 'Attached '))][-2:]
         queries, warnings = [], []
-        emit({'type': 'status', 'text': 'Updating memory and recalling past chats…'})
+        # Memory preparation is background context, not the user's current task.
+        # Do not replace the visible run status with an internal implementation step.
         for start in range(0, len(source), chunk_size):
             self._check(cancel)
             chunk = source[start:start + chunk_size]

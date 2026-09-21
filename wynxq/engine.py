@@ -269,7 +269,7 @@ class AgentEngine:
                 saw_screen = any(m.get("images") and str(m.get("content", "")).startswith(
                     "Current desktop screenshot (") for m in payload["messages"])
                 screen_changed = False
-                visual_input = available_schemas - _NONVISUAL - {"screenshot"}
+                visual_input = available_schemas - nonvisual - {"screenshot"}
 
                 def report_blocked(name: str, args: dict, result: dict) -> dict:
                     """Emit the same activity contract as an executable tool call."""

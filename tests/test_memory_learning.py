@@ -92,29 +92,56 @@ def test_memory_off_does_not_write_or_inject_facts(tmp_path):
     svc.store.close()
 
 
+@pytest.mark.parametrize('text', [
+    'hi', 'hey bro', 'thanks', 'привет', 'hallo', '👍',
+])
+def test_small_talk_skips_automatic_memory_work(tmp_path, text):
+    client = Model([decision('Should never be written', text)])
+    svc = service(tmp_path, client)
+    svc.memory.remember('Existing durable fact')
+    events = []
+    assert run(svc, text, emit=events.append) == ('', '')
+    assert client.requests == []
+    assert events == []
+    assert svc.memory.notes() == ['Existing durable fact']
+    svc.store.close()
+
+
+def test_memory_preparation_does_not_replace_visible_run_status(tmp_path):
+    source = 'I prefer working in a quiet room.'
+    client = Model([decision('User prefers working in a quiet room.', source)])
+    svc = service(tmp_path, client, reference=lambda: False)
+    events = []
+    run(svc, source, emit=events.append)
+    assert not any(event.get('type') == 'status' for event in events)
+    svc.store.close()
+
+
 def test_toggle_off_or_clear_during_inference_cannot_restore_memory(tmp_path):
     flags = {'enabled': True}
-    client = Model([decision('A new fact', 'hello')])
+    source = 'I moved my desk beside the window.'
+    client = Model([decision('User moved their desk beside the window.', source)])
     svc = service(tmp_path, client, enabled=lambda: flags['enabled'], reference=lambda: False)
     original = client.memory_json
     def disabling(*args, **kwargs):
         flags['enabled'] = False
         return original(*args, **kwargs)
     client.memory_json = disabling
-    assert run(svc, 'hello') == ('', '')
+    assert run(svc, source) == ('', '')
     assert svc.memory.notes() == []
     svc.store.close()
 
 
 def test_cancelled_memory_request_never_writes(tmp_path):
     cancel = threading.Event()
+    source = 'I always study with the window open.'
     class Cancelling(Model):
         def memory_json(self, *args, **kwargs):
             cancel.set()
             return super().memory_json(*args, **kwargs)
-    svc = service(tmp_path, Cancelling([decision('Fact', 'hello')]))
+    svc = service(tmp_path, Cancelling([decision('User studies with the window open.', source)]))
     with pytest.raises(Cancelled):
-        run(svc, 'hello', cancel=cancel)
+        run(svc, source, cancel=cancel)
     assert svc.memory.notes() == []
     svc.store.close()
 
@@ -126,7 +153,7 @@ def test_bad_model_json_is_reported_and_existing_memory_is_kept(tmp_path):
     svc = service(tmp_path, Broken())
     svc.memory.remember('Previously saved fact')
     events = []
-    remembered, _ = run(svc, 'hello', emit=events.append)
+    remembered, _ = run(svc, 'What setup did I tell you I use?', emit=events.append)
     assert 'Previously saved fact' in remembered
     assert any(event['type'] == 'memory_warning' for event in events)
     svc.store.close()

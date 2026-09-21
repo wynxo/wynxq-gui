@@ -48,10 +48,10 @@ Item {
 
     function permissionLabel(mode) {
         if (mode === "manual") return "Ask";
-        if (mode === "safe") return "Auto-approve";
-        if (mode === "auto") return "Autopilot";
+        if (mode === "safe") return "Safe";
+        if (mode === "auto") return "Auto";
         if (mode === "full") return "Full";
-        return "Auto-approve";
+        return "Safe";
     }
 
     function permissionDetail(mode) {
@@ -257,8 +257,8 @@ Item {
         Rectangle {
             id: modeSurface
             objectName: "modeSurface"
-            Layout.preferredHeight: 34
-            Layout.preferredWidth: modeRow.implicitWidth + 8
+            Layout.preferredHeight: 30
+            Layout.preferredWidth: modeRow.implicitWidth + 6
             radius: Theme.r2
             color: Theme.surfaceSunken
             border.width: 1
@@ -278,8 +278,8 @@ Item {
                         id: choice
                         required property var modelData
                         objectName: "modeChoice_" + modelData.id
-                        width: 82
-                        height: 26
+                        width: 68
+                        height: 24
                         padding: 0
                         enabled: root.canChooseMode
                         hoverEnabled: true
@@ -341,8 +341,8 @@ Item {
             id: autonomyButton
             visible: root.resolvedMode === "work"
             enabled: !!(bridge && !bridge.connecting)
-            Layout.preferredHeight: 30
-            Layout.preferredWidth: autonomyRow.implicitWidth + Theme.s3 * 2
+            Layout.preferredHeight: 28
+            Layout.preferredWidth: autonomyRow.implicitWidth + Theme.s2 * 2
             hoverEnabled: true
             Accessible.name: bridge ? "Work autonomy " + root.permissionLabel(bridge.permissionMode) : "Work autonomy"
             Accessible.description: bridge ? root.permissionDetail(bridge.permissionMode) : ""
@@ -352,11 +352,11 @@ Item {
             ToolTip.delay: Theme.tooltipDelay
             background: GlassSurface {
                 radius: Theme.r2
-                solid: true
+                solid: false
                 glassEnabled: autonomyButton.hovered || autonomyMenu.opened || autonomyButton.visualFocus
-                tint: autonomyButton.hovered || autonomyMenu.opened ? Theme.glassTintHover : Theme.surface
-                fillOpacity: autonomyButton.hovered || autonomyMenu.opened ? 0.66 : 1.0
-                outlineVisible: true
+                tint: Theme.glassTintHover
+                fillOpacity: autonomyButton.hovered || autonomyMenu.opened ? 0.48 : 0.0
+                outlineVisible: autonomyButton.hovered || autonomyMenu.opened || autonomyButton.visualFocus
                 strongEdge: autonomyButton.hovered || autonomyMenu.opened || autonomyButton.visualFocus
                 active: autonomyButton.visualFocus
                 sheen: autonomyButton.hovered || autonomyMenu.opened
@@ -422,22 +422,17 @@ Item {
         }
 
         // ------------------------------------------------------- run state
-        Rectangle {
+        Item {
+            id: runState
             visible: bridge && bridge.busy
-            Layout.preferredWidth: runRow.implicitWidth + Theme.s3 + Theme.s2
+            Layout.preferredWidth: Math.min(runRow.implicitWidth, Math.max(120, root.width * 0.22))
             Layout.preferredHeight: 28
-            Layout.maximumWidth: Math.max(110, root.width * 0.28)
-            radius: Theme.r2
-            color: Theme.surface
-            border.width: 1
-            border.color: Theme.borderSubtle
+            Layout.maximumWidth: Math.max(120, root.width * 0.22)
 
             RowLayout {
                 id: runRow
                 anchors.fill: parent
-                anchors.leftMargin: Theme.s3
-                anchors.rightMargin: Theme.s1
-                spacing: Theme.s2
+                spacing: Theme.s1
                 ActivityGlyph {
                     running: true
                     tone: bridge && bridge.permissionPending ? Theme.warning : Theme.success
@@ -445,6 +440,7 @@ Item {
                     Layout.preferredHeight: implicitHeight
                 }
                 Text {
+                    Layout.fillWidth: true
                     text: !bridge ? ""
                         : bridge.permissionPending ? "Waiting for approval"
                         : (bridge.status && bridge.status !== "Ready when you are"
@@ -456,45 +452,21 @@ Item {
                     elide: Text.ElideRight
                 }
                 Text {
-                    visible: bridge && bridge.tokenRate !== "—" && root.width > 1080
-                    text: bridge ? String(bridge.tokenRate).replace(" tok/s", " tokens/s") : ""
+                    visible: bridge && bridge.tokenRate !== "—" && root.width > 1180
+                    text: bridge ? String(bridge.tokenRate).replace(" tok/s", " t/s") : ""
                     color: Theme.textMuted
                     font.family: Theme.monoFamily
                     font.pixelSize: Theme.micro
                 }
-                AbstractButton {
-                    implicitWidth: 34
-                    implicitHeight: 21
-                    hoverEnabled: true
-                    Accessible.name: "Stop"
+                IconButton {
+                    Layout.preferredWidth: 24
+                    Layout.preferredHeight: 24
+                    iconSize: 10
+                    iconName: "stop"
+                    tooltip: "Stop"
+                    tint: Theme.danger
+                    activeTint: Theme.danger
                     onClicked: if (bridge) bridge.stop()
-                    background: GlassSurface {
-                        radius: Theme.r1
-                        solid: false
-                        glassEnabled: parent.hovered || parent.visualFocus
-                        tint: Theme.dangerMuted
-                        fillOpacity: parent.hovered ? 0.72 : 0.0
-                        outlineVisible: parent.hovered || parent.visualFocus
-                        strongEdge: parent.hovered || parent.visualFocus
-                        active: parent.visualFocus
-                        sheen: parent.hovered
-                        edgeColor: parent.visualFocus
-                                 ? Theme.accentEdge
-                                 : Theme.alpha(Theme.danger, 0.28)
-                    }
-                    contentItem: Text {
-                        text: "Stop"
-                        color: Theme.danger
-                        font.family: Theme.sansFamily
-                        font.pixelSize: Theme.micro
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        acceptedButtons: Qt.NoButton
-                        cursorShape: Qt.PointingHandCursor
-                    }
                 }
             }
         }

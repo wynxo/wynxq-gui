@@ -508,6 +508,30 @@ def test_builtin_browser_tool_is_explicit_and_does_not_use_desktop():
     assert history[-1]["content"] == "Opened it in Wynxq Browser."
 
 
+def test_builtin_browser_stays_nonvisual_with_screen_control_enabled():
+    opened = []
+    client = FakeClient([
+        response(calls=[("browser_open", {"target": "https://www.youtube.com"})]),
+        response("Opened."),
+    ])
+    desktop = FakeDesktop()
+    events = []
+    history = AgentEngine(
+        client, desktop,
+        browser_open=lambda target: opened.append(target) or {
+            "ok": True, "url": target, "browser": "Wynxq built-in browser"
+        },
+    ).run([{"role": "user", "content": "open youtube in your browser"}],
+          "local:test", True, threading.Event(), events.append)
+    assert opened == ["https://www.youtube.com"]
+    assert desktop.calls == []
+    assert not any(
+        "Visual action deferred" in event.get("result", {}).get("error", "")
+        for event in events if event.get("type") == "tool_end"
+    )
+    assert history[-1]["content"] == "Opened."
+
+
 def test_ui_attachment_metadata_never_reaches_ollama_and_nonvision_images_are_skipped():
     client = FakeClient([response("I cannot inspect the picture.")], ["tools"])
     message = {
