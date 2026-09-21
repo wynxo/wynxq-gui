@@ -23,17 +23,17 @@ AbstractButton {
 
     background: GlassSurface {
         radius: Theme.r2
-        solid: row.current
-        glassEnabled: row.current || row.hovered || moreMenu.opened || row.visualFocus
+        solid: false
+        glassEnabled: row.hovered || moreMenu.opened || row.visualFocus
         tint: row.current ? Theme.surfaceSelected : Theme.glassTintHover
-        fillOpacity: row.current ? 1.0
+        fillOpacity: row.current ? (row.hovered || moreMenu.opened ? 0.88 : 0.72)
                    : row.hovered || moreMenu.opened ? 0.48 : 0.0
         outlineVisible: row.current || row.hovered || moreMenu.opened || row.visualFocus
         strongEdge: row.hovered || moreMenu.opened || row.visualFocus
         active: row.visualFocus
         sheen: row.hovered || moreMenu.opened || row.visualFocus
         edgeColor: row.visualFocus ? Theme.accentEdge
-                 : row.current ? Theme.glassEdge
+                 : row.current ? Theme.alpha(Theme.borderStrong, 0.72)
                  : row.hovered || moreMenu.opened ? Theme.glassEdgeStrong : "transparent"
 
         Rectangle {

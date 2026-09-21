@@ -105,7 +105,7 @@ Item {
         strongEdge: input.activeFocus
         active: input.activeFocus
         sheen: root.homeMode || input.activeFocus
-        edgeColor: input.activeFocus ? Theme.accentEdge : Theme.borderStrong
+        edgeColor: input.activeFocus ? Theme.accentEdge : Theme.border
 
         ColumnLayout {
             id: content

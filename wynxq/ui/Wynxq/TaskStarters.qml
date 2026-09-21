@@ -78,14 +78,14 @@ Item {
         id: flow
         width: parent.width
         x: Math.max(0, (root.width - childrenRect.width) / 2)
-        spacing: Theme.s1
+        spacing: Theme.s2
 
         Repeater {
             model: root.actions
             delegate: AbstractButton {
                 id: starter
                 required property var modelData
-                implicitHeight: 30
+                implicitHeight: 32
                 implicitWidth: starterRow.implicitWidth + Theme.s3 * 2
                 hoverEnabled: true
                 focusPolicy: Qt.StrongFocus
@@ -105,14 +105,16 @@ Item {
                     autoGlass: false
                     glassEnabled: starter.hovered || starter.down || starter.visualFocus
                     tint: starter.down ? Theme.glassTintStrong : Theme.glassTintHover
-                    fillOpacity: starter.down ? 0.58
-                               : starter.hovered ? 0.34
-                               : starter.visualFocus ? 0.22 : 0.0
-                    outlineVisible: starter.hovered || starter.down || starter.visualFocus
+                    fillOpacity: starter.down ? 0.62
+                               : starter.hovered ? 0.42
+                               : starter.visualFocus ? 0.28 : 0.10
+                    outlineVisible: true
                     strongEdge: starter.hovered || starter.down
                     active: starter.visualFocus
                     sheen: starter.hovered || starter.down
-                    edgeColor: starter.visualFocus ? Theme.accentEdge : Theme.glassEdge
+                    edgeColor: starter.visualFocus ? Theme.accentEdge
+                             : starter.hovered || starter.down ? Theme.glassEdgeStrong
+                             : Theme.alpha(Theme.border, 0.52)
                 }
                 contentItem: Row {
                     id: starterRow

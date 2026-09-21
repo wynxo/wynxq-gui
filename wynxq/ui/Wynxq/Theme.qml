@@ -20,30 +20,30 @@ QtObject {
     // ---------------------------------------------------------- foundation
     // Opaque fallbacks remain the readability baseline. GlassSurface layers
     // translucency over these values without weakening text contrast.
-    readonly property color background:      "#17181b"
-    readonly property color backgroundSoft:  "#111215"
-    readonly property color surface:         "#202126"
-    readonly property color surfaceRaised:   "#27292e"
-    readonly property color surfaceHover:    "#303239"
-    readonly property color surfacePressed:  "#3a3d45"
-    readonly property color surfaceSelected: "#34373f"
-    readonly property color surfaceSunken:   "#0e0f12"
+    readonly property color background:      "#141518"
+    readonly property color backgroundSoft:  "#101114"
+    readonly property color surface:         "#1d1f24"
+    readonly property color surfaceRaised:   "#24272d"
+    readonly property color surfaceHover:    "#2d3037"
+    readonly property color surfacePressed:  "#353941"
+    readonly property color surfaceSelected: "#30343c"
+    readonly property color surfaceSunken:   "#0d0e11"
     readonly property color scrim:           "#cc070707"
 
     // Aliases kept so a component can say what it means.
     readonly property color surfaceElevated: surfaceRaised
     readonly property color panel:           backgroundSoft
 
-    readonly property color borderSubtle: "#303239"
-    readonly property color border:       "#3d4049"
-    readonly property color borderStrong: "#535761"
+    readonly property color borderSubtle: "#292d34"
+    readonly property color border:       "#393e47"
+    readonly property color borderStrong: "#4c525d"
 
     // ------------------------------------------------------ liquid glass
     // Cross-platform approximation of the macOS material vocabulary. The
     // values deliberately stay neutral; accent is reserved for focus/action.
-    readonly property color glassTint:        "#2a2b2f"
-    readonly property color glassTintStrong:  "#323338"
-    readonly property color glassTintHover:   "#3a3b40"
+    readonly property color glassTint:        "#27292e"
+    readonly property color glassTintStrong:  "#303238"
+    readonly property color glassTintHover:   "#383b42"
     readonly property color glassEdge:        Qt.rgba(1, 1, 1, 0.10)
     readonly property color glassEdgeStrong:  Qt.rgba(1, 1, 1, 0.18)
     readonly property color glassInner:       Qt.rgba(1, 1, 1, 0.045)
@@ -56,8 +56,8 @@ QtObject {
     readonly property real glassStrongOpacity: 0.88
 
     readonly property color textPrimary:   "#f1f3f7"
-    readonly property color textSecondary: "#c4c8d1"
-    readonly property color textMuted:     "#a0a6b2"
+    readonly property color textSecondary: "#c9cdd5"
+    readonly property color textMuted:     "#9ba2ae"
     readonly property color textDisabled:  "#6a6a64"
     readonly property color textInverse:   "#111111"
 

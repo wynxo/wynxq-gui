@@ -35,7 +35,7 @@ Item {
         height: root.editing ? editColumn.implicitHeight + Theme.s4 * 2
                              : Math.max(44, displayColumn.implicitHeight + Theme.s3 * 2)
         radius: Theme.r3
-        color: Theme.surfaceRaised
+        color: root.editing ? Theme.surfaceRaised : Theme.surface
         border.width: 1
         border.color: root.editing ? Theme.accentEdge : Theme.borderSubtle
 

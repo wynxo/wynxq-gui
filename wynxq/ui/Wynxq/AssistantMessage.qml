@@ -238,13 +238,13 @@ Item {
             id: actions
             objectName: "responseActions"
             width: parent.width
-            height: 22
+            height: 28
             visible: !root.streaming && root.body.length > 0
-            opacity: hover.hovered || activeFocus ? 1 : root.latest ? 0.34 : 0
+            opacity: hover.hovered || activeFocus ? 1 : root.latest ? 0.56 : 0
             Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
             RowLayout {
                 anchors.fill: parent
-                spacing: 0
+                spacing: 2
                 IconButton {
                     Layout.preferredWidth: 26; Layout.preferredHeight: 26; iconSize: 12
                     iconName: "copy"; tooltip: "Copy response"

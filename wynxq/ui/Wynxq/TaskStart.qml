@@ -65,12 +65,12 @@ Item {
 
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: root.showSculpture ? 138 : 0
+            Layout.preferredHeight: root.showSculpture ? 118 : 0
             visible: root.showSculpture
             ChromeMark {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: 158
-                height: 138
+                width: 132
+                height: 118
             }
         }
 
@@ -109,9 +109,9 @@ Item {
             wrapMode: Text.Wrap
             color: Theme.textPrimary
             font.family: Theme.sansFamily
-            font.pixelSize: root.width < 560 ? 24 : 32
+            font.pixelSize: root.width < 560 ? 23 : 30
             font.weight: Font.Medium
-            font.letterSpacing: -0.45
+            font.letterSpacing: -0.35
         }
 
         Text {
@@ -131,8 +131,8 @@ Item {
         UsageHeatmap {
             visible: root.showSculpture
             Layout.topMargin: visible ? Theme.s3 : 0
-            Layout.preferredWidth: Math.min(360, root.width)
-            Layout.maximumWidth: 360
+            Layout.preferredWidth: Math.min(328, root.width)
+            Layout.maximumWidth: 328
             Layout.alignment: Qt.AlignHCenter
         }
     }
