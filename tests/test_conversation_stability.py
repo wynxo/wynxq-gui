@@ -35,6 +35,13 @@ def test_keyboard_can_reveal_actions_and_copy_an_older_answer(measured):
     assert measured["keyboard_copied_answer"]
 
 
+def test_short_answer_actions_stay_directly_below_the_text(measured):
+    # Theme.s2 is 8 px; allow one extra spacing unit for platform rounding.
+    assert 0 <= measured["short_answer_action_gap"] <= 16, measured
+    assert measured["short_answer_actions_offset"] < 96, measured
+    assert measured["short_answer_height"] < 128, measured
+
+
 def test_following_survives_a_shrinking_viewport(measured):
     assert measured["initial_at_bottom"], measured["initial_geometry"]
     assert measured["resize_at_bottom"], measured["resized_geometry"]

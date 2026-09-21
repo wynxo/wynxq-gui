@@ -15,6 +15,12 @@ TextEdit {
     property bool streaming: false
     signal linkClicked(string link)
 
+    // Rich TextEdit can otherwise keep a stale externally-assigned height
+    // after its document becomes shorter. Its geometry is always the rendered
+    // document, which keeps the response toolbar immediately after the prose.
+    implicitHeight: Math.ceil(contentHeight)
+    height: implicitHeight
+
     textFormat: TextEdit.RichText
     readOnly: true
     selectByMouse: true

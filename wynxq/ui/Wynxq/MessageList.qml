@@ -80,7 +80,9 @@ ListView {
         }
 
         width: list.width
-        height: loader.implicitHeight
+        // The delegate follows the loaded turn's natural content height. Do
+        // not let a transient Loader height become permanent ListView padding.
+        height: loader.item ? Math.ceil(loader.item.implicitHeight) : 0
         ListView.onPooled: {
             if (loader.item && loader.item.resetTransientState)
                 loader.item.resetTransientState();
@@ -92,6 +94,7 @@ ListView {
             // breathe without turning every normal answer into a wide page.
             width: Math.min(parent.width - Theme.s4,
                             rowItem.wideAnswer ? Theme.wideReadingWidth : Theme.readingWidth)
+            height: item ? Math.ceil(item.implicitHeight) : 0
             anchors.horizontalCenter: parent.horizontalCenter
             sourceComponent: kind === "user" ? userTurn : kind === "activity" ? activityTurn : assistantTurn
         }

@@ -27,7 +27,10 @@ Item {
     signal linkClicked(string link)
     signal branched()
 
-    implicitHeight: column.implicitHeight
+    // Keep the turn content-sized. A Loader/ListView must never stretch a
+    // short response to the viewport and strand its actions at the bottom.
+    implicitHeight: Math.ceil(column.implicitHeight)
+    height: implicitHeight
     property bool thoughtOpen: false
     function resetTransientState() {
         thoughtOpen = false;
@@ -140,6 +143,9 @@ Item {
             delegate: Loader {
                 required property var modelData
                 width: column.width
+                // Loader's implicit sizing can temporarily inherit the delegate
+                // viewport during rich-text relayout. Pin it to the loaded block.
+                height: item ? Math.ceil(item.implicitHeight) : 0
                 sourceComponent: modelData.kind === "code" ? codeBlock : proseBlock
                 onLoaded: {
                     item.blockText = modelData.text;
@@ -155,6 +161,7 @@ Item {
         Loader {
             width: column.width
             active: root.tail.length > 0
+            height: active && item ? Math.ceil(item.implicitHeight) : 0
             sourceComponent: root.tailKind === "code" ? codeBlock : proseBlock
             onLoaded: {
                 item.blockText = Qt.binding(function() { return root.tail; });
@@ -228,7 +235,9 @@ Item {
             id: actions
             objectName: "responseActions"
             width: parent.width
-            height: 22
+            // Match the button hit area so the lane itself does not clip or
+            // create misleading extra space below the response.
+            height: 26
             visible: !root.streaming && root.body.length > 0
             opacity: hover.hovered || activeFocus ? 1 : root.latest ? 0.34 : 0
             Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }

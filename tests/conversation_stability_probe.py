@@ -90,9 +90,42 @@ def main():
             result["keyboard_copied_answer"] = app.clipboard().text() == answer.property("body")
 
         window.setProperty("conversation", True)
+        listing = window.findChild(QObject, "messages")
+
+        # Reproduce the compact-answer case from the desktop UI: a one-line
+        # assistant response must keep its action row directly under the text,
+        # not stretch the delegate to the viewport height.
+        controller.messages.replace([{
+            "role": "assistant",
+            "content": "A short answer should keep its actions right below this text.",
+        }])
+        QMetaObject.invokeMethod(listing, "jumpToEnd")
+        QTest.qWait(350)
+        assistant_turns = [obj for obj in visual_descendants(listing)
+                           if obj.metaObject().className().startswith("AssistantMessage_")]
+        assert assistant_turns, "short assistant delegate was not instantiated"
+        short_answer = assistant_turns[0]
+        short_actions = short_answer.findChild(QObject, "responseActions")
+        prose_items = [obj for obj in visual_descendants(short_answer)
+                       if obj.metaObject().className().startswith("Markdown_")]
+        assert short_actions and prose_items, "short response content/actions were not instantiated"
+        short_prose = prose_items[0]
+        answer_pos = short_answer.mapToScene(QPointF(0, 0))
+        action_pos = short_actions.mapToScene(QPointF(0, 0))
+        prose_pos = short_prose.mapToScene(QPointF(0, 0))
+        result["short_answer_height"] = float(short_answer.property("implicitHeight"))
+        result["short_answer_actions_offset"] = float(action_pos.y() - answer_pos.y())
+        result["short_answer_action_gap"] = float(
+            action_pos.y() - (prose_pos.y() + short_prose.height()))
+        if os.environ.get("WYNXQ_STABILITY_SCREENSHOTS"):
+            target = Path(os.environ["WYNXQ_STABILITY_SCREENSHOTS"])
+            target.mkdir(parents=True, exist_ok=True)
+            assert window.grabWindow().save(str(target / "response-actions.png"))
+
+        controller.messages.replace([])
+        QTest.qWait(100)
         for index in range(35):
             controller.messages.append_message("user", f"Message {index}: " + "read this earlier turn. " * 5)
-        listing = window.findChild(QObject, "messages")
         QMetaObject.invokeMethod(listing, "jumpToEnd")
         QTest.qWait(400)
         result["initial_at_bottom"] = listing.property("atBottom")

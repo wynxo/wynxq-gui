@@ -182,6 +182,8 @@ jobs:
           python tests/token_usage_snapshot.py "$WYNXQ_SCREENSHOT_DIR/token-usage-idle.png" idle
       - name: Render compact conversation
         run: python -m wynxq --ui-preview conversation --size 760x640 --screenshot "$WYNXQ_SCREENSHOT_DIR/compact-chat.png"
+      - name: Render response-layout regression
+        run: WYNXQ_STABILITY_SCREENSHOTS="$WYNXQ_SCREENSHOT_DIR/regressions" python tests/conversation_stability_probe.py
       - name: Check every scene rendered
         run: |
           count=$(ls "$WYNXQ_SCREENSHOT_DIR"/screenshots/*.png | wc -l)
@@ -190,6 +192,7 @@ jobs:
           test -s "$WYNXQ_SCREENSHOT_DIR/token-usage-live.png" || { echo "live token usage snapshot missing"; exit 1; }
           test -s "$WYNXQ_SCREENSHOT_DIR/token-usage-idle.png" || { echo "idle token usage snapshot missing"; exit 1; }
           test -s "$WYNXQ_SCREENSHOT_DIR/compact-chat.png" || { echo "compact chat snapshot missing"; exit 1; }
+          test -s "$WYNXQ_SCREENSHOT_DIR/regressions/response-actions.png" || { echo "response action regression snapshot missing"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: wynxq-screenshots
