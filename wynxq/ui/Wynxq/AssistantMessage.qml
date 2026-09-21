@@ -238,7 +238,7 @@ Item {
             id: actions
             objectName: "responseActions"
             width: parent.width
-            height: 28
+            height: 22
             visible: !root.streaming && root.body.length > 0
             opacity: hover.hovered || activeFocus ? 1 : root.latest ? 0.56 : 0
             Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
