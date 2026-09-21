@@ -41,7 +41,7 @@ _TRIVIAL_PHRASES = {
 
 def _trivial_turn(value: str) -> bool:
     text = " ".join(str(value or "").split()).casefold()
-    words = re.findall(r"[^\\W_]+", text, re.UNICODE)
+    words = re.findall(r"[^\W_]+", text, re.UNICODE)
     if not words:
         return True
     phrase = " ".join(words)
