@@ -35,6 +35,11 @@ def _terms(value: str) -> set[str]:
     return terms
 
 
+def explicit_recall(query: str) -> bool:
+    """Whether the user explicitly asked to reach back into older chats."""
+    return bool(_CUE.search(str(query or "")))
+
+
 
 def _real_user_text(message: dict) -> str:
     if not isinstance(message, dict) or message.get("role") != "user":
@@ -138,9 +143,13 @@ def recall(store, query: str, *, exclude_id: str = "", limit: int = 3,
     return result
 
 
-def prompt(store, query: str, *, exclude_id: str = "") -> str:
+def prompt(store, query: str, *, exclude_id: str = "",
+           conversation_limit: int | None = None) -> str:
     """Format bounded recall as untrusted historical background."""
-    items = recall(store, query, exclude_id=exclude_id)
+    items = recall(
+        store, query, exclude_id=exclude_id,
+        conversation_limit=conversation_limit,
+    )
     if not items:
         return ""
 

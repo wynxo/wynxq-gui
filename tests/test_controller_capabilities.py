@@ -81,6 +81,27 @@ def test_capability_probe_ignores_stale_model_results(monkeypatch):
     assert bridge.modelContextLength == 32768
 
 
+def test_capability_probe_reuses_session_cache_without_another_job(monkeypatch):
+    bridge = controller()
+    bridge._online = True
+    bridge._models = ["local:test"]
+    bridge._model = "local:test"
+    bridge._model_capability_cache[(bridge._endpoint, "local:test")] = {
+        "capabilities": ["completion", "tools"],
+        "context_length": 32768,
+    }
+
+    def unexpected_job(*args, **kwargs):
+        raise AssertionError("cached capability metadata should not start a job")
+
+    monkeypatch.setattr(bridge, "_job", unexpected_job)
+    bridge._refresh_model_capabilities()
+
+    assert bridge.modelCapabilities == ["completion", "tools"]
+    assert bridge.modelContextLength == 32768
+    assert bridge.modelCapabilitiesLoading is False
+
+
 def test_capability_probe_reads_selected_model_without_blocking_controller(monkeypatch):
     bridge = controller()
     bridge._online = True

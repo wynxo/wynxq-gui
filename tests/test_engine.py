@@ -72,16 +72,17 @@ def test_real_http_protocol_models_show_chat_pull(ollama_server):
     assert list(client.pull("local:test", threading.Event()))[-1]["status"] == "success"
 
 
-def test_generate_title_uses_tool_free_local_chat_and_cleans_response(monkeypatch):
+def test_generate_title_uses_cancellable_tool_free_stream_and_cleans_response(monkeypatch):
     client = OllamaClient()
     captured = {}
 
-    def fake_json(method, path, payload=None):
-        captured.update({"method": method, "path": path, "payload": payload})
-        return {"message": {"role": "assistant",
-                            "content": "### Title: “Fix Wayland Mouse Control.”\nExtra explanation"}}
+    def fake_stream(payload, cancel):
+        captured.update(payload)
+        yield {"message": {"role": "assistant",
+                           "content": "### Title: “Fix Wayland Mouse Control.”\nExtra explanation"},
+               "done": True}
 
-    monkeypatch.setattr(client, "_json", fake_json)
+    monkeypatch.setattr(client, "stream_chat", fake_stream)
     title = client.generate_title(
         "local:test",
         "the mouse click lands in the wrong place",
@@ -90,11 +91,10 @@ def test_generate_title_uses_tool_free_local_chat_and_cleans_response(monkeypatc
     )
 
     assert title == "Fix Wayland Mouse Control"
-    assert captured["method"] == "POST"
-    assert captured["path"] == "/api/chat"
-    assert captured["payload"]["stream"] is False
-    assert "tools" not in captured["payload"]
-    assert captured["payload"]["options"]["num_predict"] == 32
+    assert captured["think"] is False
+    assert "tools" not in captured
+    assert captured["options"]["num_predict"] == 32
+    assert captured["options"]["num_ctx"] == 4096
 
 
 def test_redirects_are_rejected(ollama_server):
@@ -193,6 +193,41 @@ def run(client, desktop=None, cancel=None, **kwargs):
     history = AgentEngine(client, desktop).run(messages, "local:test", kwargs.pop("desktop_enabled", True),
         cancel or threading.Event(), events.append, **kwargs)
     return history, events, desktop
+
+
+def test_supplied_capabilities_skip_the_per_turn_show_probe():
+    class NoProbe(FakeClient):
+        def capabilities(self, model):
+            raise AssertionError("cached capabilities should avoid /api/show")
+
+    client = NoProbe([response("Hello.")])
+    history, events, _ = run(
+        client, desktop_enabled=False,
+        model_capabilities=["completion", "tools"],
+    )
+
+    assert history[-1]["content"] == "Hello."
+    assert not any(
+        event.get("type") == "status"
+        and "Checking model capabilities" in event.get("text", "")
+        for event in events
+    )
+
+
+def test_plain_chat_without_tools_thinking_or_images_needs_no_capability_probe():
+    class NoProbe(FakeClient):
+        def capabilities(self, model):
+            raise AssertionError("plain chat should not need /api/show")
+
+    client = NoProbe([response("Fast hello.")])
+    history, _, _ = run(
+        client,
+        desktop_enabled=False,
+        tools_allowed=False,
+        think=False,
+    )
+
+    assert history[-1]["content"] == "Fast hello."
 
 
 def test_tool_roundtrip_preserves_thinking_calls_and_image():

@@ -336,6 +336,7 @@ def _maybe_generate_task_title(self, task_id: str, history: list[dict], state: d
 
     def settled():
         self._title_generating.discard(task_id)
+        self._title_jobs.pop(task_id, None)
 
     def generated(title):
         settled()
@@ -359,12 +360,13 @@ def _maybe_generate_task_title(self, task_id: str, history: list[dict], state: d
         # The deterministic first-message title remains a perfectly usable fallback.
         settled()
 
-    self._job(
+    job = self._job(
         lambda cancel, emit: self._ollama_client(endpoint).generate_title(
             model, user_excerpt, assistant_excerpt, cancel),
         generated,
         failed,
     )
+    self._title_jobs[task_id] = job
 
 
 @Slot(str)

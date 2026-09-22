@@ -240,7 +240,7 @@ def _run_done(self, history, task_id=None):
         if not stopped and not state.get("error"):
             self._maybe_notify(elapsed)
     if not stopped and not state.get("error"):
-        self._maybe_generate_task_title(task_id, state["history"], state)
+        self._schedule_memory_learning(task_id, state["history"], state)
     self._refresh_tasks()
 
 

@@ -206,6 +206,9 @@ class Controller(QObject):
             self.desktop.set_stop_handler(self.stopRequested.emit)
         self._jobs: set[Job] = set()
         self._title_generating: set[str] = set()
+        self._title_jobs: dict[str, Job] = {}
+        self._memory_learning_jobs: dict[str, Job] = {}
+        self._model_capability_cache: dict[tuple[str, str], dict] = {}
         self._run_sessions = {}
         self._run_job: Job | None = None
         self._pull_job: Job | None = None
@@ -347,6 +350,8 @@ class Controller(QObject):
     openTerminalHere = _context_ops.openTerminalHere
 
     # generation/permissions/desktop operations
+    _cancel_background_inference = _generation_ops._cancel_background_inference
+    _schedule_memory_learning = _generation_ops._schedule_memory_learning
     _launch_run = _generation_ops._launch_run
     _start_run = _generation_ops._start_run
     _resume_pending_followup = _generation_ops._resume_pending_followup

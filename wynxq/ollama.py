@@ -153,7 +153,7 @@ class OllamaClient:
             raise ValueError("A user message and assistant reply are required for a title")
         payload = {
             "model": model,
-            "stream": False,
+            "think": False,
             "messages": [
                 {
                     "role": "system",
@@ -170,13 +170,17 @@ class OllamaClient:
                                + "\n\nASSISTANT:\n" + assistant_text,
                 },
             ],
-            "options": {"temperature": 0.2, "num_predict": 32},
+            "options": {"temperature": 0.2, "num_predict": 32, "num_ctx": 4096},
         }
-        data = _interruptible(lambda: self._json("POST", "/api/chat", payload), cancel)
-        message = data.get("message") or {}
-        if not isinstance(message, dict):
-            raise OllamaError("Ollama returned an invalid title response")
-        return self._clean_generated_title(message.get("content", ""))
+        pieces = []
+        for chunk in self.stream_chat(payload, cancel):
+            message = chunk.get("message") or {}
+            if not isinstance(message, dict):
+                raise OllamaError("Ollama returned an invalid title response")
+            pieces.append(str(message.get("content") or ""))
+        if _stopped(cancel):
+            raise Cancelled("Stopped")
+        return self._clean_generated_title("".join(pieces))
 
     def memory_json(self, model: str, system: str, data: dict, schema: dict,
                     *, cancel=None, num_ctx=16384) -> dict:
@@ -187,11 +191,12 @@ class OllamaClient:
         """
         if _cloud_name(model):
             raise OllamaError("Cloud models are disabled in Wynxq GUI.")
+        num_ctx = max(2048, min(int(num_ctx), 8192))
         payload = {
             "model": model, "stream": True, "think": False, "format": schema,
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": json.dumps(data, ensure_ascii=False)}],
-            "options": {"temperature": 0, "num_predict": min(2048, max(256, num_ctx // 4)), "num_ctx": num_ctx},
+            "options": {"temperature": 0, "num_predict": min(768, max(256, num_ctx // 8)), "num_ctx": num_ctx},
         }
         pieces = []
         for chunk in self.stream_chat(payload, cancel):

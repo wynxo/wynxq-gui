@@ -55,7 +55,8 @@ class AgentEngine:
             num_ctx: int = 16384, temperature: float = 0.7, keep_alive: str = "5m",
             permission_mode: str | Callable[[], str] = SAFE, project: str = "",
             confirm: Callable[[str, dict, str], bool] | None = None,
-            tools_allowed: bool = True) -> list[dict]:
+            tools_allowed: bool = True,
+            model_capabilities: list[str] | tuple[str, ...] | set[str] | None = None) -> list[dict]:
         """Answer the conversation, running tools until the model stops asking.
 
         tools_allowed is Chat mode's switch. With it off the model gets no
@@ -93,10 +94,32 @@ class AgentEngine:
         try:
             if _stopped(cancel):
                 raise Cancelled("Stopped")
-            event("status", text="Checking model capabilities…")
-            capabilities = set(_interruptible(lambda: self.client.capabilities(model), cancel))
-            if _stopped(cancel):
-                raise Cancelled("Stopped")
+            needs_capability_probe = (
+                model_capabilities is None
+                and (
+                    tools_allowed
+                    or think
+                    or any(message.get("images") for message in history)
+                )
+            )
+            if model_capabilities is not None:
+                capabilities = {
+                    str(capability).strip().lower()
+                    for capability in model_capabilities
+                    if str(capability).strip()
+                }
+            elif needs_capability_probe:
+                event("status", text="Checking model capabilities…")
+                capabilities = set(
+                    _interruptible(lambda: self.client.capabilities(model), cancel)
+                )
+                if _stopped(cancel):
+                    raise Cancelled("Stopped")
+            else:
+                # Plain chat with no thinking or images does not need /api/show
+                # before the first token. Completion support is implicit because
+                # the selected model already came from Ollama's local catalogue.
+                capabilities = {"completion"}
 
             status = self.desktop.status() if self.desktop else {}
             model_has_tools = "tools" in capabilities

@@ -165,6 +165,17 @@ def _refresh_model_capabilities(self):
         self._capability_probe_active = False
         self.changed.emit()
         return
+
+    cached = self._model_capability_cache.get((endpoint, model))
+    if cached is not None:
+        self._capability_probe_active = False
+        self._model_capabilities = list(cached.get("capabilities", []))
+        self._model_context_length = int(cached.get("context_length", 0) or 0)
+        self._capability_error = ""
+        self._decorate_catalog()
+        self.changed.emit()
+        return
+
     self._capability_probe_active = True
     self.changed.emit()
 
@@ -178,6 +189,10 @@ def _refresh_model_capabilities(self):
         })
         self._model_context_length = int(described.get("context_length", 0) or 0)
         self._capability_error = ""
+        self._model_capability_cache[(endpoint, model)] = {
+            "capabilities": list(self._model_capabilities),
+            "context_length": self._model_context_length,
+        }
         self._decorate_catalog()
         self.changed.emit()
 

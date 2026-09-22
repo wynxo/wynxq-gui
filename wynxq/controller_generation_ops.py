@@ -38,8 +38,82 @@ from .controller_support import (
     _bounded_int, _human_bytes,
 )
 
+def _cancel_background_inference(self) -> None:
+    """Give foreground generation priority over optional model housekeeping."""
+    for jobs in (self._memory_learning_jobs, self._title_jobs):
+        for job in list(jobs.values()):
+            job.cancel.set()
+
+
+def _schedule_memory_learning(self, task_id: str, history: list[dict], state: dict) -> None:
+    """Learn durable facts after the visible reply, then generate a title."""
+    task_id = str(task_id or "")
+    if not task_id:
+        return
+    if not self._memory_enabled:
+        self._maybe_generate_task_title(task_id, history, state)
+        return
+
+    previous = self._memory_learning_jobs.get(task_id)
+    if previous is not None:
+        previous.cancel.set()
+
+    endpoint = str(state.get("endpoint") or self._endpoint)
+    model = str(state.get("model") or self._model)
+    project = str(state.get("project") or "")
+    source_history = [dict(message) for message in history]
+    memory_num_ctx = min(int(self._num_ctx), 8192)
+    service = MemoryService(
+        self._ollama_client(endpoint), self.memory, self.store, task_id,
+        memory_enabled=lambda: self._memory_enabled,
+        history_enabled=lambda: self._reference_chat_history,
+    )
+
+    def settled():
+        self._memory_learning_jobs.pop(task_id, None)
+
+    def title_if_idle():
+        session = self._run_sessions.get(task_id)
+        if not session or not session.get("busy"):
+            self._maybe_generate_task_title(task_id, history, state)
+
+    def done(_changed):
+        settled()
+        title_if_idle()
+
+    def failed(message):
+        settled()
+        if str(message or "") in {"", "Stopped"}:
+            return
+        self.toast.emit(
+            "Automatic memory could not finish in the background. "
+            "Your existing saved notes are unchanged."
+        )
+        title_if_idle()
+
+    def on_event(event):
+        kind = str(event.get("type", ""))
+        if kind == "memory_changed":
+            self.memoryChanged.emit()
+        elif kind == "memory_warning":
+            self.toast.emit(str(event.get(
+                "text", "Automatic memory is unavailable for this turn."
+            )))
+
+    job = self._job(
+        lambda cancel, emit: service.learn(
+            source_history, model, project, cancel, emit, memory_num_ctx
+        ),
+        done,
+        failed,
+        on_event,
+    )
+    self._memory_learning_jobs[task_id] = job
+
+
 def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
                 desktop_enabled=None, project=None, extras=None):
+    _cancel_background_inference(self)
     task_id = str(self._task_id or "")
     if not task_id:
         raise RuntimeError("A conversation must exist before generation starts")
@@ -102,12 +176,19 @@ def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
     # context or compacts it. This callback runs on the model worker, not Qt.
     original_history = [dict(message) for message in history]
     engine.prepare_memory = lambda _history, model, project, cancel, emit, num_ctx: (
-        memory_service.prepare(original_history, model, project, cancel, emit, num_ctx)
+        memory_service.prepare(
+            original_history, model, project, cancel, emit, num_ctx, learn=False
+        )
     )
     enabled = self.desktopEnabled if desktop_enabled is None else bool(desktop_enabled)
     think = self._think
     num_ctx, temperature = self._num_ctx, self._temperature
     keep_alive, max_steps = self._keep_alive, self._max_steps
+    model_capabilities = (
+        tuple(self._model_capabilities)
+        if self._model_capabilities and not self._capability_probe_active
+        else None
+    )
 
     def permission_mode():
         current = self._permission_mode
@@ -124,7 +205,8 @@ def _launch_run(self, history, engine_class=AgentEngine, *, tools_allowed=True,
             project=state["project"],
             confirm=lambda name, args, risk: self._confirm_action_for(
                 task_id, name, args, risk),
-            tools_allowed=bool(tools_allowed)),
+            tools_allowed=bool(tools_allowed),
+            model_capabilities=model_capabilities),
         lambda result: self._run_done(result, task_id),
         lambda message: self._run_failed(message, task_id),
         lambda event: self._on_event(event, task_id),

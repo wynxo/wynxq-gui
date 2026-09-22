@@ -107,6 +107,43 @@ def test_small_talk_skips_automatic_memory_work(tmp_path, text):
     svc.store.close()
 
 
+def test_fast_prepare_reads_context_without_hidden_model_generation(tmp_path):
+    client = Model([decision('Should not be learned yet', 'I use KDE Plasma')])
+    svc = service(tmp_path, client)
+    svc.memory.remember('User uses KDE Plasma.')
+    remembered, recalled = svc.prepare(
+        [{'role': 'user', 'content': 'How should I configure KDE?'}],
+        'local:test', '', threading.Event(), lambda event: None,
+        learn=False,
+    )
+
+    assert 'User uses KDE Plasma.' in remembered
+    assert recalled == ''
+    assert client.requests == []
+    assert svc.memory.notes() == ['User uses KDE Plasma.']
+    svc.store.close()
+
+
+def test_background_learn_updates_memory_without_retrieval_selection(tmp_path):
+    source = 'I prefer working in a quiet room.'
+    fact = 'User prefers working in a quiet room.'
+    client = Model([decision(fact, source)])
+    svc = service(tmp_path, client, reference=lambda: False)
+    events = []
+
+    changed = svc.learn(
+        [{'role': 'user', 'content': source}],
+        'local:test', '', threading.Event(), events.append,
+    )
+
+    assert changed == 1
+    assert svc.memory.notes() == [fact]
+    assert len(client.requests) == 1
+    assert client.requests[0]['latest_user_message'] == source
+    assert any(event.get('type') == 'memory_changed' for event in events)
+    svc.store.close()
+
+
 def test_memory_preparation_does_not_replace_visible_run_status(tmp_path):
     source = 'I prefer working in a quiet room.'
     client = Model([decision('User prefers working in a quiet room.', source)])
@@ -229,10 +266,11 @@ def test_actual_chat_controller_runs_memory_inference_and_passes_it_to_next_chat
 
     def settle():
         deadline = time.monotonic() + 4
-        while bridge.busy and time.monotonic() < deadline:
+        while (bridge.busy or bridge._memory_learning_jobs) and time.monotonic() < deadline:
             app.processEvents()
             time.sleep(0.005)
         assert not bridge.busy
+        assert not bridge._memory_learning_jobs
 
     bridge.send(text)
     settle()
