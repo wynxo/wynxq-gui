@@ -29,12 +29,12 @@ from .agent_tools import (
 from .agent_prompt import _CHAT_SYSTEM, _SYSTEM, build_system_prompt
 from .engine_support import (
     _ThinkingTextRouter, _normalise_assistant_channels, append_screen,
-    prepare_background, fresh_history, model_history,
+    prepare_background, fresh_history, model_history, resolve_model_capabilities,
 )
 from .memory import GLOBAL as MEMORY_GLOBAL
 from .ollama import (
     DEFAULT_ENDPOINT, DEFAULT_MODEL, Cancelled, OllamaClient, OllamaError,
-    _interruptible, _stopped, validate_endpoint,
+    _stopped, validate_endpoint,
 )
 from .tool_execution import ToolExecutor
 
@@ -94,32 +94,7 @@ class AgentEngine:
         try:
             if _stopped(cancel):
                 raise Cancelled("Stopped")
-            needs_capability_probe = (
-                model_capabilities is None
-                and (
-                    tools_allowed
-                    or think
-                    or any(message.get("images") for message in history)
-                )
-            )
-            if model_capabilities is not None:
-                capabilities = {
-                    str(capability).strip().lower()
-                    for capability in model_capabilities
-                    if str(capability).strip()
-                }
-            elif needs_capability_probe:
-                event("status", text="Checking model capabilities…")
-                capabilities = set(
-                    _interruptible(lambda: self.client.capabilities(model), cancel)
-                )
-                if _stopped(cancel):
-                    raise Cancelled("Stopped")
-            else:
-                # Plain chat with no thinking or images does not need /api/show
-                # before the first token. Completion support is implicit because
-                # the selected model already came from Ollama's local catalogue.
-                capabilities = {"completion"}
+            capabilities = resolve_model_capabilities(self.client, history, model, cancel, event, think, tools_allowed, model_capabilities)
 
             status = self.desktop.status() if self.desktop else {}
             model_has_tools = "tools" in capabilities

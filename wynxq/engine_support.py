@@ -11,6 +11,27 @@ import copy
 _SCREEN_PREFIX = "Current desktop screenshot ("
 
 
+def resolve_model_capabilities(client, history, model, cancel, event, think,
+                               tools_allowed, known):
+    """Resolve model features without repeating /api/show on every chat turn."""
+    from .ollama import Cancelled, _interruptible, _stopped
+
+    if known is not None:
+        return {
+            str(capability).strip().lower()
+            for capability in known
+            if str(capability).strip()
+        }
+    if not (tools_allowed or think or any(message.get("images") for message in history)):
+        return {"completion"}
+
+    event("status", text="Checking model capabilities…")
+    capabilities = set(_interruptible(lambda: client.capabilities(model), cancel))
+    if _stopped(cancel):
+        raise Cancelled("Stopped")
+    return capabilities
+
+
 class _ThinkingTextRouter:
     """Separate tagged reasoning embedded in normal Ollama content."""
 
