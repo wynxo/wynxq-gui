@@ -193,7 +193,7 @@ jobs:
           test -s "$WYNXQ_SCREENSHOT_DIR/token-usage-idle.png" || { echo "idle token usage snapshot missing"; exit 1; }
           test -s "$WYNXQ_SCREENSHOT_DIR/compact-chat.png" || { echo "compact chat snapshot missing"; exit 1; }
           test -s "$WYNXQ_SCREENSHOT_DIR/regressions/response-actions.png" || { echo "response action regression snapshot missing"; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wynxq-screenshots
           path: /tmp/wynxq-ui-artifacts
