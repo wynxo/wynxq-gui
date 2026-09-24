@@ -249,3 +249,6 @@ def _refresh_project_instructions(self) -> None:
         self._project_instructions_summary = fresh
         self.contextStateChanged.emit()
         self.changed.emit()
+
+
+__all__ = ['setDraft']

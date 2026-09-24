@@ -515,3 +515,6 @@ def regenerateWithPreset(self, name):
         return
     self.applyRuntimePreset(name)
     self.regenerate()
+
+
+__all__ = ['setSearch', 'openAdjacentTask', 'setDraft', 'newTask', 'openTask', 'deleteTask', 'renameTaskById', 'duplicateTaskById', 'duplicateTask', 'clearTask', 'togglePin', 'branchFrom', 'editMessage', 'regenerate', 'regenerateWithPreset']

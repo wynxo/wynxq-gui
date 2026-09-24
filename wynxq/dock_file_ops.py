@@ -182,3 +182,6 @@ def revertFileBuffer(self):
     if self._viewer_dirty:
         self._viewer_dirty = False
     self.viewerChanged.emit()
+
+
+__all__ = ['setShowHidden', 'setFileFilter', 'refreshFiles', 'toggleFolder', 'revealFile', 'openFile', 'closeFile', 'setFileBuffer', 'saveFile', 'revertFileBuffer']

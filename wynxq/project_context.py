@@ -187,3 +187,6 @@ def strip(messages: list[dict]) -> list[dict]:
     return [message for message in list(messages or [])
             if not (message.get("role") == "system"
                     and str(message.get("content", "")).startswith(PROJECT_CONTEXT_PREFIX))]
+
+
+__all__ = ['inspect_project', 'snapshot', 'inject', 'strip', 'PROJECT_CONTEXT_PREFIX', 'MAX_SCAN_ENTRIES', 'MAX_SCAN_DEPTH', 'MAX_TOP_LEVEL', 'MAX_PROMPT_CHARS']

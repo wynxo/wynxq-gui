@@ -357,3 +357,6 @@ class OllamaClient:
         if _cloud_name(model.strip()):
             raise OllamaError("Cloud models are disabled in Wynxq GUI. Download a local model instead.")
         yield from self._stream("/api/pull", {"model": model.strip(), "stream": True}, cancel)
+
+
+__all__ = ['Cancelled', 'OllamaClient', 'OllamaError', 'validate_endpoint']

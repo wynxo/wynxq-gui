@@ -392,3 +392,6 @@ class Memory:
             if removed:
                 self._save(document.render())
         return {"ok": True, "forgotten": len(removed), "notes": removed[:10]}
+
+
+__all__ = ['Document', 'Memory', 'default_path', 'section_title']

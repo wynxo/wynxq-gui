@@ -244,3 +244,5 @@ def page_context(url: str, title: str, text: str) -> dict:
         "truncated": truncated,
         "secure": is_secure(url),
     }
+
+__all__ = ['engine_available', 'initialize', 'unavailable_reason', 'normalize', 'display_url', 'host_of', 'is_secure', 'is_local', 'page_context', 'ALLOWED_SCHEMES', 'DEFAULT_HOME', 'SEARCH_TEMPLATE', 'MAX_PAGE_TEXT']

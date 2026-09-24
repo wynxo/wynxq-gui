@@ -152,3 +152,6 @@ def analyze(client, model, source, dialogue, existing, project, cancel, num_ctx)
         "existing_memories": [{k: v for k, v in row.items() if not k.startswith("_")}
                               for row in existing],
     }, ANALYSIS_SCHEMA, cancel=cancel, num_ctx=num_ctx)
+
+
+__all__ = ['normalize', 'note_id', 'memory_candidates', 'validate_analysis', 'analyze', 'ANALYSIS_SYSTEM', 'ANALYSIS_SCHEMA']

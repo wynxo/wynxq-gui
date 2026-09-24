@@ -214,3 +214,6 @@ def shutdown(self):
     self.store.set_setting(self.ACTIVE_RUNS_KEY, [])
     self._workspace_shutdown = True
     Controller.shutdown(self, )
+
+
+__all__ = ['setTaskMode', 'newTaskMode', 'newTask', 'openTask', 'send', 'deleteTask', 'clearTask', 'duplicateTask', 'duplicateTaskById', 'branchFrom', 'shutdown']

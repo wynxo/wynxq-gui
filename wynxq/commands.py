@@ -87,3 +87,6 @@ def run_command(command: str, cwd: str = "", timeout: int = 60, cancel=None) -> 
     elif process.returncode:
         result["error"] = f"Command exited with status {process.returncode}"
     return result
+
+
+__all__ = ['run_command']

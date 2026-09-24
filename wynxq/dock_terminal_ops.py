@@ -141,3 +141,6 @@ def terminalText(self):
 def resizeTerminal(self, columns, rows):
     if self._shell is not None:
         self._shell.resize(columns, rows)
+
+
+__all__ = ['setTerminalPalette', 'startTerminal', 'restartTerminal', 'sendTerminal', 'writeTerminal', 'runInTerminal', 'interruptTerminal', 'clearTerminal', 'terminalText', 'resizeTerminal']

@@ -492,3 +492,5 @@ class DockController(QObject):
         return dict(self._preview)
 
     # ------------------------------------------------------------- lifecycle
+
+__all__ = ['DockController']

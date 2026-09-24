@@ -461,3 +461,6 @@ class ShellSession:
         if self.exit_code is None:
             self.exit_code = -1
         self.pid = 0
+
+
+__all__ = ['PTYShell']

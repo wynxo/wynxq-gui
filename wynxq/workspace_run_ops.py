@@ -289,3 +289,6 @@ def _run_failed(self, message, task_id=None):
         return
     Controller._run_failed(self, message, task_id)
     self._journal_active_run(task_id, False)
+
+
+__all__ = ['undoLastRun']

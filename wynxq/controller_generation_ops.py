@@ -345,3 +345,6 @@ def send(self, text):
         self.clearAttachments()
     self._start_run(list(self._history))
     self.scrollToEnd.emit()
+
+
+__all__ = ['send']

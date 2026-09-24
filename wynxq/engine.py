@@ -38,6 +38,7 @@ from .ollama import (
 )
 from .tool_execution import ToolExecutor
 
+__all__ = ["AgentEngine"]
 
 LOG = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ LOG = logging.getLogger(__name__)
 class AgentEngine:
     def __init__(self, client: OllamaClient, desktop, memory=None,
                  browser_open: Callable[[str], dict] | None = None):
+        """Create an engine with the given client, desktop controller, and optional memory."""
         self.client, self.desktop, self.memory = client, desktop, memory
         self.browser_open = browser_open
         self.prepare_memory = None

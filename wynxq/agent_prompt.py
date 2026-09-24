@@ -128,3 +128,6 @@ def build_system_prompt(*, tools_allowed: bool, tools_enabled: bool, visual: boo
     if recalled:
         system += "\n\n" + recalled
     return system
+
+
+__all__ = ['build_system_prompt']

@@ -654,3 +654,6 @@ SCENES = [
     ("25-system", "conversation", "system"),
     ("26-code-run", "work-run", ""),
 ]
+
+
+__all__ = ['DemoController', 'SCENES']

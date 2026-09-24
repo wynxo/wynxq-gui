@@ -76,3 +76,6 @@ def open_terminal(path: str = "") -> bool:
         except OSError:
             continue
     return False
+
+
+__all__ = ['available', 'send', 'should_notify', 'open_path', 'open_terminal', 'LOG', 'APP_ID', 'MIN_SECONDS', 'TERMINALS']

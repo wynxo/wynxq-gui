@@ -136,3 +136,6 @@ def shutdown(self) -> None:
         worker.finished.connect(lambda w=worker: _ORPHANED.discard(w))
     self._workers.clear()
     self._active_worker = None
+
+
+__all__ = ['navigate', 'browserStateChanged', 'browserLoadState', 'browserHistoryState', 'browserFailed', 'clearBrowser', 'attachPage', 'showPreview', 'clearPreview', 'shutdown']

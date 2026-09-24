@@ -111,3 +111,6 @@ def chooseProject(self):
     path = QFileDialog.getExistingDirectory(None, "Choose a project folder", start)
     if path and self._set_project(path):
         self.toast.emit(f"Working in {ctx.working_directory_label(path)}")
+
+
+__all__ = ['refreshTokenUsage', 'selectEndpoint', 'setEndpoint', 'chooseProject']

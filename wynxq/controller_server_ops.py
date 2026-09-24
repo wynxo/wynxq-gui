@@ -516,3 +516,6 @@ def resetOnboarding(self):
     self._onboarded = False
     self.store.set_setting("onboarded", False)
     self.changed.emit()
+
+
+__all__ = ['addEndpointProfile', 'removeEndpointProfile', 'setDefaultEndpoint', 'selectEndpoint', 'refreshModels', 'setModel', 'toggleFavoriteModel', 'deleteModel', 'applyRuntimePreset', 'saveRuntimeSettings', 'setTheme', 'setAccent', 'setDensity', 'setFlag', 'setEndpoint', 'completeOnboarding', 'resetOnboarding']

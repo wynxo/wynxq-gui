@@ -254,3 +254,6 @@ class WorkspaceController(Controller):
         if not count:
             return ""
         return f"Undo this run · {count} file{'s' if count != 1 else ''}"
+
+
+__all__ = ['WorkspaceController']

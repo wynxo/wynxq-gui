@@ -68,3 +68,6 @@ class WorkspaceOllamaClient(OllamaClient):
     """Ollama client whose endpoint policy permits explicit non-loopback origins."""
 
     endpoint_validator = staticmethod(validate_workspace_endpoint)
+
+
+__all__ = ['WorkspaceOllamaClient']

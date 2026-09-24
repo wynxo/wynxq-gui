@@ -394,3 +394,6 @@ def working_directory_label(path: str) -> str:
 
 def default_directory() -> str:
     return os.environ.get("XDG_DOCUMENTS_DIR") or str(Path.home())
+
+
+__all__ = ['ContextError']

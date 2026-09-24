@@ -195,3 +195,6 @@ def shutdown(self):
     for job in list(self._jobs):
         job.wait(2000)
     self.desktop.disconnect()
+
+
+__all__ = ['renderMarkdown', 'setHtmlPalette', 'highlight', 'setCodePalette', 'copyText', 'saveCode', 'copyAndOpenTerminal', 'exportTask', 'clearError', 'canClose', 'shutdown']

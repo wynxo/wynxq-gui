@@ -166,3 +166,6 @@ def absolutePath(self, relative):
         return str(files.resolve_within(self._project, str(relative)))
     except (OSError, ValueError):
         return ""
+
+
+__all__ = ['refreshChanges', 'openDiff', 'closeDiff', 'revertChange', 'absolutePath']

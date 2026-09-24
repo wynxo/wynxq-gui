@@ -230,3 +230,6 @@ def set_conversation_runtime(self, conversation_id: str, model: str | None = Non
             "UPDATE conversations SET " + ",".join(updates) + " WHERE id=?",
             values,
         )
+
+
+__all__ = ['create_conversation', 'list_conversations', 'search', 'get_conversation', 'rename_conversation', 'set_pinned', 'delete_conversation', 'get_messages', 'set_messages', 'set_conversation_runtime', 'LIST_SQL']

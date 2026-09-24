@@ -62,3 +62,6 @@ def serialized_io(function):
     def wrapped(*args, **kwargs):
         return _run_in_python_thread(function, args, kwargs)
     return wrapped
+
+
+__all__ = ['serialized_io']

@@ -93,3 +93,6 @@ def summary(project: str | Path) -> str:
     if not names:
         return ""
     return ", ".join(names)
+
+
+__all__ = ['load', 'prompt', 'inject', 'strip', 'summary', 'INSTRUCTIONS_PREFIX', 'CANDIDATES', 'MAX_FILE_BYTES', 'MAX_TOTAL_CHARS']

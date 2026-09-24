@@ -180,3 +180,6 @@ class NativeCore:
 
 
 native_core = NativeCore()
+
+
+__all__ = ['NativeCore', 'sys_platform']

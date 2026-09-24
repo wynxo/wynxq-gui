@@ -481,3 +481,6 @@ def to_html(text: str, palette: dict | None = None) -> str:
     close_lists()
     body = "".join(out) or "&nbsp;"
     return (f'<div style="color:{colors["text"]}">{body}</div>')
+
+
+__all__ = ['StreamingDocument', 'normalise_language', 'display_language', 'highlight', 'segment', 'code_blocks', 'to_html', 'MARKDOWN', 'CODE', 'DEFAULT_PALETTE', 'DISPLAY_NAMES', 'RUNNABLE', 'HTML_PALETTE']

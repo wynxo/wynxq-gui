@@ -234,3 +234,6 @@ class MemoryService:
                   'Automatic memory could not finish this turn. Your saved notes are kept. '
                   + warnings[0][:160]})
         return changed_total
+
+
+__all__ = ['MemoryService']

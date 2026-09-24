@@ -387,3 +387,6 @@ class DesktopController:
             raise DesktopError(f"Could not open {matches[0]['name']} (launcher exit {process.returncode}).")
 
 
+
+
+__all__ = ['DesktopController']

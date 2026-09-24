@@ -164,3 +164,6 @@ class ToolExecutor:
             LOG.warning("Desktop tool %s failed: %s", name, exc)
             result = {"ok": False, "error": str(exc)}
         return finish(result)
+
+
+__all__ = ['ToolExecutor']

@@ -359,3 +359,6 @@ def revealPath(self, path):
 def openTerminalHere(self):
     if not notify.open_terminal(self._working_directory or str(Path.home())):
         self.toast.emit("No terminal emulator was found on this system.")
+
+
+__all__ = ['removeAttachment', 'setAttachmentEnabled', 'attach_web_page', 'clearAttachments', 'attachPath', 'attachFile', 'attachFolder', 'attachClipboard', 'pasteImage', 'attachScreenshot', 'attachRegion', 'cancelRegion', 'cropRegion', 'attachWindow', 'activeWindowTitle', 'chooseProject', 'openProject', 'clearProject', 'copyProjectPath', 'revealPath', 'openTerminalHere']

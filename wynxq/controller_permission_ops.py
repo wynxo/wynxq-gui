@@ -223,3 +223,6 @@ def revealMemory(self):
     if not notify.open_path(str(self.memory.path)):
         self.copyText(str(self.memory.path))
         self.toast.emit("No application opened it, so the path was copied instead.")
+
+
+__all__ = ['resolvePermission', 'allowRestOfTask', 'setPermissionMode', 'setMemoryEnabled', 'setReferenceChatHistory', 'saveMemory', 'rememberNote', 'clearMemory', 'reloadMemory', 'revealMemory']

@@ -219,3 +219,6 @@ def candidate_excerpts(store, queries, *, exclude_id="", budget=12000, cancel=No
         seen.add(row['id'])
         used += cost
     return result
+
+
+__all__ = ['explicit_recall', 'recall', 'prompt', 'candidate_excerpts']

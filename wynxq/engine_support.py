@@ -197,3 +197,6 @@ def prepare_background(engine, history, model, project, cancel, emit, num_ctx):
         logging.getLogger(__name__).exception("Memory preparation failed")
         emit({"type": "memory_warning", "text": "Automatic memory is unavailable this turn; answering continues."})
         return "", ""
+
+
+__all__ = ['resolve_model_capabilities', 'fresh_history', 'append_screen', 'ollama_message', 'model_history', 'latest_user_query', 'background_context', 'prepare_background']

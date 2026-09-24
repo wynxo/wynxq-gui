@@ -55,3 +55,6 @@ def begin_turn(self, title: str) -> None:
 def settle_turn(self, state: str) -> None:
     self.log.settle_turn(state)
     self.activityChanged.emit()
+
+
+__all__ = ['removeContext', 'refresh_context', 'clearActivity', 'record', 'record_update', 'begin_turn', 'settle_turn']

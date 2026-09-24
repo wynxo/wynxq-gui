@@ -168,3 +168,6 @@ class ActivityLog:
         if counts["elapsedLabel"]:
             parts.append(counts["elapsedLabel"])
         return " · ".join(parts)
+
+
+__all__ = ['ActivityLog', 'normalise_state', 'format_duration', 'STATES', 'TERMINAL_STATES', 'ALIASES', 'MAX_EVENTS', 'MAX_OUTPUT']

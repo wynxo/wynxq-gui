@@ -50,6 +50,9 @@ from . import controller_event_ops as _event_ops
 from . import controller_misc_ops as _misc_ops
 
 
+__all__ = ["Controller"]
+
+
 class Controller(QObject):
     # None means use the module-level OllamaClient at call time. Tests and
     # embedders can still replace controller.OllamaClient; product subclasses
@@ -99,6 +102,7 @@ class Controller(QObject):
     PERMISSION_TIMEOUT = 180.0
 
     def __init__(self, store=None, desktop=None, autoconnect=True, memory=None):
+        """Create the controller, wiring store, desktop, memory and the default task list."""
         super().__init__()
         self.store = store or Store()
         self.desktop = desktop or DesktopController(tokens=_StoredTokens(self.store))
@@ -710,6 +714,7 @@ class Controller(QObject):
 
     @Slot(int)
     def setSidebarWidth(self, width):
+        """Persist a sidebar width between 200 and 400 pixels."""
         width = _bounded_int(width, 200, 400, self._sidebar_width)
         if width == self._sidebar_width:
             return
@@ -719,6 +724,7 @@ class Controller(QObject):
 
     @Slot(bool)
     def setSidebarCollapsed(self, collapsed):
+        """Persist whether the sidebar is collapsed."""
         collapsed = bool(collapsed)
         if collapsed == self._sidebar_collapsed:
             return

@@ -154,3 +154,6 @@ class ProductController(WorkspaceController):
         # mode before every tool action, so this is safe to change mid-run.
         self._session_auto = False
         super().setPermissionMode(mode)
+
+
+__all__ = ['ProductController']

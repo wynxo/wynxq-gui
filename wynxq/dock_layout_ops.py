@@ -201,3 +201,6 @@ def set_project(self, path: str) -> bool:
     if path:
         self.refreshChanges()
     return True
+
+
+__all__ = ['moveTab', 'setTabHidden', 'resetTabLayout', 'setVisible', 'toggle', 'setWidth', 'setTab', 'openTab', 'suggest', 'set_project']

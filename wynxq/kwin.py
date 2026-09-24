@@ -157,3 +157,6 @@ def promote_control_windows(cancel: threading.Event | None = None) -> bool:
             Path(path).unlink(missing_ok=True)
         except OSError:
             pass
+
+
+__all__ = ['promote_control_windows']

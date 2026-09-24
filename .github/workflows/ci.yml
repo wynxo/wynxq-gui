@@ -4,6 +4,23 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install lint tools
+        run: pip install ruff mypy
+      - name: Lint with ruff
+        run: ruff check wynxq install.py
+      - name: Format check with ruff
+        run: ruff format --check wynxq install.py
+      - name: Type check with mypy
+        run: mypy wynxq --ignore-missing-imports
+
   native-core:
     runs-on: ubuntu-24.04
     steps:

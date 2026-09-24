@@ -312,3 +312,6 @@ def revert_file(root, path, untracked: bool = False) -> dict:
     except (OSError, subprocess.SubprocessError) as exc:
         return {"ok": False, "error": str(exc)}
     return {"ok": True, "error": "", "deleted": False}
+
+
+__all__ = ['DiffError']

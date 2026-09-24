@@ -158,3 +158,6 @@ class Store:
             except sqlite3.Error:
                 pass
             self._db.close()
+
+
+__all__ = ['Store']
