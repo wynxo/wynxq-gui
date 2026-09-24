@@ -15,6 +15,8 @@ def test_old_product_namespace_is_gone():
     for path in ROOT.rglob("*"):
         if not path.is_file() or path == Path(__file__):
             continue
+        if ".git" in path.parts:
+            continue
         if old in path.as_posix().casefold():
             offenders.append(path.relative_to(ROOT).as_posix())
             continue
