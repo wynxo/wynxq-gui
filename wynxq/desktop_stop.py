@@ -157,3 +157,6 @@ class GlobalStop:
                 await self._portal._call("org.freedesktop.portal.Session", "Close", path=session)
             except Exception:
                 pass
+
+
+__all__ = ['X11GlobalStop', 'GlobalStop']

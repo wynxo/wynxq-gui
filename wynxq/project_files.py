@@ -432,3 +432,6 @@ def write_file(root, path, text: str) -> dict:
     info = target.stat()
     return {"path": str(target), "size": int(info.st_size),
             "sizeLabel": human_size(info.st_size)}
+
+
+__all__ = ['language_for', 'kind_for', 'human_size', 'explain', 'resolve_within', 'list_directory', 'search_tree', 'read_file', 'write_file', 'MAX_ENTRIES', 'MAX_SEARCH_ENTRIES', 'MAX_TEXT_BYTES', 'MAX_IMAGE_BYTES', 'MAX_TRACKED_READS', 'NOISE_DIRECTORIES', 'LANGUAGES', 'IMAGE_SUFFIXES', 'KIND_BY_SUFFIX']

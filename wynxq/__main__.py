@@ -261,3 +261,5 @@ def _snapshot_isolated(directory: Path, size: str | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+__all__ = ['main', 'UI', 'SOCKET']

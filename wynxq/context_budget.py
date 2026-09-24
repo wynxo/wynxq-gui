@@ -204,3 +204,6 @@ def merge_generated(full_history: list[dict], fitted_input: list[dict], engine_r
     generated = copy.deepcopy(result[prefix:])
     generated = strip_compaction(generated)
     return copy.deepcopy(list(full_history or [])) + generated
+
+
+__all__ = ['Fit', 'message_tokens', 'history_budget', 'fit_history', 'strip_compaction', 'merge_generated', 'COMPACTION_PREFIX', 'MESSAGE_OVERHEAD', 'IMAGE_TOKEN_ESTIMATE', 'MIN_HISTORY_BUDGET']
