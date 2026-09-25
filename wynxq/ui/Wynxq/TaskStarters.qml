@@ -54,15 +54,12 @@ Item {
 
         if (!root.hasProject)
             list.push({ label: "Open project", icon: "folder", command: "project", needs: "work" });
-        else
+        else {
             list.push({ label: "Quick open", icon: "search", command: "palette", needs: "work" });
+            list.push({ label: "Browse files", icon: "folderOpen", command: "files", needs: "work" });
+        }
 
         list.push({ label: "Terminal", icon: "terminal", command: "terminal-panel", needs: "work" });
-
-        if (root.hasProject)
-            list.push({ label: "Explain project", icon: "code", needs: "work",
-                        prompt: "Inspect this project and explain how it is put together." });
-
         list.push({ label: "Read my screen", icon: "eye", needs: "work",
                     prompt: "What is on my screen? Help me with it." });
 

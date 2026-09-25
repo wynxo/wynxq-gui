@@ -22,7 +22,7 @@ Item {
             return;
         }
         column.opacity = 0;
-        column.scale = 0.99;
+        column.scale = 0.985;
         entrance.restart();
     }
 
@@ -36,7 +36,7 @@ Item {
         }
         NumberAnimation {
             target: column; property: "scale"
-            from: 0.99; to: 1; duration: Theme.slow; easing.type: Theme.easing
+            from: 0.985; to: 1; duration: Theme.slow; easing.type: Theme.easing
         }
     }
 

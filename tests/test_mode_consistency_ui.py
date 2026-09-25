@@ -35,7 +35,9 @@ def test_tool_starters_promote_a_fresh_task_to_work():
     assert 'command: "files", needs: "work"' in text
     assert 'command: "terminal-panel", needs: "work"' in text
     assert 'label: "Read my screen", icon: "eye", needs: "work"' in text
-    assert 'label: "Run a command", icon: "bolt", needs: "work"' in text
+    # The home remains intentionally small; arbitrary commands are available
+    # through Terminal and quick-open rather than another permanent starter.
+    assert 'label: "Run a command", icon: "bolt", needs: "work"' not in text
     # Browser is intentionally not permanent home chrome; it remains available
     # from the Work dock and universal quick-open.
     assert 'command: "browser", needs: "work"' not in text

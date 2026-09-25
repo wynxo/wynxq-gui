@@ -333,10 +333,12 @@ def test_composer_send_is_plain_circular_not_glass():
     assert "GlassSurface" not in send
 
 
-def test_fresh_task_shows_thirty_day_usage_grid():
+def test_fresh_task_keeps_usage_out_of_the_primary_prompt_surface():
     task = (MODULE / "TaskStart.qml").read_text(encoding="utf-8")
     heatmap = (MODULE / "UsageHeatmap.qml").read_text(encoding="utf-8")
-    assert "UsageHeatmap {" in task
+    assert "UsageHeatmap {" not in task
+    assert "ChromeMark {" not in task
+    # The reusable activity component remains available to dedicated usage UI.
     assert "30-day activity" in heatmap
     assert "Theme.success" in heatmap
     assert "bridge.tokenUsageDays" in heatmap
