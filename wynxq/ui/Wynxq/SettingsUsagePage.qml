@@ -26,26 +26,10 @@ Column {
         Column {
             Layout.fillWidth: true
             spacing: 4
-            Text {
-                text: "Usage"
-                color: Theme.textPrimary
-                font.family: Theme.sansFamily
-                font.pixelSize: 22
-                font.weight: Font.DemiBold
-            }
-            Text {
-                text: "Local token activity and model usage."
-                color: Theme.textMuted
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.caption
-            }
+            Text { text: "Usage"; color: Theme.textPrimary; font.family: Theme.sansFamily; font.pixelSize: 22; font.weight: Font.DemiBold }
+            Text { text: "Local token activity and model usage."; color: Theme.textMuted; font.family: Theme.sansFamily; font.pixelSize: Theme.caption }
         }
-        Text {
-            text: root.periods.find(function(item) { return item.key === root.period; }).detail
-            color: Theme.textDisabled
-            font.family: Theme.sansFamily
-            font.pixelSize: Theme.micro
-        }
+        Text { text: root.periods.find(function(item) { return item.key === root.period; }).detail; color: Theme.textDisabled; font.family: Theme.sansFamily; font.pixelSize: Theme.micro }
     }
 
     Rectangle {
@@ -110,29 +94,11 @@ Column {
         RowLayout {
             width: parent.width
             spacing: Theme.s2
-            Text {
-                text: root.count(root.selected.tokens)
-                color: Theme.textPrimary
-                font.family: Theme.sansFamily
-                font.pixelSize: 34
-                font.weight: Font.DemiBold
-            }
-            Text {
-                text: "tokens"
-                color: Theme.textMuted
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.caption
-                Layout.alignment: Qt.AlignBottom
-                Layout.bottomMargin: 6
-            }
+            Text { text: root.count(root.selected.tokens); color: Theme.textPrimary; font.family: Theme.sansFamily; font.pixelSize: 34; font.weight: Font.DemiBold }
+            Text { text: "tokens"; color: Theme.textMuted; font.family: Theme.sansFamily; font.pixelSize: Theme.caption; Layout.alignment: Qt.AlignBottom; Layout.bottomMargin: 6 }
             Item { Layout.fillWidth: true }
             Rectangle { width: 6; height: 6; radius: 3; color: Theme.success }
-            Text {
-                text: (root.overview.currentStreak || 0) + " day streak"
-                color: Theme.textSecondary
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.caption
-            }
+            Text { text: (root.overview.currentStreak || 0) + " day streak"; color: Theme.textSecondary; font.family: Theme.sansFamily; font.pixelSize: Theme.caption }
         }
 
         RowLayout {
@@ -148,18 +114,8 @@ Column {
                 delegate: Column {
                     required property var modelData
                     spacing: 3
-                    Text {
-                        text: modelData.label
-                        color: Theme.textDisabled
-                        font.family: Theme.sansFamily
-                        font.pixelSize: Theme.micro
-                    }
-                    Text {
-                        text: modelData.value
-                        color: Theme.textSecondary
-                        font.family: Theme.monoFamily
-                        font.pixelSize: Theme.caption
-                    }
+                    Text { text: modelData.label; color: Theme.textDisabled; font.family: Theme.sansFamily; font.pixelSize: Theme.micro }
+                    Text { text: modelData.value; color: Theme.textSecondary; font.family: Theme.monoFamily; font.pixelSize: Theme.caption }
                 }
             }
             Item { Layout.fillWidth: true }
@@ -175,19 +131,9 @@ Column {
 
     RowLayout {
         width: parent.width
-        Text {
-            text: (root.overview.activeDays || 0) + " active days · all time"
-            color: Theme.textMuted
-            font.family: Theme.sansFamily
-            font.pixelSize: Theme.caption
-        }
+        Text { text: (root.overview.activeDays || 0) + " active days · all time"; color: Theme.textMuted; font.family: Theme.sansFamily; font.pixelSize: Theme.caption }
         Item { Layout.fillWidth: true }
-        Text {
-            text: "Stored on this device"
-            color: Theme.textDisabled
-            font.family: Theme.sansFamily
-            font.pixelSize: Theme.micro
-        }
+        Text { text: "Stored on this device"; color: Theme.textDisabled; font.family: Theme.sansFamily; font.pixelSize: Theme.micro }
     }
 
     Rectangle { width: parent.width; height: 1; color: Theme.borderSubtle }
@@ -198,20 +144,8 @@ Column {
 
         RowLayout {
             width: parent.width
-            Text {
-                Layout.fillWidth: true
-                text: "Models"
-                color: Theme.textPrimary
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.heading
-                font.weight: Font.DemiBold
-            }
-            Text {
-                text: "Last 30 days"
-                color: Theme.textMuted
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.micro
-            }
+            Text { Layout.fillWidth: true; text: "Models"; color: Theme.textPrimary; font.family: Theme.sansFamily; font.pixelSize: Theme.heading; font.weight: Font.DemiBold }
+            Text { text: "Last 30 days"; color: Theme.textMuted; font.family: Theme.sansFamily; font.pixelSize: Theme.micro }
         }
 
         Repeater {

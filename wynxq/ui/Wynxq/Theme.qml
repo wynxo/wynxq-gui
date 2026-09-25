@@ -62,7 +62,7 @@ QtObject {
 
     readonly property color textPrimary:   "#f1f0ec"
     readonly property color textSecondary: "#c8c6c0"
-    readonly property color textMuted:     "#96938c"
+    readonly property color textMuted:     "#9a9790"
     readonly property color textDisabled:  "#6f6c66"
     readonly property color textInverse:   "#111111"
 
