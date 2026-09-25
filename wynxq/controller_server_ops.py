@@ -436,6 +436,17 @@ def _normalise_accent(value):
 
 
 @Slot(str, result=bool)
+def setColorScheme(self, value):
+    if value not in self.COLOR_SCHEMES:
+        return False
+    if value != self._color_scheme:
+        self._color_scheme = value
+        self.store.set_setting("color_scheme", value)
+        self.changed.emit()
+    return True
+
+
+@Slot(str, result=bool)
 def setTheme(self, theme):
     theme = str(theme)
     if theme not in self.THEMES:
@@ -518,4 +529,4 @@ def resetOnboarding(self):
     self.changed.emit()
 
 
-__all__ = ['addEndpointProfile', 'removeEndpointProfile', 'setDefaultEndpoint', 'selectEndpoint', 'refreshModels', 'setModel', 'toggleFavoriteModel', 'deleteModel', 'applyRuntimePreset', 'saveRuntimeSettings', 'setTheme', 'setAccent', 'setDensity', 'setFlag', 'setEndpoint', 'completeOnboarding', 'resetOnboarding']
+__all__ = ['addEndpointProfile', 'removeEndpointProfile', 'setDefaultEndpoint', 'selectEndpoint', 'refreshModels', 'setModel', 'toggleFavoriteModel', 'deleteModel', 'applyRuntimePreset', 'saveRuntimeSettings', 'setColorScheme', 'setTheme', 'setAccent', 'setDensity', 'setFlag', 'setEndpoint', 'completeOnboarding', 'resetOnboarding']

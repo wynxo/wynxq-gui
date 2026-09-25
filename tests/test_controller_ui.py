@@ -528,6 +528,12 @@ def test_connection_state_reports_what_the_header_needs(tmp_path):
 # ------------------------------------------------------------------ settings
 def test_appearance_settings_persist_and_reject_bad_values(tmp_path):
     bridge = controller(tmp_path)
+    assert bridge.colorScheme == "Dark"
+    assert bridge.setColorScheme("Black") is True
+    assert bridge.colorScheme == "Black"
+    assert bridge.store.get_setting("color_scheme") == "Black"
+    assert bridge.setColorScheme("invalid") is False
+    assert bridge.colorScheme == "Black"
     assert bridge.setTheme("Ion") is True
     assert bridge.accentColor == Controller.THEMES["Ion"]
     assert bridge.setTheme("Nope") is False
@@ -1272,3 +1278,12 @@ def test_control_overlay_never_invents_a_global_stop_shortcut(tmp_path):
         assert bridge.computerControlStopDetail == "Emergency stop: Meta+Shift+X"
     finally:
         bridge.shutdown()
+
+
+def test_color_scheme_survives_restart(tmp_path):
+    bridge = controller(tmp_path)
+    bridge.setColorScheme("Midnight")
+    bridge.shutdown()
+    restored = controller(tmp_path)
+    assert restored.colorScheme == "Midnight"
+    restored.shutdown()

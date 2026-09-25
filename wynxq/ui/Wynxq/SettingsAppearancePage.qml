@@ -11,10 +11,28 @@ Column {
         accentField.text = bridge ? bridge.accentColor : "";
     }
 
+    Connections {
+        target: bridge
+        function onChanged() {
+            if (!accentField.activeFocus) accentField.text = bridge.accentColor;
+        }
+    }
+
     spacing: Theme.s6
     SettingsGroup {
+        title: "App colors"
+        description: "Change the canvas, sidebar, settings, panels and controls together. Applied immediately and remembered after restart."
+        Segmented {
+            objectName: "appColorSchemePicker"
+            width: Math.min(360, parent.width)
+            options: [{id: "Dark", label: "Dark gray"}, {id: "Black", label: "Black"}, {id: "Midnight", label: "Midnight"}]
+            current: bridge ? bridge.colorScheme : "Dark"
+            onSelected: function(value) { if (bridge) bridge.setColorScheme(value); }
+        }
+    }
+    SettingsGroup {
         title: "Accent"
-        description: "One restrained highlight colour, used sparingly across the app."
+        description: "Choose the highlight color for buttons, selections and focus throughout the app. Activity stays green and status colors keep their meaning."
         Flow {
             width: parent.width
             spacing: Theme.s2
@@ -23,7 +41,7 @@ Column {
                 delegate: AbstractButton {
                     id: swatch
                     required property var modelData
-                    readonly property bool current: bridge && bridge.theme === modelData.name
+                    readonly property bool current: bridge && bridge.accentColor.toLowerCase() === modelData.color.toLowerCase()
                     width: 96; height: 52
                     hoverEnabled: true
                     Accessible.name: modelData.name

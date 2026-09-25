@@ -92,6 +92,7 @@ ApplicationWindow {
 
     Connections {
         target: Theme
+        function onColorSchemeChanged() { Qt.callLater(window.pushPalettes); }
         function onAccentChanged() { window.pushPalettes(); }
         function onBridgeChanged() { window.pushPalettes(); }
     }

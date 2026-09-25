@@ -17,33 +17,38 @@ QtObject {
     property var bridge: null
     readonly property bool ready: bridge !== null
 
+    readonly property string colorScheme: ready ? bridge.colorScheme : "Dark"
+    function paletteColor(dark, black, midnight) {
+        return colorScheme === "Black" ? black : colorScheme === "Midnight" ? midnight : dark;
+    }
+
     // ---------------------------------------------------------- foundation
     // Opaque fallbacks remain the readability baseline. GlassSurface layers
     // translucency over these values without weakening text contrast.
-    readonly property color background:      "#141518"
-    readonly property color backgroundSoft:  "#101114"
-    readonly property color surface:         "#1d1f24"
-    readonly property color surfaceRaised:   "#24272d"
-    readonly property color surfaceHover:    "#2d3037"
-    readonly property color surfacePressed:  "#353941"
-    readonly property color surfaceSelected: "#30343c"
-    readonly property color surfaceSunken:   "#0d0e11"
+    readonly property color background: paletteColor("#171717", "#090909", "#141518")
+    readonly property color backgroundSoft: paletteColor("#121212", "#050505", "#101114")
+    readonly property color surface: paletteColor("#1e1e1e", "#141414", "#1d1f24")
+    readonly property color surfaceRaised: paletteColor("#252525", "#1c1c1c", "#24272d")
+    readonly property color surfaceHover: paletteColor("#2d2d2d", "#262626", "#2d3037")
+    readonly property color surfacePressed: paletteColor("#363636", "#303030", "#353941")
+    readonly property color surfaceSelected: paletteColor("#303030", "#292929", "#30343c")
+    readonly property color surfaceSunken: paletteColor("#0e0e0e", "#000000", "#0d0e11")
     readonly property color scrim:           "#cc070707"
 
     // Aliases kept so a component can say what it means.
     readonly property color surfaceElevated: surfaceRaised
     readonly property color panel:           backgroundSoft
 
-    readonly property color borderSubtle: "#292d34"
-    readonly property color border:       "#393e47"
-    readonly property color borderStrong: "#4c525d"
+    readonly property color borderSubtle: paletteColor("#303030", "#242424", "#292d34")
+    readonly property color border: paletteColor("#404040", "#353535", "#393e47")
+    readonly property color borderStrong: paletteColor("#565656", "#494949", "#4c525d")
 
     // ------------------------------------------------------ liquid glass
     // Cross-platform approximation of the macOS material vocabulary. The
     // values deliberately stay neutral; accent is reserved for focus/action.
-    readonly property color glassTint:        "#27292e"
-    readonly property color glassTintStrong:  "#303238"
-    readonly property color glassTintHover:   "#383b42"
+    readonly property color glassTint: paletteColor("#272727", "#1d1d1d", "#27292e")
+    readonly property color glassTintStrong: paletteColor("#303030", "#252525", "#303238")
+    readonly property color glassTintHover: paletteColor("#383838", "#303030", "#383b42")
     readonly property color glassEdge:        Qt.rgba(1, 1, 1, 0.10)
     readonly property color glassEdgeStrong:  Qt.rgba(1, 1, 1, 0.18)
     readonly property color glassInner:       Qt.rgba(1, 1, 1, 0.045)
@@ -55,10 +60,10 @@ QtObject {
     readonly property real glassOpacity: 0.68
     readonly property real glassStrongOpacity: 0.88
 
-    readonly property color textPrimary:   "#f1f3f7"
-    readonly property color textSecondary: "#c9cdd5"
-    readonly property color textMuted:     "#9ba2ae"
-    readonly property color textDisabled:  "#6a6a64"
+    readonly property color textPrimary:   "#f2f2f2"
+    readonly property color textSecondary: "#cccccc"
+    readonly property color textMuted:     "#aaaaaa"
+    readonly property color textDisabled:  "#858585"
     readonly property color textInverse:   "#111111"
 
     // Platinum matches the controller default; Appearance can replace it.
@@ -98,7 +103,7 @@ QtObject {
         "yellow": "#d7ab5d", "blue": "#82abdd", "magenta": "#c2a0e4", "cyan": "#7fc8bf",
         "white": "#d8d7d2", "brightBlack": "#b0afa8", "brightRed": "#f09c8e",
         "brightGreen": "#94daaa", "brightYellow": "#e6c179", "brightBlue": "#9dc0e8",
-        "brightMagenta": "#d4b6ee", "brightCyan": "#98dad1", "brightWhite": "#f1f3f7",
+        "brightMagenta": "#d4b6ee", "brightCyan": "#98dad1", "brightWhite": "#f2f2f2",
         "dim": "#a0a6b2"
     })
 

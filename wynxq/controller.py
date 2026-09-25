@@ -76,6 +76,8 @@ class Controller(QObject):
     stopRequested = Signal()
     scrollToEnd = Signal()
 
+    COLOR_SCHEMES = ("Dark", "Black", "Midnight")
+
     THEMES = {
         "Platinum": "#e9e3d6",
         "Ember": "#e8865a",
@@ -135,6 +137,9 @@ class Controller(QObject):
         self._density = setting("density", "Comfortable")
         if self._density not in self.DENSITIES:
             self._density = "Comfortable"
+        self._color_scheme = setting("color_scheme", "Dark")
+        if self._color_scheme not in self.COLOR_SCHEMES:
+            self._color_scheme = "Dark"
         self._theme = setting("theme", "Platinum")
         self._theme = self.LEGACY_THEMES.get(self._theme, self._theme)
         if self._theme not in self.THEMES:
@@ -287,6 +292,7 @@ class Controller(QObject):
     applyRuntimePreset = _server_ops.applyRuntimePreset
     saveRuntimeSettings = _server_ops.saveRuntimeSettings
     _normalise_accent = _server_ops._normalise_accent
+    setColorScheme = _server_ops.setColorScheme
     setTheme = _server_ops.setTheme
     setAccent = _server_ops.setAccent
     setDensity = _server_ops.setDensity
@@ -688,6 +694,8 @@ class Controller(QObject):
     def density(self): return self._density
     @Property(str, notify=changed)
     def theme(self): return self._theme
+    @Property(str, notify=changed)
+    def colorScheme(self): return self._color_scheme
     @Property(str, notify=changed)
     def accentColor(self): return self._accent
     @Property(bool, notify=changed)

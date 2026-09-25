@@ -57,7 +57,7 @@ Column {
                 width: root.cellSize
                 height: root.cellSize
                 radius: 2
-                color: !valid ? "transparent" : tokens > 0 ? Theme.alpha(Theme.accent, 0.22 + 0.78 * Math.sqrt(tokens / root.maximum)) : Theme.surfaceHover
+                color: !valid ? "transparent" : tokens > 0 ? Theme.alpha(Theme.success, 0.22 + 0.78 * Math.sqrt(tokens / root.maximum)) : Theme.surfaceHover
                 border.width: valid ? 1 : 0
                 border.color: hover.hovered ? Theme.textSecondary : Theme.borderSubtle
                 HoverHandler { id: hover }
@@ -90,7 +90,7 @@ Column {
         width: parent.width
         Text { Layout.fillWidth: true; text: root.days.length ? root.days[0].date + " — " + root.days[root.days.length - 1].date : "No recorded activity yet"; color: Theme.textDisabled; font.family: Theme.sansFamily; font.pixelSize: Theme.micro }
         Text { text: "Less"; color: Theme.textMuted; font.pixelSize: Theme.micro }
-        Repeater { model: [0, .25, .5, .75, 1]; delegate: Rectangle { required property real modelData; width: 9; height: 9; radius: 2; color: modelData ? Theme.alpha(Theme.accent, modelData) : Theme.surfaceHover } }
+        Repeater { model: [0, .25, .5, .75, 1]; delegate: Rectangle { required property real modelData; width: 9; height: 9; radius: 2; color: modelData ? Theme.alpha(Theme.success, modelData) : Theme.surfaceHover } }
         Text { text: "More"; color: Theme.textMuted; font.pixelSize: Theme.micro }
     }
 }

@@ -15,10 +15,13 @@ BODY = 4.5
 LARGE = 3.0
 
 
-def tokens() -> dict[str, str]:
+def tokens(scheme=0) -> dict[str, str]:
     """Literal colours declared in Theme.qml."""
     text = THEME.read_text(encoding="utf-8")
     found = dict(re.findall(r'property color (\w+):\s*"(#[0-9a-fA-F]{6})"', text))
+    for name, dark, black, midnight in re.findall(
+            r'property color (\w+):\s*paletteColor\("(#[0-9a-fA-F]{6})", "(#[0-9a-fA-F]{6})", "(#[0-9a-fA-F]{6})"\)', text):
+        found[name] = (dark, black, midnight)[scheme]
     # `accent` is a binding with a literal fallback, so it needs its own read.
     found["accent"] = re.search(r'bridge\.accentColor : "(#[0-9a-fA-F]{6})"', text).group(1)
     return found
@@ -144,3 +147,13 @@ def test_text_on_the_accent_is_readable():
         # Theme.onAccent picks the dark ink above this luminance threshold.
         ink = "#101011" if relative_luminance(value) > 0.28 else "#f6f5f2"
         assert contrast(ink, value) >= LARGE, f"onAccent against {name}"
+
+
+@pytest.mark.parametrize("scheme", [0, 1, 2])
+def test_all_app_color_schemes_keep_readable_text_and_accents(scheme):
+    palette = tokens(scheme)
+    for surface in SURFACES:
+        for ink in ("textPrimary", "textSecondary", "textMuted", "success", "warning", "danger", "info"):
+            assert contrast(palette[ink], palette[surface]) >= BODY
+        for accent in theme_accents().values():
+            assert contrast(accent, palette[surface]) >= BODY
