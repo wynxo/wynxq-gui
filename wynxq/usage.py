@@ -36,7 +36,7 @@ def _blank_bucket() -> dict:
 
 
 def _blank_summary() -> dict:
-    return {name: _blank_bucket() for name in ("today", "week", "month", "allTime")}
+    return {name: _blank_bucket() for name in ("today", "week", "month", "year", "allTime")}
 
 
 class TokenUsageTracker:

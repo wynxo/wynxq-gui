@@ -49,6 +49,7 @@ def _usage_boundaries(now: float) -> dict[str, float | None]:
         "today": today.timestamp(),
         "week": week.timestamp(),
         "month": month.timestamp(),
+        "year": today.replace(month=1, day=1).timestamp(),
         "allTime": None,
     }
 

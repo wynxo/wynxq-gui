@@ -213,6 +213,7 @@ Sheet {
 
         ScrollView {
             id: settingsScroll
+            objectName: "settingsScroll"
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true

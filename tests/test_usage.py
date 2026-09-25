@@ -265,3 +265,16 @@ def test_overview_empty_and_leap_day(tmp_path):
     copy["totalChats"] = 99
     assert tracker.overview["totalChats"] == 1
     store.close()
+
+
+def test_yearly_usage_starts_at_local_new_year(tmp_path):
+    store = Store(tmp_path / "year.sqlite3")
+    for date, tokens in [(datetime(2025, 12, 31, 23, 59), 100),
+                         (datetime(2026, 1, 1), 20), (datetime(2026, 9, 25, 10), 30),
+                         (datetime(2027, 1, 1), 999)]:
+        store.record_token_usage("chat", "model", metrics(tokens, tokens), created_at=date.timestamp())
+    summary = store.token_usage_summary(datetime(2026, 9, 25, 12).timestamp())
+    assert summary["year"]["tokens"] == 100
+    assert summary["year"]["runs"] == 2
+    assert summary["allTime"]["tokens"] == 300
+    store.close()

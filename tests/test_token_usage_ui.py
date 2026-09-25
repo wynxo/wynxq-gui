@@ -33,9 +33,9 @@ def test_settings_owns_exact_period_usage():
     assert "bridge.refreshTokenUsage()" in shell
     assert "bridge.tokenUsage" in shell
     assert "bridge.conversationTokens" in page
-    for label in ("TODAY", "THIS WEEK", "THIS MONTH", "ALL TIME"):
+    for label in ("Today usage", "Weekly", "Monthly", "Yearly", "All time"):
         assert label in page
-    assert "cached input is already part of input and is never counted twice" in page
+    assert "Cached input is already part of input and is never counted twice" in page
 
 
 def test_composer_does_not_send_while_real_ime_preedit_exists():

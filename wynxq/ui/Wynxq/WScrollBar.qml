@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 
-// One quiet, predictable scrollbar for every scrollable surface. The hover
-// handler observes the viewport without consuming clicks or wheel events.
+// Reveal only at the scrollbar edge or during scrolling. Keep drag capture
+// alive outside the viewport, and fade after wheel/keyboard movement settles.
 ScrollBar {
     id: control
     objectName: "wynxqScrollBar"
@@ -11,8 +11,17 @@ ScrollBar {
         && ((hoverTarget.moving === true)
             || (hoverTarget.contentItem && hoverTarget.contentItem.moving === true))
     readonly property bool revealed: size < 1
-        && (viewportHover.hovered || hovered || pressed || viewportMoving)
+        && (hovered || edgeHover.hovered || pressed || viewportMoving || scrollFade.running)
 
+    property bool initialized: false
+    Component.onCompleted: initialized = true
+    onPositionChanged: if (initialized) scrollFade.restart()
+    Timer { id: scrollFade; interval: 650 }
+
+    x: orientation === Qt.Vertical && parent ? parent.width - width : 0
+    y: orientation === Qt.Horizontal && parent ? parent.height - height : 0
+    width: orientation === Qt.Vertical ? implicitWidth : (parent ? parent.width : implicitWidth)
+    height: orientation === Qt.Horizontal ? implicitHeight : (parent ? parent.height : implicitHeight)
     policy: ScrollBar.AsNeeded
     hoverEnabled: true
     minimumSize: 0.04
@@ -23,8 +32,8 @@ ScrollBar {
     Behavior on opacity { enabled: !Theme.reducedMotion; NumberAnimation { duration: Theme.fast } }
 
     HoverHandler {
-        id: viewportHover
-        parent: control.hoverTarget
+        id: edgeHover
+        parent: control
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
 

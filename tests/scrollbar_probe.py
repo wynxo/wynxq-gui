@@ -31,14 +31,17 @@ def capture(name):
     if output: assert window.grabWindow().save(str(output / name))
 def move(x, y):
     QTest.mouseMove(window, QPoint(x, y))
-    QTest.qWait(300)
+    QTest.qWait(850)
 try:
     move(400, 20)
     assert bar.property('opacity') == 0, 'Idle scrollbar remains visible'
     capture('scrollbar-idle.png')
     point = viewport.mapToScene(QPointF(viewport.width() / 2, 100))
     move(int(point.x()), int(point.y()))
-    assert bar.property('opacity') == 1, 'Viewport hover does not reveal scrollbar'
+    assert bar.property('opacity') == 0, 'Content hover reveals scrollbar away from its edge'
+    point = bar.mapToScene(QPointF(bar.width()/2, bar.height()/2))
+    move(int(point.x()), int(point.y()))
+    assert bar.property('opacity') == 1, 'Scrollbar edge hover does not reveal scrollbar'
     capture('scrollbar-hover.png')
     thumb = bar.property('contentItem')
     point = thumb.mapToScene(QPointF(thumb.width()/2, thumb.height()/2))
@@ -47,7 +50,7 @@ try:
     move(400, 20)
     assert bar.property('opacity') == 1, 'Dragging outside viewport hides scrollbar'
     QTest.mouseRelease(window, Qt.LeftButton, Qt.NoModifier, QPoint(400, 20))
-    QTest.qWait(300)
+    QTest.qWait(850)
     assert bar.property('opacity') == 0, 'Scrollbar stays visible after drag release'
     # Content without overflow must never show a misleading scrollbar.
     window.setHeight(1600)
