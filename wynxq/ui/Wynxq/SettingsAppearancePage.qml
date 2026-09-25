@@ -18,7 +18,7 @@ Column {
         }
     }
 
-    spacing: Theme.s6
+    spacing: Theme.s5
     SettingsGroup {
         title: "App colors"
         description: "Change the canvas, sidebar, settings, panels and controls together. Applied immediately and remembered after restart."
@@ -42,30 +42,30 @@ Column {
                     id: swatch
                     required property var modelData
                     readonly property bool current: bridge && bridge.accentColor.toLowerCase() === modelData.color.toLowerCase()
-                    width: 96; height: 52
+                    width: 88; height: 44
                     hoverEnabled: true
                     Accessible.name: modelData.name
                     Accessible.checked: current
                     onClicked: { if (bridge) bridge.setTheme(modelData.name); accentField.text = modelData.color; }
                     background: Rectangle {
-                        radius: Theme.r2
-                        color: swatch.hovered ? Theme.surfaceHover : Theme.surface
-                        border.width: 1
-                        border.color: swatch.current || swatch.visualFocus ? Theme.accentEdge : Theme.borderSubtle
+                        radius: Theme.r1
+                        color: swatch.current ? Theme.surfaceRaised : swatch.hovered ? Theme.surfaceHover : "transparent"
+                        border.width: swatch.current || swatch.visualFocus ? 1 : 0
+                        border.color: swatch.visualFocus ? Theme.accentEdge : Theme.border
                         Behavior on color { enabled: !Theme.reducedMotion; ColorAnimation { duration: Theme.fast } }
                     }
                     contentItem: Column {
                         spacing: Theme.s2
                         topPadding: Theme.s2
                         Rectangle {
-                            width: 22; height: 22; radius: 11
+                            width: 18; height: 18; radius: 9
                             color: modelData.color
                             anchors.horizontalCenter: parent.horizontalCenter
                             Icon {
                                 anchors.centerIn: parent
                                 visible: swatch.current
                                 name: "check"; ink: Theme.textInverse
-                                width: 13; height: 13
+                                width: 11; height: 11
                             }
                         }
                         Text {

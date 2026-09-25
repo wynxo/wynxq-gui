@@ -45,7 +45,7 @@ try:
         QTest.qWait(250)
         assert controller.colorScheme == scheme
         assert picker.property("current") == scheme
-        expected = {"Dark": "#171717", "Black": "#090909", "Midnight": "#141518"}[scheme]
+        expected = {"Dark": "#181817", "Black": "#090909", "Midnight": "#141518"}[scheme]
         assert window.property("color").name() == expected
         assert settings.property("background").property("color").name() == expected
     controller.setColorScheme("Dark")

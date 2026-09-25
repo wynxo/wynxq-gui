@@ -20,8 +20,8 @@ Sheet {
         border.color: Theme.border
         border.width: 1
     }
-    width: Math.min(page === usagePage ? 1080 : 900, parent ? parent.width - Theme.s6 : 900)
-    height: Math.min(page === usagePage ? 820 : page === appearancePage ? 760 : 580, parent ? parent.height - Theme.s6 : 580)
+    width: Math.min(page === usagePage ? 980 : 860, parent ? parent.width - Theme.s6 : 860)
+    height: Math.min(page === usagePage ? 760 : page === appearancePage ? 700 : 560, parent ? parent.height - Theme.s6 : 560)
     signal openModelManager()
     signal openMemoryPanel()
 
@@ -114,7 +114,7 @@ Sheet {
         spacing: 0
 
         Rectangle {
-            Layout.preferredWidth: 186
+            Layout.preferredWidth: 176
             Layout.fillHeight: true
             color: Theme.backgroundSoft
             bottomLeftRadius: Theme.r4
@@ -163,26 +163,21 @@ Sheet {
                             enabled: !Theme.reducedMotion
                             NumberAnimation { duration: Theme.fast; easing.type: Theme.easing }
                         }
-                        background: GlassSurface {
-                            radius: Theme.r2
-                            solid: sheet.page === index
-                            glassEnabled: pageButton.hovered || pageButton.down || pageButton.visualFocus
-                            tint: sheet.page === index ? Theme.surfaceSelected
-                                  : pageButton.down ? Theme.glassTintStrong : Theme.glassTintHover
-                            fillOpacity: sheet.page === index ? 1.0
-                                       : pageButton.down ? 0.60
-                                       : pageButton.hovered ? 0.46
-                                       : pageButton.visualFocus ? 0.32 : 0.0
-                            outlineVisible: sheet.page === index || pageButton.visualFocus
-                            strongEdge: pageButton.hovered || pageButton.down || pageButton.visualFocus
-                            active: pageButton.visualFocus
-                            sheen: pageButton.hovered || pageButton.down
-                            edgeColor: pageButton.visualFocus ? Theme.accentEdge
-                                     : sheet.page === index ? Theme.glassEdge : "transparent"
+                        background: Rectangle {
+                            radius: Theme.r1
+                            color: sheet.page === index ? Theme.surfaceRaised
+                                 : pageButton.down ? Theme.surfacePressed
+                                 : pageButton.hovered ? Theme.surfaceHover : "transparent"
+                            border.width: pageButton.visualFocus ? 1 : 0
+                            border.color: Theme.accentEdge
+                            Behavior on color {
+                                enabled: !Theme.reducedMotion
+                                ColorAnimation { duration: Theme.fast }
+                            }
                         }
                         contentItem: Row {
-                            leftPadding: Theme.s3
-                            spacing: Theme.s3
+                            leftPadding: Theme.s2
+                            spacing: Theme.s2
                             Icon {
                                 name: modelData.icon
                                 ink: sheet.page === index ? Theme.accent : Theme.textMuted
@@ -204,7 +199,7 @@ Sheet {
                     Layout.fillWidth: true
                     Layout.leftMargin: Theme.s3
                     Layout.bottomMargin: Theme.s2
-                    text: "Wynxq " + (bridge ? bridge.appVersion : "")
+                    text: bridge && bridge.appVersion ? "v" + bridge.appVersion : ""
                     color: Theme.textMuted
                     font.family: Theme.sansFamily; font.pixelSize: Theme.micro
                 }
@@ -222,14 +217,14 @@ Sheet {
             ScrollBar.vertical: WScrollBar {}
 
             Item {
-                width: sheet.width - 186
+                width: sheet.width - 176
                 readonly property Item current: stack.children[sheet.page] || null
-                implicitHeight: (current ? current.implicitHeight : 0) + Theme.s5 + Theme.s7
+                implicitHeight: (current ? current.implicitHeight : 0) + Theme.s5 + Theme.s6
 
                 StackLayout {
                     id: stack
-                    width: parent.width - Theme.s6 * 2
-                    x: Theme.s6
+                    width: parent.width - Theme.s5 * 2
+                    x: Theme.s5
                     y: Theme.s5
                     currentIndex: sheet.page
 

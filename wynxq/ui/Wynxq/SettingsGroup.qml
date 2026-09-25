@@ -5,7 +5,7 @@ Column {
     property string description: ""
     default property alias groupBody: holder.data
     width: parent ? parent.width : 400
-    spacing: Theme.s3
+    spacing: Theme.s2
 
     Text {
         text: parent.title
@@ -22,12 +22,12 @@ Column {
         font.family: Theme.sansFamily
         font.pixelSize: Theme.caption
         wrapMode: Text.WordWrap
-        lineHeight: 1.5
-        bottomPadding: Theme.s1
+        lineHeight: 1.35
+        bottomPadding: 2
     }
     Column {
         id: holder
         width: parent.width
-        spacing: Theme.s3
+        spacing: Theme.s2
     }
 }

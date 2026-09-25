@@ -25,45 +25,45 @@ QtObject {
     // ---------------------------------------------------------- foundation
     // Opaque fallbacks remain the readability baseline. GlassSurface layers
     // translucency over these values without weakening text contrast.
-    readonly property color background: paletteColor("#171717", "#090909", "#141518")
-    readonly property color backgroundSoft: paletteColor("#121212", "#050505", "#101114")
-    readonly property color surface: paletteColor("#1e1e1e", "#141414", "#1d1f24")
-    readonly property color surfaceRaised: paletteColor("#252525", "#1c1c1c", "#24272d")
-    readonly property color surfaceHover: paletteColor("#2d2d2d", "#262626", "#2d3037")
-    readonly property color surfacePressed: paletteColor("#363636", "#303030", "#353941")
-    readonly property color surfaceSelected: paletteColor("#303030", "#292929", "#30343c")
-    readonly property color surfaceSunken: paletteColor("#0e0e0e", "#000000", "#0d0e11")
+    readonly property color background: paletteColor("#181817", "#090909", "#141518")
+    readonly property color backgroundSoft: paletteColor("#131312", "#050505", "#101114")
+    readonly property color surface: paletteColor("#1d1d1c", "#141414", "#1d1f24")
+    readonly property color surfaceRaised: paletteColor("#232322", "#1c1c1c", "#24272d")
+    readonly property color surfaceHover: paletteColor("#292928", "#262626", "#2d3037")
+    readonly property color surfacePressed: paletteColor("#30302f", "#303030", "#353941")
+    readonly property color surfaceSelected: paletteColor("#2a2a29", "#292929", "#30343c")
+    readonly property color surfaceSunken: paletteColor("#10100f", "#000000", "#0d0e11")
     readonly property color scrim:           "#cc070707"
 
     // Aliases kept so a component can say what it means.
     readonly property color surfaceElevated: surfaceRaised
     readonly property color panel:           backgroundSoft
 
-    readonly property color borderSubtle: paletteColor("#303030", "#242424", "#292d34")
-    readonly property color border: paletteColor("#404040", "#353535", "#393e47")
-    readonly property color borderStrong: paletteColor("#565656", "#494949", "#4c525d")
+    readonly property color borderSubtle: paletteColor("#292927", "#242424", "#292d34")
+    readonly property color border: paletteColor("#363634", "#353535", "#393e47")
+    readonly property color borderStrong: paletteColor("#484845", "#494949", "#4c525d")
 
     // ------------------------------------------------------ liquid glass
     // Cross-platform approximation of the macOS material vocabulary. The
     // values deliberately stay neutral; accent is reserved for focus/action.
-    readonly property color glassTint: paletteColor("#272727", "#1d1d1d", "#27292e")
-    readonly property color glassTintStrong: paletteColor("#303030", "#252525", "#303238")
-    readonly property color glassTintHover: paletteColor("#383838", "#303030", "#383b42")
-    readonly property color glassEdge:        Qt.rgba(1, 1, 1, 0.10)
-    readonly property color glassEdgeStrong:  Qt.rgba(1, 1, 1, 0.18)
-    readonly property color glassInner:       Qt.rgba(1, 1, 1, 0.045)
-    readonly property color glassSpecular:    Qt.rgba(1, 1, 1, 0.12)
-    readonly property color glassSpecularHot: Qt.rgba(1, 1, 1, 0.19)
+    readonly property color glassTint: paletteColor("#222221", "#1d1d1d", "#27292e")
+    readonly property color glassTintStrong: paletteColor("#292928", "#252525", "#303238")
+    readonly property color glassTintHover: paletteColor("#30302f", "#303030", "#383b42")
+    readonly property color glassEdge:        Qt.rgba(1, 1, 1, 0.075)
+    readonly property color glassEdgeStrong:  Qt.rgba(1, 1, 1, 0.13)
+    readonly property color glassInner:       Qt.rgba(1, 1, 1, 0.032)
+    readonly property color glassSpecular:    Qt.rgba(1, 1, 1, 0.08)
+    readonly property color glassSpecularHot: Qt.rgba(1, 1, 1, 0.13)
     readonly property color glassLowlight:    Qt.rgba(0, 0, 0, 0.28)
     readonly property color glassShadow:      Qt.rgba(0, 0, 0, 0.72)
     readonly property real glassThinOpacity: 0.46
     readonly property real glassOpacity: 0.68
     readonly property real glassStrongOpacity: 0.88
 
-    readonly property color textPrimary:   "#f2f2f2"
-    readonly property color textSecondary: "#cccccc"
-    readonly property color textMuted:     "#aaaaaa"
-    readonly property color textDisabled:  "#858585"
+    readonly property color textPrimary:   "#f1f0ec"
+    readonly property color textSecondary: "#c8c6c0"
+    readonly property color textMuted:     "#96938c"
+    readonly property color textDisabled:  "#6f6c66"
     readonly property color textInverse:   "#111111"
 
     // Platinum matches the controller default; Appearance can replace it.
@@ -122,10 +122,10 @@ QtObject {
 
     // Slightly rounder continuous-feeling geometry makes the glass read as a
     // material while keeping dense tooling compact.
-    readonly property int r1: 7
-    readonly property int r2: 10
-    readonly property int r3: 14
-    readonly property int r4: 18
+    readonly property int r1: 5
+    readonly property int r2: 8
+    readonly property int r3: 11
+    readonly property int r4: 14
     readonly property int rPill: 999
 
     readonly property int control: compact ? 30 : 32
