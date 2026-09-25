@@ -329,6 +329,19 @@ class DemoController(WorkspaceController):
                      "total_ms": 0.0, "tokens_per_second": rate},
                     created_at=now - offset,
                 )
+        if self.scene == "usage":
+            # Deterministic preview fixtures, isolated from the user's database.
+            for offset in range(1, 280):
+                if offset % 7 in (0, 6) or offset % 13 == 0:
+                    continue
+                output = 300 + ((offset * 7919) % 9000)
+                self.store.record_token_usage(
+                    created[offset % len(created)]["id"],
+                    ["qwen3:14b", "qwen2.5-coder:7b", "qwen2.5vl:7b"][offset % 3],
+                    {"tokens": output, "prompt_tokens": output * 4,
+                     "total_ms": output / 25 * 1000, "tokens_per_second": 25},
+                    created_at=now - offset * 86400,
+                )
         self._usage.refresh()
         self._conversation_tokens = self._read_conversation_tokens()
         self._usage.exact_metrics(self._run_metrics)

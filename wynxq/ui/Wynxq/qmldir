@@ -94,3 +94,5 @@ PermissionPrompt 1.0 PermissionPrompt.qml
 Onboarding 1.0 Onboarding.qml
 
 WScrollBar 1.0 WScrollBar.qml
+
+UsageActivityGrid 1.0 UsageActivityGrid.qml

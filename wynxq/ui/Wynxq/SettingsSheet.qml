@@ -14,8 +14,8 @@ Sheet {
     property var appBridge: bridge
     objectName: "settingsSheet"
     title: "Settings"
-    width: Math.min(900, parent ? parent.width - Theme.s6 : 900)
-    height: Math.min(580, parent ? parent.height - Theme.s6 : 580)
+    width: Math.min(page === usagePage ? 1080 : 900, parent ? parent.width - Theme.s6 : 900)
+    height: Math.min(page === usagePage ? 820 : 580, parent ? parent.height - Theme.s6 : 580)
     signal openModelManager()
     signal openMemoryPanel()
 

@@ -228,3 +228,40 @@ def test_tracker_refreshes_daily_and_model_views(tmp_path):
     assert tracker.models[0]["name"] == "qwen"
     assert tracker.models[0]["tokens"] >= 30
     store.close()
+
+
+def test_overview_lifetime_streaks_peak_and_generation(tmp_path):
+    store = Store(tmp_path / "overview.sqlite3")
+    now = datetime(2026, 9, 25, 12).timestamp()
+    for day, chat, total in [(20, "a", 100), (21, "a", 200), (22, "b", 50), (24, "c", 80)]:
+        store.record_token_usage(chat, "model", metrics(total, 0, total_ms=60000),
+                                 created_at=datetime(2026, 9, day, 12).timestamp())
+    store.record_token_usage("future", "model", metrics(99999, 0), created_at=now + 86400)
+    overview = store.token_usage_overview(now)
+    assert overview["currentStreak"] == 1  # yesterday counts until today ends
+    assert overview["longestStreak"] == 3
+    assert overview["peakDayTokens"] == 200
+    assert overview["longestGenerationMs"] == 120000
+    assert overview["totalChats"] == 3
+    assert overview["activeDays"] == 4
+    assert len(overview["year"]) == 366
+    assert overview["year"][-1]["tokens"] == 0
+    assert sum(day["tokens"] for day in overview["year"]) == 430
+    assert store.token_usage_overview(now + 3 * 86400)["currentStreak"] == 0
+    store.close()
+
+
+def test_overview_empty_and_leap_day(tmp_path):
+    store = Store(tmp_path / "empty.sqlite3")
+    now = datetime(2024, 3, 1, 12).timestamp()
+    overview = store.token_usage_overview(now)
+    assert overview["currentStreak"] == overview["longestStreak"] == 0
+    assert overview["totalChats"] == overview["peakDayTokens"] == 0
+    assert overview["year"][-2]["date"] == "2024-02-29"
+    store.record_token_usage("chat", "model", metrics(5, 10), created_at=now)
+    tracker = TokenUsageTracker(store)
+    assert tracker.overview["totalChats"] == 1
+    copy = tracker.overview
+    copy["totalChats"] = 99
+    assert tracker.overview["totalChats"] == 1
+    store.close()

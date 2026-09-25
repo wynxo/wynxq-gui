@@ -98,7 +98,7 @@ def token_usage_summary(self, now: float | None = None) -> dict[str, dict]:
 
 def token_usage_daily(self, days: int = 7, now: float | None = None) -> list[dict]:
     """Exact local-day usage for a compact trend view, including empty days."""
-    days = max(2, min(int(days or 7), 31))
+    days = max(2, min(int(days or 7), 366))
     now = time.time() if now is None else float(now)
     local_now = datetime.fromtimestamp(now)
     today = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -151,6 +151,42 @@ def token_usage_daily(self, days: int = 7, now: float | None = None) -> list[dic
         )
         result.append(bucket)
     return result
+
+
+def token_usage_overview(self, now: float | None = None) -> dict:
+    """Lifetime activity statistics from exact runs; calendar days use local time."""
+    now = time.time() if now is None else float(now)
+    today = datetime.fromtimestamp(now).date()
+    with self._lock:
+        rows = self._db.execute(
+            "SELECT created_at, conversation_id, output_tokens + prompt_tokens tokens, "
+            "duration_ms FROM token_usage WHERE created_at <= ? ORDER BY created_at", (now,)
+        ).fetchall()
+    daily = {}
+    chats = {}
+    for row in rows:
+        day = datetime.fromtimestamp(row["created_at"]).date()
+        daily[day] = daily.get(day, 0) + row["tokens"]
+        if row["conversation_id"]:
+            chats[row["conversation_id"]] = chats.get(row["conversation_id"], 0) + row["duration_ms"]
+    longest = streak = 0
+    previous = None
+    for day in sorted(daily):
+        streak = streak + 1 if previous and day == previous + timedelta(days=1) else 1
+        longest = max(longest, streak)
+        previous = day
+    current = 0
+    cursor = today if today in daily else today - timedelta(days=1)
+    while cursor in daily:
+        current += 1
+        cursor -= timedelta(days=1)
+    return {
+        "peakDayTokens": max(daily.values(), default=0),
+        "longestGenerationMs": max(chats.values(), default=0),
+        "currentStreak": current, "longestStreak": longest,
+        "activeDays": len(daily), "totalChats": len(chats),
+        "year": token_usage_daily(self, 366, now),
+    }
 
 
 def token_usage_models(self, days: int = 30, now: float | None = None,
@@ -222,4 +258,4 @@ def conversation_token_usage(self, conversation_id: str) -> dict[str, int]:
     }
 
 
-__all__ = ['record_token_usage', 'token_usage_summary', 'token_usage_daily', 'token_usage_models', 'conversation_token_usage']
+__all__ = ['record_token_usage', 'token_usage_summary', 'token_usage_overview', 'token_usage_daily', 'token_usage_models', 'conversation_token_usage']

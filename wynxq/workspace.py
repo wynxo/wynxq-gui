@@ -206,6 +206,10 @@ class WorkspaceController(Controller):
     def tokenUsage(self):
         return self._usage.summary
 
+    @Property("QVariantMap", notify=usageChanged)
+    def tokenUsageOverview(self):
+        return self._usage.overview
+
     @Property("QVariantList", notify=usageChanged)
     def tokenUsageDays(self):
         return self._usage.daily

@@ -53,6 +53,7 @@ class TokenUsageTracker:
         self._summary = _blank_summary()
         self._daily: list[dict] = []
         self._models: list[dict] = []
+        self._overview: dict = {}
         self.refresh()
         self.reset()
 
@@ -87,6 +88,10 @@ class TokenUsageTracker:
     def models(self) -> list[dict]:
         return copy.deepcopy(self._models)
 
+    @property
+    def overview(self) -> dict:
+        return copy.deepcopy(self._overview)
+
     def refresh(self) -> bool:
         """Refresh period totals plus the small trend/model views shown in Settings."""
         summary = getattr(self.store, "token_usage_summary", None)
@@ -95,9 +100,13 @@ class TokenUsageTracker:
         fresh = summary() if callable(summary) else _blank_summary()
         fresh_daily = daily(30) if callable(daily) else []
         fresh_models = models() if callable(models) else []
-        changed = (fresh != self._summary
+        overview = getattr(self.store, "token_usage_overview", None)
+        fresh_overview = overview() if callable(overview) else {}
+        changed = (fresh_overview != self._overview
+                   or fresh != self._summary
                    or fresh_daily != self._daily
                    or fresh_models != self._models)
+        self._overview = fresh_overview
         self._summary = fresh
         self._daily = fresh_daily
         self._models = fresh_models

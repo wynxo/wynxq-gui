@@ -120,6 +120,7 @@ class Store:
     # ------------------------------------------------ exact usage slice
     record_token_usage = _usage_ops.record_token_usage
     _usage_boundaries = staticmethod(_usage_ops._usage_boundaries)
+    token_usage_overview = _usage_ops.token_usage_overview
     token_usage_summary = _usage_ops.token_usage_summary
     token_usage_daily = _usage_ops.token_usage_daily
     token_usage_models = _usage_ops.token_usage_models
