@@ -54,22 +54,17 @@ Item {
 
         if (!root.hasProject)
             list.push({ label: "Open project", icon: "folder", command: "project", needs: "work" });
-        else {
+        else
             list.push({ label: "Quick open", icon: "search", command: "palette", needs: "work" });
-            list.push({ label: "Browse files", icon: "folderOpen", command: "files", needs: "work" });
-        }
 
         list.push({ label: "Terminal", icon: "terminal", command: "terminal-panel", needs: "work" });
 
         if (root.hasProject)
-            list.push({ label: "Explain this project", icon: "code", needs: "work",
+            list.push({ label: "Explain project", icon: "code", needs: "work",
                         prompt: "Inspect this project and explain how it is put together." });
 
         list.push({ label: "Read my screen", icon: "eye", needs: "work",
                     prompt: "What is on my screen? Help me with it." });
-
-        list.push({ label: "Run a command", icon: "bolt", needs: "work",
-                    prompt: "Check my disk space and explain what you find." });
 
         return list;
     }
@@ -78,15 +73,15 @@ Item {
         id: flow
         width: parent.width
         x: Math.max(0, (root.width - childrenRect.width) / 2)
-        spacing: Theme.s2
+        spacing: Theme.s1
 
         Repeater {
             model: root.actions
             delegate: AbstractButton {
                 id: starter
                 required property var modelData
-                implicitHeight: 32
-                implicitWidth: starterRow.implicitWidth + Theme.s3 * 2
+                implicitHeight: 28
+                implicitWidth: starterRow.implicitWidth + Theme.s2 * 2
                 hoverEnabled: true
                 focusPolicy: Qt.StrongFocus
                 Accessible.role: Accessible.Button
@@ -99,32 +94,26 @@ Item {
                     else
                         root.starterChosen(modelData.prompt);
                 }
-                background: GlassSurface {
-                    radius: Theme.r2
-                    solid: false
-                    autoGlass: false
-                    glassEnabled: starter.hovered || starter.down || starter.visualFocus
-                    tint: starter.down ? Theme.glassTintStrong : Theme.glassTintHover
-                    fillOpacity: starter.down ? 0.62
-                               : starter.hovered ? 0.42
-                               : starter.visualFocus ? 0.28 : 0.10
-                    outlineVisible: true
-                    strongEdge: starter.hovered || starter.down
-                    active: starter.visualFocus
-                    sheen: starter.hovered || starter.down
-                    edgeColor: starter.visualFocus ? Theme.accentEdge
-                             : starter.hovered || starter.down ? Theme.glassEdgeStrong
-                             : Theme.alpha(Theme.border, 0.52)
+                background: Rectangle {
+                    radius: Theme.r1
+                    color: starter.down ? Theme.surfacePressed
+                         : starter.hovered ? Theme.surfaceHover : "transparent"
+                    border.width: starter.visualFocus ? 1 : 0
+                    border.color: Theme.accentEdge
+                    Behavior on color {
+                        enabled: !Theme.reducedMotion
+                        ColorAnimation { duration: Theme.fast }
+                    }
                 }
                 contentItem: Row {
                     id: starterRow
                     anchors.centerIn: parent
-                    spacing: Theme.s2
+                    spacing: Theme.s1
                     Icon {
                         name: starter.modelData.icon
                         ink: starter.hovered || starter.visualFocus
                              ? Theme.textPrimary : Theme.textMuted
-                        width: 13; height: 13
+                        width: 12; height: 12
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {

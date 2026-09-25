@@ -4,12 +4,15 @@ import QtQuick.Layouts
 /*!
     The fresh-task headline.
 
-    Keep the first screen calm: one mode cue, one useful question, one short
-    explanation. The composer remains the visual centre of gravity.
+    Keep the first screen calm: one quiet runtime cue, one useful question and
+    one short explanation. The composer is the visual centre of gravity.
 */
 Item {
     id: root
 
+    // Kept as a public property because preview scenes toggle it. The refined
+    // home no longer adds decorative sculpture or activity data above the
+    // composer; short and tall windows intentionally share the same hierarchy.
     property bool showSculpture: true
 
     function playEntrance() {
@@ -19,7 +22,7 @@ Item {
             return;
         }
         column.opacity = 0;
-        column.scale = 0.985;
+        column.scale = 0.99;
         entrance.restart();
     }
 
@@ -33,7 +36,7 @@ Item {
         }
         NumberAnimation {
             target: column; property: "scale"
-            from: 0.985; to: 1; duration: Theme.slow; easing.type: Theme.easing
+            from: 0.99; to: 1; duration: Theme.slow; easing.type: Theme.easing
         }
     }
 
@@ -47,11 +50,11 @@ Item {
         ? "Conversation only — no shell, workspace tools, or desktop control."
         : bridge && bridge.desktopEnabled
             ? (hasProject
-                ? "Project tools and commands are available. Screen control is on and used only when the task needs visual context."
-                : "Commands are available. Screen control is on and used only when the task needs visual context.")
+                ? "Project tools and commands are ready. Screen control is on when visual context is needed."
+                : "Commands are ready. Screen control is on when visual context is needed.")
             : (hasProject
-                ? "Project tools and commands are available. Screen control is optional and stays off until you enable it."
-                : "Commands are available. Screen control is optional and stays off until you enable it.")
+                ? "Project tools and commands are ready. Screen control stays off until you enable it."
+                : "Commands are ready. Screen control stays off until you enable it.")
 
     implicitHeight: column.implicitHeight
 
@@ -63,42 +66,22 @@ Item {
         width: parent.width
         spacing: Theme.s2
 
-        Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.showSculpture ? 118 : 0
-            visible: root.showSculpture
-            ChromeMark {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 132
-                height: 118
-            }
-        }
-
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.s2
-
+            spacing: Theme.s1
             Item { Layout.fillWidth: true }
-
             Rectangle {
-                width: 5
-                height: 5
-                radius: 3
-                color: Theme.accent
-                Layout.alignment: Qt.AlignVCenter
+                width: 5; height: 5; radius: 3
+                color: bridge && bridge.online ? Theme.success : Theme.danger
             }
-
             Text {
                 text: bridge && bridge.online
-                    ? "LOCAL AI  ·  " + (bridge.modelShortName || "OLLAMA")
-                    : "OLLAMA OFFLINE"
-                color: bridge && bridge.online ? Theme.textMuted : Theme.danger
+                    ? (bridge.modelShortName || "Ollama") + " · local"
+                    : "Ollama offline"
+                color: bridge && bridge.online ? Theme.textDisabled : Theme.danger
                 font.family: Theme.monoFamily
                 font.pixelSize: Theme.micro
-                font.weight: Font.DemiBold
-                font.letterSpacing: 1.0
             }
-
             Item { Layout.fillWidth: true }
         }
 
@@ -109,9 +92,9 @@ Item {
             wrapMode: Text.Wrap
             color: Theme.textPrimary
             font.family: Theme.sansFamily
-            font.pixelSize: root.width < 560 ? 23 : 30
+            font.pixelSize: root.width < 560 ? 22 : 27
             font.weight: Font.Medium
-            font.letterSpacing: -0.35
+            font.letterSpacing: -0.25
         }
 
         Text {
@@ -122,18 +105,10 @@ Item {
             color: Theme.textMuted
             font.family: Theme.sansFamily
             font.pixelSize: Theme.caption
-            lineHeight: 1.35
+            lineHeight: 1.3
             wrapMode: Text.Wrap
             maximumLineCount: 2
             elide: Text.ElideRight
-        }
-
-        UsageHeatmap {
-            visible: root.showSculpture
-            Layout.topMargin: visible ? Theme.s3 : 0
-            Layout.preferredWidth: Math.min(328, root.width)
-            Layout.maximumWidth: 328
-            Layout.alignment: Qt.AlignHCenter
         }
     }
 }

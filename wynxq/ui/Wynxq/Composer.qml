@@ -95,17 +95,17 @@ Item {
         id: shell
         width: parent.width
         height: content.implicitHeight + Theme.s3 * 2
-        radius: Theme.r4
-        tint: input.activeFocus ? Theme.glassTintStrong : Theme.surfaceRaised
-        fillOpacity: input.activeFocus ? Theme.glassStrongOpacity : 1.0
+        radius: Theme.r3
+        tint: Theme.surfaceRaised
+        fillOpacity: 1.0
         solid: true
         autoGlass: false
-        glassEnabled: root.homeMode || input.activeFocus
+        glassEnabled: input.activeFocus
         elevated: input.activeFocus
         strongEdge: input.activeFocus
         active: input.activeFocus
-        sheen: root.homeMode || input.activeFocus
-        edgeColor: input.activeFocus ? Theme.accentEdge : Theme.border
+        sheen: input.activeFocus
+        edgeColor: input.activeFocus ? Theme.accentEdge : Theme.borderSubtle
 
         ColumnLayout {
             id: content
@@ -516,6 +516,7 @@ Item {
 
                 TokenUsage {
                     id: tokenUsage
+                    visible: !root.homeMode || (bridge && bridge.conversationTokens > 0)
                     Layout.maximumWidth: Math.max(100, root.width * 0.4)
                     Layout.rightMargin: Theme.s3
                     Layout.preferredHeight: 30
