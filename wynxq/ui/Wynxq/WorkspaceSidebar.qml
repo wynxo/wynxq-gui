@@ -50,7 +50,6 @@ Item {
             Layout.preferredHeight: 30
             spacing: Theme.s2
 
-            Mark { Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
 
             // Mode is a task boundary. Picking the other entry starts a fresh
             // task rather than mutating the capabilities of the current one.
@@ -59,25 +58,23 @@ Item {
                 Layout.fillWidth: true
                 implicitHeight: 28
                 hoverEnabled: true
-                Accessible.name: "Wynxq GUI. Current mode " + (root.inWork ? "Work" : "Chat") + ". Start another mode"
+                Accessible.name: "Current mode " + (root.inWork ? "Work" : "Chat") + ". Start another mode"
                 onClicked: productMenu.opened ? productMenu.close() : productMenu.open()
-                background: GlassSurface {
-                    radius: Theme.r2
-                    tint: Theme.glassTintHover
-                    fillOpacity: productButton.hovered || productMenu.opened ? 0.44 : 0.0
-                    outlineVisible: productButton.hovered || productMenu.opened || productButton.visualFocus
-                    active: productButton.visualFocus
-                    sheen: productButton.hovered || productMenu.opened
+                background: Rectangle {
+                    radius: Theme.r1
+                    color: productButton.hovered || productMenu.opened ? Theme.surfaceHover : "transparent"
+                    border.width: productButton.visualFocus ? 1 : 0
+                    border.color: Theme.accentEdge
                 }
                 contentItem: Row {
                     leftPadding: Theme.s1
                     spacing: Theme.s1
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Wynxq GUI"
-                        color: Theme.textPrimary
+                        text: root.inWork ? "Work" : "Chat"
+                        color: Theme.textSecondary
                         font.family: Theme.sansFamily
-                        font.pixelSize: Theme.heading
+                        font.pixelSize: Theme.caption
                         font.weight: Font.DemiBold
                     }
                     Icon {

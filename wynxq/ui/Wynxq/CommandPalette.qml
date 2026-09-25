@@ -36,7 +36,7 @@ Sheet {
         { id: "terminal-panel", group: "Workspace", label: "Terminal", detail: "A real shell in the project", icon: "terminal", shortcut: "Ctrl+`", workOnly: true },
         { id: "changes", group: "Workspace", label: "Changes", detail: "Uncommitted work, and its diff", icon: "branch", shortcut: "Ctrl+Shift+G", workOnly: true },
         { id: "context", group: "Workspace", label: "Context", detail: "What the model can see", icon: "layers", shortcut: "Ctrl+Shift+K", workOnly: true },
-        { id: "memory", group: "Workspace", label: "Memory", detail: "What Wynxq GUI remembers between tasks", icon: "memory", shortcut: "Ctrl+Shift+M", workOnly: true },
+        { id: "memory", group: "Workspace", label: "Memory", detail: "What Wynxq remembers between tasks", icon: "memory", shortcut: "Ctrl+Shift+M", workOnly: true },
         { id: "activity", group: "Workspace", label: "Activity", detail: "The full run timeline", icon: "bolt", shortcut: "Ctrl+Shift+A", workOnly: true },
         { id: "browser", group: "Workspace", label: "Browser", detail: "Read a page beside the task", icon: "globe", shortcut: "Ctrl+Shift+W", workOnly: true },
         { id: "preview", group: "Workspace", label: "Preview", detail: "Images and captures, full size", icon: "image", shortcut: "Ctrl+Shift+U", workOnly: true },

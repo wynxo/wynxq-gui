@@ -79,8 +79,8 @@ def test_quick_bar_makes_the_current_task_mode_explicit():
 
 def test_onboarding_uses_the_gui_product_name():
     text = ONBOARDING.read_text(encoding="utf-8")
-    assert 'Accessible.name: "Welcome to Wynxq GUI"' in text
-    assert '"Start using Wynxq GUI"' in text
+    assert 'Accessible.name: "Welcome to Wynxq"' in text
+    assert '"Start using Wynxq"' in text
 
 
 def test_command_palette_starts_work_not_a_retired_coding_product():

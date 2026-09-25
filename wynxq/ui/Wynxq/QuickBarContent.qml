@@ -179,7 +179,7 @@ Item {
                 }
                 Item { Layout.fillWidth: true }
                 Chip {
-                    text: "Open Wynxq GUI"; iconName: "launch"
+                    text: "Open Wynxq"; iconName: "launch"
                     onClicked: root.expandRequested()
                 }
             }

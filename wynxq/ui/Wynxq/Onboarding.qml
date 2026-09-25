@@ -41,7 +41,7 @@ Popup {
         anchors.margins: Theme.s6
         spacing: Theme.s4
         Accessible.role: Accessible.Dialog
-        Accessible.name: "Welcome to Wynxq GUI"
+        Accessible.name: "Welcome to Wynxq"
 
         RowLayout {
             Layout.fillWidth: true
@@ -51,7 +51,7 @@ Popup {
             ChromeMark { Layout.preferredWidth: 52; Layout.preferredHeight: 52 }
             Text {
                 Layout.fillWidth: true
-                text: ["Wynxq GUI",
+                text: ["Wynxq",
                        "Connect Ollama",
                        "Choose a model",
                        "Your workspace",
@@ -82,18 +82,18 @@ Popup {
                 width: bodyScroll.availableWidth
                 text: {
                     if (root.step === 0)
-                        return "An Ollama-powered AI workbench for Linux. Run inference on this computer or point Wynxq GUI at an Ollama server you control on your LAN, homelab, or trusted remote host. No Wynxq GUI account or API key required.";
+                        return "An Ollama-powered AI workbench for Linux. Run inference on this computer or point Wynxq at an Ollama server you control on your LAN, homelab, or trusted remote host. No Wynxq account or API key required.";
                     if (root.step === 1)
                         return bridge && bridge.online
                                ? "Connected to " + bridge.endpoint + " · " + bridge.endpointScopeLabel + ". " + bridge.models.length + " model" + (bridge.models.length === 1 ? "" : "s") + " available."
-                               : "Wynxq GUI cannot reach the configured Ollama server yet. Check that Ollama is listening there, then retry. You can change the address in Settings — LAN and remote HTTP(S) servers are supported.";
+                               : "Wynxq cannot reach the configured Ollama server yet. Check that Ollama is listening there, then retry. You can change the address in Settings — LAN and remote HTTP(S) servers are supported.";
                     if (root.step === 2)
                         return bridge && bridge.models.length
-                               ? "Wynxq GUI will use " + bridge.model + ". Any chat model works; screen control also needs vision and tool calling."
+                               ? "Wynxq will use " + bridge.model + ". Any chat model works; screen control also needs vision and tool calling."
                                : "No models are installed on that Ollama server yet. Open the model manager to download one — gemma3:4b is a good place to start.";
                     if (root.step === 3)
                         return "Open a project folder and the dock on the right becomes useful: its files, a real shell running in it, and whatever Git says has changed — plus what the model can currently see and everything it has done. Ctrl+Shift+B opens and closes it; each tool has its own key.";
-                    return "Wynxq GUI can see your screen and use your mouse and keyboard, but only when you turn it on. Those desktop actions still happen on this computer even if Ollama inference runs on another machine. Escape stops it from the Wynxq GUI window, and your desktop can give it a stop key that works from anywhere.";
+                    return "Wynxq can see your screen and use your mouse and keyboard, but only when you turn it on. Those desktop actions still happen on this computer even if Ollama inference runs on another machine. Escape stops it from the Wynxq window, and your desktop can give it a stop key that works from anywhere.";
                 }
                 color: Theme.textSecondary
                 font.family: Theme.sansFamily
@@ -155,7 +155,7 @@ Popup {
                 objectName: "welcomeContinue"
                 text: root.step === 1 && !(bridge && bridge.online) ? "Retry"
                     : root.step === 2 && bridge && !bridge.models.length ? "Open model manager"
-                    : root.step === root.lastStep ? "Start using Wynxq GUI" : "Continue"
+                    : root.step === root.lastStep ? "Start using Wynxq" : "Continue"
                 variant: "primary"
                 focus: true
                 onClicked: {

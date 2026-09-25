@@ -321,7 +321,7 @@ Item {
                     bottomPadding: Theme.s1
                     background: Item {}
                     Accessible.role: Accessible.EditableText
-                    Accessible.name: root.workMode ? "Work request" : "Message to Wynxq GUI"
+                    Accessible.name: root.workMode ? "Work request" : "Message to Wynxq"
                     Accessible.description: placeholderText
 
                     Keys.priority: Keys.BeforeItem

@@ -40,7 +40,7 @@ def test_new_task_starts_unlocked_and_chat_choice_locks(tmp_path):
     bridge = controller(tmp_path)
     assert bridge.taskMode == "chat"
     assert bridge.taskModeLocked is False
-    assert bridge.productName == "Wynxq GUI"
+    assert bridge.productName == "Wynxq"
 
     assert bridge.setTaskMode("chat") is True
     assert bridge.taskMode == "chat"
@@ -54,7 +54,7 @@ def test_work_starts_as_locked_tool_task(tmp_path):
     bridge.newTaskMode("work")
     assert bridge.taskMode == "work"
     assert bridge.taskModeLocked is True
-    assert bridge.productName == "Wynxq GUI"
+    assert bridge.productName == "Wynxq"
     bridge.shutdown()
 
 
@@ -75,7 +75,7 @@ def test_first_send_persists_chat_mode_and_reopen_restores_it(tmp_path, monkeypa
     bridge.openTask(task_id)
     assert bridge.taskMode == "chat"
     assert bridge.taskModeLocked is True
-    assert bridge.productName == "Wynxq GUI"
+    assert bridge.productName == "Wynxq"
     bridge.shutdown()
 
 
@@ -134,7 +134,7 @@ def test_reopening_legacy_coding_task_migrates_to_work(tmp_path):
     assert bridge.store.get_setting(f"task_mode:{task['id']}") == "work"
     assert bridge.taskMode == "work"
     assert bridge.taskModeLocked is True
-    assert bridge.productName == "Wynxq GUI"
+    assert bridge.productName == "Wynxq"
     bridge.shutdown()
 
 

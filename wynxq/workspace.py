@@ -157,7 +157,7 @@ class WorkspaceController(Controller):
 
     @Property(str, notify=modeChanged)
     def productName(self):
-        return "Wynxq GUI"
+        return "Wynxq"
 
     @Property("QVariantList", notify=planChanged)
     def planSteps(self):

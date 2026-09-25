@@ -98,23 +98,6 @@ Item {
             Layout.leftMargin: root.sidebarCollapsed && !root.drawerOpen ? Theme.s1 : Theme.s2
             spacing: Theme.s2
 
-            Text {
-                visible: root.sidebarCollapsed
-                text: "Wynxq GUI"
-                color: Theme.textSecondary
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.label
-                font.weight: Font.DemiBold
-            }
-
-            Text {
-                visible: root.sidebarCollapsed && bridge && bridge.projectName
-                text: "/"
-                color: Theme.textDisabled
-                font.family: Theme.sansFamily
-                font.pixelSize: Theme.caption
-            }
-
             AbstractButton {
                 id: projectButton
                 objectName: "projectButton"

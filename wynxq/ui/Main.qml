@@ -24,7 +24,7 @@ ApplicationWindow {
     width: 1440; height: 920
     minimumWidth: 560; minimumHeight: 520
     visible: true
-    title: (bridge ? bridge.taskTitle : "Wynxq GUI") + " — " + (bridge ? bridge.productName : "Wynxq GUI")
+    title: (bridge ? bridge.taskTitle : "Wynxq") + " — " + (bridge ? bridge.productName : "Wynxq")
     color: bridge && bridge.solidBackground ? Theme.background : Theme.backgroundSoft
 
     // ------------------------------------------------------------ layout
@@ -604,7 +604,7 @@ ApplicationWindow {
     ConfirmSheet {
         id: linkSheet
         title: "Open this link?"
-        message: "Wynxq GUI can show it in the built-in browser, or hand it to your default browser."
+        message: "Wynxq can show it in the built-in browser, or hand it to your default browser."
         confirmText: "Open in browser"
         property string link: ""
         function ask(url) { link = url; detail = url; show(); }
@@ -628,7 +628,7 @@ ApplicationWindow {
         height: quickContent.implicitHeight
         flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Dialog
         color: "transparent"
-        title: "Wynxq GUI quick bar"
+        title: "Wynxq quick bar"
 
         QuickBarContent {
             id: quickContent
